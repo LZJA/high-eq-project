@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS `history` (
     `role_background` VARCHAR(100) NOT NULL COMMENT '预设角色背景',
     `user_intent` TEXT NOT NULL COMMENT '用户真实意图',
     `model_used` VARCHAR(50) NOT NULL DEFAULT 'deepseek-chat' COMMENT '使用的 AI 模型名称',
+    `tone` VARCHAR(50) DEFAULT '自然得体' COMMENT '语气/风格',
     `status` TINYINT DEFAULT 1 COMMENT '状态: 1-正常, 0-已删除',
     `is_favorite` TINYINT DEFAULT 0 COMMENT '是否收藏: 1-是, 0-否',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',

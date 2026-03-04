@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+
 import { replyAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +25,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { ArrowLeft, Clock, Heart, Trash2, User, Copy } from "lucide-react";
 import { Link } from "wouter";
+import { AppNav } from "@/components/AppNav";
 
 interface FavoriteItem {
   id: string;
@@ -41,7 +42,7 @@ interface FavoriteItem {
 }
 
 export default function Favorites() {
-  const { user } = useAuth();
+
   const [isLoading, setIsLoading] = useState(true);
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -107,27 +108,7 @@ export default function Favorites() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* 导航栏 */}
-      <nav className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              HighEQ
-            </Link>
-            <Badge variant="secondary" className="ml-2">Beta</Badge>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link href="/app" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              回复生成器
-            </Link>
-            <Link href="/history" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              历史记录
-            </Link>
-            <span className="text-sm text-muted-foreground">
-              {user?.username}
-            </span>
-          </div>
-        </div>
-      </nav>
+      <AppNav activePage="favorites" />
 
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         <div className="mb-6">

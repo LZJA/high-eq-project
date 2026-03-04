@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.highiq.dto.GenerateReplyRequest;
 import com.highiq.dto.GenerateReplyResponse;
 import com.highiq.dto.HistoryDTO;
+import com.highiq.dto.PageResponse;
+import com.highiq.dto.SuggestionDTO;
 import com.highiq.entity.History;
 import com.highiq.entity.ReplySuggestion;
 import com.highiq.mapper.HistoryMapper;
@@ -13,6 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -39,18 +43,21 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
     @Transactional
     public GenerateReplyResponse generateReplies(String userId, GenerateReplyRequest request) {
         long startTime = System.currentTimeMillis();
-        
+
         try {
             // 调用 AI 服务生成回复
-            List<String> suggestions = aiService.generateReplies(
+            List<String> aiSuggestions = aiService.generateReplies(
                     request.getChatContent(),
                     request.getRoleBackground(),
                     request.getUserIntent(),
-                    request.getReplyCount()
+                    request.getReplyCount(),
+                    request.getTone()
             );
-            
+
             // 保存到数据库
             String historyId = UUID.randomUUID().toString();
+            String selectedTone = request.getTone() != null && !request.getTone().isEmpty() ? request.getTone() : "自然得体";
+
             History history = History.builder()
                     .id(historyId)
                     .userId(userId)
@@ -58,32 +65,54 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                     .roleBackground(request.getRoleBackground())
                     .userIntent(request.getUserIntent())
                     .modelUsed(request.getModelPreference() != null ? request.getModelPreference() : "deepseek-chat")
+                    .tone(selectedTone)
                     .status(1)
                     .isFavorite(0)
                     .build();
-            
+
             baseMapper.insert(history);
-            
-            // 保存回复建议
-            for (int i = 0; i < suggestions.size(); i++) {
+
+            // 构建返回的建议列表（包含 id, content, reason, tone）
+            List<SuggestionDTO> suggestionDTOs = new ArrayList<>();
+
+            // 保存回复建议到数据库并构建 DTO
+            for (int i = 0; i < aiSuggestions.size(); i++) {
+                String suggestionId = UUID.randomUUID().toString();
+                String aiSuggestion = aiSuggestions.get(i);
+
+                // 解析 AI 返回的格式：内容|||REASON|||理由
+                String[] parts = aiSuggestion.split("\\|\\|\\|REASON\\|\\|\\|", 2);
+                String content = parts[0];
+                String reason = parts.length > 1 ? parts[1] : "这是一条高情商回复，能得体地表达意图";
+
+                // 保存完整内容到数据库（包含理由，方便后续解析）
                 ReplySuggestion suggestion = ReplySuggestion.builder()
-                        .id(UUID.randomUUID().toString())
+                        .id(suggestionId)
                         .historyId(historyId)
-                        .suggestionText(suggestions.get(i))
+                        .suggestionText(aiSuggestion)
                         .orderIndex(i + 1)
                         .isSelected(0)
                         .build();
                 replySuggestionMapper.insert(suggestion);
+
+                // 构建 DTO - 使用 AI 生成的推荐理由
+                SuggestionDTO dto = SuggestionDTO.builder()
+                        .id(suggestionId)
+                        .content(content)
+                        .reason(reason)
+                        .tone(selectedTone)
+                        .build();
+                suggestionDTOs.add(dto);
             }
-            
+
             long endTime = System.currentTimeMillis();
             long generatedTime = endTime - startTime;
-            
-            log.info("Generated {} replies in {} ms", suggestions.size(), generatedTime);
-            
+
+            log.info("Generated {} replies in {} ms", aiSuggestions.size(), generatedTime);
+
             return GenerateReplyResponse.builder()
                     .historyId(historyId)
-                    .suggestions(suggestions)
+                    .suggestions(suggestionDTOs)
                     .modelUsed(request.getModelPreference() != null ? request.getModelPreference() : "deepseek-chat")
                     .generatedTime(generatedTime)
                     .build();
@@ -94,38 +123,52 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
     }
     
     /**
-     * 获取用户的历史记录
+     * 获取用户的历史记录（分页）
      */
-    public List<HistoryDTO> getUserHistory(String userId, Integer page, Integer size) {
+    public PageResponse<HistoryDTO> getUserHistory(String userId, Integer page, Integer size) {
         if (page == null || page < 1) page = 1;
         if (size == null || size < 1) size = 10;
-        
+
         int offset = (page - 1) * size;
-        
+
         QueryWrapper<History> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("user_id", userId)
                 .eq("status", 1)
-                .orderByDesc("create_time")
-                .last("LIMIT " + offset + ", " + size);
-        
+                .orderByDesc("create_time");
+
+        // 获取总数
+        Long total = baseMapper.selectCount(queryWrapper);
+
+        // 获取当前页数据
+        queryWrapper.last("LIMIT " + offset + ", " + size);
         List<History> histories = baseMapper.selectList(queryWrapper);
-        
-        return histories.stream()
-                .map(this::convertToDTO)
+
+        List<HistoryDTO> items = histories.stream()
+                .map(h -> convertToDTO(h, false))
                 .collect(Collectors.toList());
+
+        int totalPages = (int) Math.ceil((double) total / size);
+
+        return PageResponse.<HistoryDTO>builder()
+                .items(items)
+                .totalPages(totalPages)
+                .total(total)
+                .currentPage(page)
+                .pageSize(size)
+                .build();
     }
     
     /**
-     * 获取单个历史记录详情
+     * 获取单个历史记录详情（包含建议列表）
      */
     public HistoryDTO getHistoryDetail(String historyId, String userId) {
         History history = baseMapper.selectById(historyId);
-        
+
         if (history == null || !history.getUserId().equals(userId)) {
             throw new RuntimeException("历史记录不存在");
         }
-        
-        return convertToDTO(history);
+
+        return convertToDTO(history, true);
     }
     
     /**
@@ -162,7 +205,7 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
     }
     
     /**
-     * 获取用户收藏的历史记录
+     * 获取用户收藏的历史记录（包含建议列表）
      */
     public List<HistoryDTO> getFavoriteHistory(String userId) {
         QueryWrapper<History> queryWrapper = new QueryWrapper<>();
@@ -170,11 +213,11 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                 .eq("status", 1)
                 .eq("is_favorite", 1)
                 .orderByDesc("create_time");
-        
+
         List<History> histories = baseMapper.selectList(queryWrapper);
-        
+
         return histories.stream()
-                .map(this::convertToDTO)
+                .map(h -> convertToDTO(h, true))
                 .collect(Collectors.toList());
     }
     
@@ -187,22 +230,38 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
         if (history == null || !history.getUserId().equals(userId)) {
             throw new RuntimeException("历史记录不存在");
         }
-        
+
         QueryWrapper<ReplySuggestion> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("history_id", historyId)
                 .orderByAsc("order_index");
-        
+
         List<ReplySuggestion> suggestions = replySuggestionMapper.selectList(queryWrapper);
-        
+
         return suggestions.stream()
-                .map(ReplySuggestion::getSuggestionText)
+                .map(rs -> {
+                    String storedText = rs.getSuggestionText();
+                    // 如果包含新格式分隔符，只返回内容部分
+                    if (storedText.contains("|||REASON|||")) {
+                        return storedText.split("\\|\\|\\|REASON\\|\\|\\|", 2)[0];
+                    }
+                    return storedText;
+                })
                 .collect(Collectors.toList());
     }
     
     /**
      * 将 History 转换为 HistoryDTO
+     * @param history 历史记录实体
+     * @param includeSuggestions 是否包含建议列表
      */
-    private HistoryDTO convertToDTO(History history) {
+    private HistoryDTO convertToDTO(History history, boolean includeSuggestions) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+        List<SuggestionDTO> suggestions = null;
+        if (includeSuggestions) {
+            suggestions = getSuggestionsForHistory(history.getId(), history.getTone());
+        }
+
         return HistoryDTO.builder()
                 .id(history.getId())
                 .userId(history.getUserId())
@@ -210,8 +269,49 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                 .roleBackground(history.getRoleBackground())
                 .userIntent(history.getUserIntent())
                 .modelUsed(history.getModelUsed())
-                .isFavorite(history.getIsFavorite())
-                .createTime(history.getCreateTime())
+                .tone(history.getTone())
+                .isFavorite(history.getIsFavorite() != null && history.getIsFavorite() == 1)
+                .createTime(history.getCreateTime() != null ? history.getCreateTime().format(formatter) : null)
+                .suggestions(suggestions)
                 .build();
+    }
+
+    /**
+     * 获取历史记录的建议列表
+     */
+    private List<SuggestionDTO> getSuggestionsForHistory(String historyId, String tone) {
+        QueryWrapper<ReplySuggestion> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("history_id", historyId)
+                .orderByAsc("order_index");
+
+        List<ReplySuggestion> replySuggestions = replySuggestionMapper.selectList(queryWrapper);
+
+        String displayTone = tone != null && !tone.isEmpty() ? tone : "自然得体";
+
+        return replySuggestions.stream()
+                .map(rs -> {
+                    String storedText = rs.getSuggestionText();
+
+                    // 尝试解析新格式：内容|||REASON|||理由
+                    String content;
+                    String reason;
+                    if (storedText.contains("|||REASON|||")) {
+                        String[] parts = storedText.split("\\|\\|\\|REASON\\|\\|\\|", 2);
+                        content = parts[0];
+                        reason = parts.length > 1 ? parts[1] : "这是一条高情商回复，能得体地表达意图";
+                    } else {
+                        // 旧格式，直接使用存储的文本作为内容
+                        content = storedText;
+                        reason = "使用" + displayTone + "语气生成的高情商回复";
+                    }
+
+                    return SuggestionDTO.builder()
+                            .id(rs.getId())
+                            .content(content)
+                            .reason(reason)
+                            .tone(displayTone)
+                            .build();
+                })
+                .collect(Collectors.toList());
     }
 }

@@ -14,12 +14,12 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class GenerateReplyResponse {
-    
+
     private String historyId;
-    
-    private List<String> suggestions;
-    
+
+    private List<SuggestionDTO> suggestions;
+
     private String modelUsed;
-    
+
     private Long generatedTime;  // 生成耗时（毫秒）
 }

@@ -21,7 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { Copy, Heart, Wand2 } from "lucide-react";
-import { Link } from "wouter";
+import { AppNav } from "@/components/AppNav";
 
 // 预设角色
 const PRESET_ROLES = [
@@ -38,8 +38,17 @@ const PRESET_ROLES = [
 // AI 模型选项
 const AI_MODELS = [
   { value: "deepseek", label: "DeepSeek (推荐)" },
-  { value: "doubao", label: "豆包" },
-  { value: "wenxin", label: "百度文心一言" },
+  // { value: "doubao", label: "豆包" },
+  // { value: "wenxin", label: "百度文心一言" },
+];
+
+// 语气/风格选项
+const TONE_OPTIONS = [
+  { value: "温和友善", label: "温和友善", description: "充满关怀和理解" },
+  { value: "正式得体", label: "正式得体", description: "保持专业和礼貌" },
+  { value: "幽默风趣", label: "幽默风趣", description: "轻松活泼的表达" },
+  { value: "真诚直接", label: "真诚直接", description: "坦率表达想法" },
+  { value: "委婉含蓄", label: "委婉含蓄", description: "间接表达意思" },
 ];
 
 interface ReplySuggestion {
@@ -50,13 +59,14 @@ interface ReplySuggestion {
 }
 
 export default function ReplyApp() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
   const [chatContent, setChatContent] = useState("");
   const [roleBackground, setRoleBackground] = useState("");
   const [userIntent, setUserIntent] = useState("");
   const [replyCount, setReplyCount] = useState(3);
   const [modelPreference, setModelPreference] = useState("deepseek");
+  const [tone, setTone] = useState("");
   const [suggestions, setSuggestions] = useState<ReplySuggestion[]>([]);
   const [currentHistoryId, setCurrentHistoryId] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
@@ -83,6 +93,7 @@ export default function ReplyApp() {
         userIntent,
         replyCount,
         modelPreference,
+        tone,
       });
 
       setSuggestions(response.data.suggestions || []);
@@ -125,6 +136,7 @@ export default function ReplyApp() {
     setChatContent("");
     setRoleBackground("");
     setUserIntent("");
+    setTone("");
     setSuggestions([]);
     setCurrentHistoryId(null);
     setFavorites(new Set());
@@ -133,32 +145,7 @@ export default function ReplyApp() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* 导航栏 */}
-      <nav className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Link href="/" className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              HighEQ
-            </Link>
-            <Badge variant="secondary" className="ml-2">Beta</Badge>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link href="/history" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              历史记录
-            </Link>
-            <Link href="/favorites" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              收藏
-            </Link>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                {user?.username}
-              </span>
-              <Button variant="outline" size="sm" onClick={logout}>
-                退出
-              </Button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <AppNav activePage="app" showLogout />
 
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* 输入区域 */}
@@ -228,6 +215,32 @@ export default function ReplyApp() {
                 />
               </div>
 
+              {/* 语气/风格选择 */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">语气/风格（可选）</label>
+                <Select
+                  value={tone}
+                  onValueChange={setTone}
+                  disabled={isGenerating}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="选择回复语气" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TONE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        <div className="flex items-center gap-2">
+                          <span>{option.label}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {option.description}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* 高级选项 */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -237,7 +250,7 @@ export default function ReplyApp() {
                     onValueChange={(v) => setReplyCount(parseInt(v))}
                     disabled={isGenerating}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -255,7 +268,7 @@ export default function ReplyApp() {
                     onValueChange={setModelPreference}
                     disabled={isGenerating}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>

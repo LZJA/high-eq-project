@@ -18,25 +18,27 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @TableName("history")
 public class History {
-    
+
     @TableId(type = IdType.ASSIGN_UUID)
     private String id;
-    
+
     private String userId;
-    
+
     private String chatContent;
-    
+
     private String roleBackground;
-    
+
     private String userIntent;
-    
+
     private String modelUsed;
-    
+
+    private String tone;  // 语气/风格
+
     private Integer status;
-    
+
     private Integer isFavorite;
-    
+
     private LocalDateTime createTime;
-    
+
     private LocalDateTime updateTime;
 }

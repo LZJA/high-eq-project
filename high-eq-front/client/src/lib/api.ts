@@ -132,6 +132,7 @@ export const replyAPI = {
     userIntent: string;
     replyCount?: number;
     modelPreference?: string;
+    tone?: string;
   }) => {
     const response = await apiClient.post('/reply/generate', data);
     return response.data;

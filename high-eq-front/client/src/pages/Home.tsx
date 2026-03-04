@@ -1,7 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useAuth } from "@/contexts/AuthContext";
 import { ArrowRight, Brain, Database, Zap, BarChart3, MessageSquare, History } from "lucide-react";
 import { useState } from "react";
+import { useLocation } from "wouter";
 
 /**
  * 高情商回复生成助手 - 技术方案展示网站
@@ -18,6 +20,17 @@ const FEATURE_HISTORY = "https://d2xsxph8kpxj0f.cloudfront.net/31051966323356097
 
 export default function Home() {
   const [expandedModel, setExpandedModel] = useState<string | null>(null);
+  const { isAuthenticated } = useAuth();
+  const [, navigate] = useLocation();
+
+  const handleStart = () => {
+    const hasToken = !!localStorage.getItem("access_token");
+    if (isAuthenticated || hasToken) {
+      navigate("/app");
+      return;
+    }
+    navigate("/login");
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -36,7 +49,9 @@ export default function Home() {
             <a href="#tech-stack" className="text-gray-600 hover:text-gray-900 transition">技术栈</a>
             <a href="#models" className="text-gray-600 hover:text-gray-900 transition">AI 模型</a>
           </div>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white">开始使用</Button>
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleStart}>
+            开始使用
+          </Button>
         </div>
       </nav>
 

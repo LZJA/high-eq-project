@@ -15,4 +15,6 @@ public class HighEqApplication {
         SpringApplication.run(HighEqApplication.class, args);
     }
 
+
+
 }

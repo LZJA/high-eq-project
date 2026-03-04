@@ -4,6 +4,7 @@ import com.highiq.dto.ApiResponse;
 import com.highiq.dto.GenerateReplyRequest;
 import com.highiq.dto.GenerateReplyResponse;
 import com.highiq.dto.HistoryDTO;
+import com.highiq.dto.PageResponse;
 import com.highiq.service.ReplyService;
 import com.highiq.util.JwtUtil;
 import jakarta.validation.Valid;
@@ -49,19 +50,19 @@ public class ReplyController {
     }
     
     /**
-     * 获取用户历史记录
+     * 获取用户历史记录（分页）
      */
     @GetMapping("/history")
-    public ApiResponse<List<HistoryDTO>> getHistory(
+    public ApiResponse<PageResponse<HistoryDTO>> getHistory(
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer size,
             @RequestHeader("Authorization") String authHeader) {
         try {
             String token = authHeader.replace("Bearer ", "");
             String userId = jwtUtil.getUserIdFromToken(token);
-            
-            List<HistoryDTO> histories = replyService.getUserHistory(userId, page, size);
-            return ApiResponse.success("获取成功", histories);
+
+            PageResponse<HistoryDTO> pageResponse = replyService.getUserHistory(userId, page, size);
+            return ApiResponse.success("获取成功", pageResponse);
         } catch (Exception e) {
             log.error("Failed to get history", e);
             return ApiResponse.error(500, e.getMessage());
