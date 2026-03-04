@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    container_name: high-eq-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-higheq}
+      MYSQL_USER: ${MYSQL_USER:-higheq}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-higheq123}
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - high-eq-network
+
+  # Spring Boot 后端应用
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: high-eq-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      # 数据库配置
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-higheq}?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-higheq}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-higheq123}
+      # JWT 配置
+      JWT_SECRET: ${JWT_SECRET}
+      # AI 配置
+      AI_DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
+      # JVM 配置
+      JAVA_OPTS: "-Xms512m -Xmx1024m"
+    ports:
+      - "8080:8080"
+    networks:
+      - high-eq-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  high-eq-network:
+    driver: bridge

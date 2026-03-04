@@ -64,31 +64,99 @@ high-eq-backend/
 
 ### 安装步骤
 
+#### 方式一：本地开发环境
+
 1. **初始化数据库**
    ```bash
    mysql -u root -p -P 3307 < src/main/resources/db/init.sql
    ```
 
-2. **配置应用**
-   编辑 `src/main/resources/application.yml`：
-   ```yaml
-   spring:
-     datasource:
-       url: jdbc:mysql://localhost:3307/high_eq_db?characterEncoding=utf8&useUnicode=true
-       username: root
-       password: your_password
-
-   ai:
-     deepseek:
-       api-key: your_deepseek_api_key
+2. **配置环境变量**
+   复制并编辑环境变量配置：
+   ```bash
+   cp .env.example .env
+   # 编辑 .env 文件，填入正确的配置
    ```
 
 3. **编译并运行**
+   使用启动脚本：
+   ```bash
+   # Linux/Mac
+   ./start.sh
+
+   # Windows
+   start.bat
+   ```
+
+   或直接使用 Maven：
    ```bash
    mvn spring-boot:run
    ```
 
 应用将在 `http://localhost:8080/api` 启动。
+
+#### 方式二：Docker 部署（推荐用于生产环境）
+
+1. **前置条件**
+   - Docker 20.10 或更高版本
+   - Docker Compose 2.0 或更高版本
+
+2. **配置环境变量**
+   ```bash
+   cp .env.example .env
+   # 编辑 .env 文件，填入正确的配置
+   ```
+
+3. **使用部署脚本**
+   ```bash
+   # 构建并启动服务
+   ./deploy-docker.sh up
+
+   # 查看服务状态
+   ./deploy-docker.sh status
+
+   # 查看日志
+   ./deploy-docker.sh logs
+
+   # 停止服务
+   ./deploy-docker.sh down
+
+   # 重启服务
+   ./deploy-docker.sh restart
+   ```
+
+4. **或使用 Docker Compose 命令**
+   ```bash
+   # 构建镜像
+   docker-compose build
+
+   # 启动服务（包含 MySQL 和后端）
+   docker-compose up -d
+
+   # 查看服务状态
+   docker-compose ps
+
+   # 查看日志
+   docker-compose logs -f
+
+   # 停止服务
+   docker-compose down
+
+   # 停止服务并删除数据卷
+   docker-compose down -v
+   ```
+
+5. **服务访问地址**
+   - 后端 API: http://localhost:8080
+   - MySQL: localhost:3306
+
+### Docker 镜像说明
+
+- 使用多阶段构建，优化镜像大小
+- 基于 Alpine Linux，最终镜像约 200MB
+- 内置健康检查，自动监控服务状态
+- 非 root 用户运行，提高安全性
+- 支持 JVM 参数优化，默认使用 75% 容器内存
 
 ## API 文档
 
@@ -258,30 +326,72 @@ Authorization: Bearer {token}
 
 ## 环境变量配置
 
-| 变量名 | 说明 | 示例 |
-|--------|------|------|
-| `DEEPSEEK_API_KEY` | DeepSeek API Key | sk-xxxxx |
-| `MYSQL_HOST` | MySQL 主机 | localhost |
-| `MYSQL_PORT` | MySQL 端口 | 3307 |
-| `MYSQL_DATABASE` | 数据库名 | high_eq_db |
-| `MYSQL_USER` | MySQL 用户 | root |
-| `MYSQL_PASSWORD` | MySQL 密码 | password |
-| `JWT_SECRET` | JWT 密钥 | your-secret-key |
-| `JWT_EXPIRATION` | Token 过期时间（毫秒） | 86400000 |
+项目使用 `.env` 文件管理环境变量，**本地开发和 Docker 部署共用同一个 `.env` 文件**。
+
+请复制 `.env.example` 文件并重命名为 `.env`，然后填入实际配置值：
+
+```bash
+cp .env.example .env
+# 编辑 .env 文件，填入正确的配置
+```
+
+| 变量名 | 说明 | 示例 | 必填 |
+|--------|------|------|------|
+| `MYSQL_USER` | MySQL 用户名 | root | 是 |
+| `MYSQL_PASSWORD` | MySQL 密码 | password | 是 |
+| `MYSQL_ROOT_PASSWORD` | MySQL root 密码（Docker） | root | 是 |
+| `MYSQL_DATABASE` | 数据库名（Docker） | higheq | 是 |
+| `MYSQL_HOST` | MySQL 主机（本地开发） | localhost | 否 |
+| `MYSQL_PORT` | MySQL 端口（本地开发） | 3306 | 否 |
+| `JWT_SECRET` | JWT 密钥（至少32位） | your-secret-key-change-this | 是 |
+| `DEEPSEEK_API_KEY` | DeepSeek API Key | sk-xxxxx | 是 |
+
+### 环境变量加载说明
+
+项目使用 dotenv-java 库在应用启动时加载 `.env` 文件中的环境变量。环境变量在 `main()` 方法中加载，确保在 Spring 初始化之前就可用。
+
+Docker 部署时，环境变量通过 `docker-compose.yml` 传入容器。
 
 ## 常见问题
 
 ### Q: 如何修改数据库连接信息？
-A: 编辑 `application.yml` 中的 `spring.datasource` 配置。
+A: 编辑 `.env` 文件中的数据库相关配置：
+- 本地开发：修改 `MYSQL_HOST`、`MYSQL_PORT` 等
+- Docker 部署：docker-compose 会自动读取 `.env` 中的 `MYSQL_DATABASE`、`MYSQL_USER`、`MYSQL_PASSWORD` 等变量
 
 ### Q: 如何获取 DeepSeek API Key？
 A: 访问 [DeepSeek 官网](https://api-docs.deepseek.com) 注册账号并获取 API Key。
 
 ### Q: 如何处理中文乱码？
-A: 确保数据库 URL 包含 `characterEncoding=utf8&useUnicode=true`，同时检查 Jackson 和 Servlet 的编码配置。
+A: 确保数据库 URL 包含 `characterEncoding=utf8&useUnicode=true`，同时检查 Jackson 和 Servlet 的编码配置。项目已配置 UTF-8 编码支持。
 
 ### Q: 如何扩展新的 AI 模型支持？
 A: 在 `AiService` 中添加新的模型调用方法，并在配置文件中添加相应的配置。
+
+### Q: Docker 部署后如何查看日志？
+A: 使用以下命令查看日志：
+```bash
+# 查看所有日志
+docker-compose logs -f
+
+# 只查看后端日志
+docker-compose logs -f backend
+
+# 只查看 MySQL 日志
+docker-compose logs -f mysql
+```
+
+### Q: Docker 部署后数据库数据会丢失吗？
+A: 不会。Docker Compose 使用命名卷 `mysql_data` 持久化数据库数据。只有在使用 `docker-compose down -v` 命令时才会删除数据。
+
+### Q: 如何在生产环境部署？
+A: 建议使用 Docker 部署，并修改以下配置：
+1. 修改 `.env` 文件中的默认密码
+2. 使用强密码作为 `JWT_SECRET`
+3. 配置反向代理（如 Nginx）
+4. 启用 HTTPS
+5. 配置防火墙规则
+6. 定期备份数据库
 
 ## 许可证
 

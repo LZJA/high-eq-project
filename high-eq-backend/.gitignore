@@ -48,3 +48,8 @@ Thumbs.db
 
 # Spring Boot
 spring-boot-*.log
+
+# Docker
+backups/
+
+# Volume data (if mounted locally)
