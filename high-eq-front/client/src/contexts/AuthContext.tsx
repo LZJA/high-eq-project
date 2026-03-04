@@ -1,5 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authAPI } from '@/lib/api';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+import { authAPI } from "@/lib/api";
 
 /**
  * 用户信息类型
@@ -22,7 +28,12 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
-  register: (username: string, password: string, email?: string, phone?: string) => Promise<void>;
+  register: (
+    username: string,
+    password: string,
+    email?: string,
+    phone?: string
+  ) => Promise<void>;
   logout: () => void;
 }
 
@@ -34,7 +45,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 /**
  * 认证提供者组件
  */
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -42,11 +55,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
    * 初始化认证状态
    */
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
+    const token = localStorage.getItem("access_token");
     if (token) {
       // 可以在这里验证 token 的有效性
       // 从 localStorage 中恢复用户信息
-      const savedUser = localStorage.getItem('user');
+      const savedUser = localStorage.getItem("user");
       if (savedUser) {
         setUser(JSON.parse(savedUser));
       }
@@ -63,9 +76,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const response = await authAPI.login({ username, password });
       const { token, refreshToken, user: userData } = response.data;
 
-      localStorage.setItem('access_token', token);
-      localStorage.setItem('refresh_token', refreshToken);
-      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem("access_token", token);
+      localStorage.setItem("refresh_token", refreshToken);
+      localStorage.setItem("user", JSON.stringify(userData));
 
       setUser(userData);
     } finally {
@@ -76,7 +89,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   /**
    * 注册
    */
-  const register = async (username: string, password: string, email?: string, phone?: string) => {
+  const register = async (
+    username: string,
+    password: string,
+    email?: string,
+    phone?: string
+  ) => {
     setIsLoading(true);
     try {
       await authAPI.register({ username, password, email, phone });
@@ -91,9 +109,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
    * 登出
    */
   const logout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user");
     setUser(null);
   };
 
@@ -115,7 +133,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };

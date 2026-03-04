@@ -3,7 +3,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { toast } from "sonner";
 import { Link } from "wouter";
 
@@ -28,7 +34,9 @@ export default function Login() {
       toast.success("登录成功！");
       window.location.href = "/app";
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "登录失败，请检查用户名和密码");
+      toast.error(
+        error.response?.data?.message || "登录失败，请检查用户名和密码"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -57,7 +65,7 @@ export default function Login() {
                 type="text"
                 placeholder="请输入用户名"
                 value={formData.username}
-                onChange={(e) =>
+                onChange={e =>
                   setFormData({ ...formData, username: e.target.value })
                 }
                 disabled={isLoading}
@@ -72,7 +80,7 @@ export default function Login() {
                 type="password"
                 placeholder="请输入密码"
                 value={formData.password}
-                onChange={(e) =>
+                onChange={e =>
                   setFormData({ ...formData, password: e.target.value })
                 }
                 disabled={isLoading}
@@ -80,17 +88,16 @@ export default function Login() {
                 required
               />
             </div>
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-            >
+            <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "登录中..." : "登录"}
             </Button>
           </form>
           <div className="mt-4 text-center text-sm text-muted-foreground">
             还没有账户？{" "}
-            <Link href="/register" className="text-primary hover:underline font-medium">
+            <Link
+              href="/register"
+              className="text-primary hover:underline font-medium"
+            >
               立即注册
             </Link>
           </div>
