@@ -11,8 +11,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * AI 服务类 - 调用 DeepSeek API
@@ -137,14 +135,14 @@ public class AiService {
         requestBody.put("model", model);
         requestBody.put("temperature", temperature);
         requestBody.put("max_tokens", maxTokens);
-        
+
         List<Map<String, String>> messages = new ArrayList<>();
         Map<String, String> message = new HashMap<>();
         message.put("role", "user");
         message.put("content", prompt);
         messages.add(message);
         requestBody.put("messages", messages);
-        
+
         try {
             String response = webClient.post()
                     .uri(apiUrl + "/chat/completions")
@@ -154,7 +152,7 @@ public class AiService {
                     .retrieve()
                     .bodyToMono(String.class)
                     .block();
-            
+
             return objectMapper.readValue(response, Map.class);
         } catch (Exception e) {
             log.error("DeepSeek API call failed", e);

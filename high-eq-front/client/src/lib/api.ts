@@ -35,19 +35,21 @@ apiClient.interceptors.request.use(
 );
 
 /**
- * 响应拦截器 - 处理 Token 过期
+ * 响应拦截器 - 处理 Token 过期和权限错误
  */
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // 处理 401 (未授权) 和 403 (禁止访问) 错误
+    if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
         const refreshToken = localStorage.getItem('refresh_token');
         if (refreshToken) {
+          // 尝试使用 refresh token 刷新
           const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {}, {
             headers: {
               Authorization: `Bearer ${refreshToken}`,
@@ -62,8 +64,8 @@ apiClient.interceptors.response.use(
           return apiClient(originalRequest);
         }
       } catch (refreshError) {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
+        // 刷新失败，清除所有认证信息并跳转登录页
+        clearAuthData();
         window.location.href = '/login';
       }
     }
@@ -71,6 +73,23 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+/**
+ * 清除所有认证相关的数据
+ */
+function clearAuthData() {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+  localStorage.removeItem('user');
+
+  // 触发自定义事件，通知 AuthContext 清除用户状态
+  window.dispatchEvent(new Event('auth_logout'));
+
+  // 延迟跳转，确保 AuthContext 先更新状态
+  setTimeout(() => {
+    window.location.href = '/login';
+  }, 100);
+}
 
 /**
  * 认证相关 API

@@ -57,14 +57,38 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   useEffect(() => {
     const token = localStorage.getItem("access_token");
     if (token) {
-      // 可以在这里验证 token 的有效性
-      // 从 localStorage 中恢复用户信息
-      const savedUser = localStorage.getItem("user");
-      if (savedUser) {
-        setUser(JSON.parse(savedUser));
-      }
+      // 验证 token 是否有效
+      authAPI.getCurrentUser()
+        .then(() => {
+          // token 有效，从 localStorage 中恢复用户信息
+          const savedUser = localStorage.getItem("user");
+          if (savedUser) {
+            setUser(JSON.parse(savedUser));
+          }
+        })
+        .catch(() => {
+          // token 无效，清除所有数据
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("refresh_token");
+          localStorage.removeItem("user");
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    } else {
+      setIsLoading(false);
     }
-    setIsLoading(false);
+
+    // 监听自定义登出事件（当 token 失效时触发）
+    const handleLogout = () => {
+      setUser(null);
+    };
+
+    window.addEventListener('auth_logout', handleLogout);
+
+    return () => {
+      window.removeEventListener('auth_logout', handleLogout);
+    };
   }, []);
 
   /**
