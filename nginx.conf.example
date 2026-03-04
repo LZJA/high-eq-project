@@ -1,0 +1,78 @@
+# Nginx 配置示例 - HighEQ 前端项目
+# 文件位置：/etc/nginx/sites-available/high-eq.conf
+
+server {
+    listen 80;
+    server_name your-domain.com;  # 修改为你的域名
+
+    # 字符集
+    charset utf-8;
+
+    # 日志文件
+    access_log /var/log/nginx/high-eq-access.log;
+    error_log /var/log/nginx/high-eq-error.log;
+
+    # Gzip 压缩
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json;
+
+    # 前端静态文件
+    # 构建产物位置: /var/www/high-eq/dist
+    root /var/www/high-eq/dist;
+    index index.html;
+
+    # 前端路由 - SPA 路由关键配置
+    # 所有非静态文件请求都返回 index.html，由前端路由处理
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # 后端 API 代理
+    location /api/ {
+        proxy_pass http://localhost:8080/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # 超时设置
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    # 静态资源缓存 - 提高加载速度
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # 安全头
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+}
+
+# HTTPS 配置（使用 Let's Encrypt）
+# 取消以下注释并配置 SSL 证书
+#
+# server {
+#     listen 443 ssl http2;
+#     server_name your-domain.com;
+#
+#     ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
+#     ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
+#     ssl_protocols TLSv1.2 TLSv1.3;
+#     ssl_ciphers HIGH:!aNULL:!MD5;
+#
+#     # 其他配置同上...
+# }
+#
+# # HTTP 重定向到 HTTPS
+# server {
+#     listen 80;
+#     server_name your-domain.com;
+#     return 301 https://$server_name$request_uri;
+# }

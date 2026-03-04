@@ -1,7 +1,11 @@
 import axios, { AxiosInstance } from 'axios';
 
-// API 基础 URL - 根据环境调整
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+// API 基础 URL
+// 开发环境：使用 Vite 代理 /api
+// 生产环境：使用环境变量 VITE_API_URL 或相对路径
+const API_BASE_URL = import.meta.env.MODE === 'development'
+  ? '/api'
+  : (import.meta.env.VITE_API_URL || '/api');
 
 /**
  * API 客户端配置
