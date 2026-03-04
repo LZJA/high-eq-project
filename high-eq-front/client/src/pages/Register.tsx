@@ -51,7 +51,7 @@ export default function Register() {
         formData.phone || undefined
       );
       toast.success("注册成功！");
-      window.location.href = "/app";
+      window.location.href = "/";
     } catch (error: any) {
       toast.error(error.response?.data?.message || "注册失败，请稍后重试");
     } finally {

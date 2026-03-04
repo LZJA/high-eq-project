@@ -1,0 +1,35 @@
+# 忽略 node_modules
+node_modules/
+dist/
+dist-ssr/
+
+# 忽略构建文件
+*.log
+.DS_Store
+*.local
+
+# 忽略环境变量文件
+.env
+.env.local
+.env.*.local
+
+# 忽略 IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 忽略 OS
+.DS_Store
+Thumbs.db
+
+# 忽略后端配置文件（包含敏感信息）
+high-eq-backend/src/main/resources/application.yml
+high-eq-backend/application.yml
+high-eq-backend/*.key
+high-eq-backend/*.pem
+
+# 忽略后端构建输出
+high-eq-backend/target/
+high-eq-backend/logs/
