@@ -3,10 +3,6 @@
 # 阶段1: 构建阶段
 FROM maven:3.9.12-eclipse-temurin-17 AS builder
 
-# 配置 DNS 服务器（解决容器内 DNS 解析问题）
-RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf && \
-    echo "nameserver 114.114.114.114" >> /etc/resolv.conf
-
 # 设置工作目录
 WORKDIR /app
 
