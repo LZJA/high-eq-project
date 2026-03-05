@@ -20,11 +20,22 @@ public class HighEqApplication {
 
     /**
      * 加载 .env 文件并设置系统属性
+     * 根据 Spring Profile 自动选择合适的环境文件：
+     * - prod profile: .env.production
+     * - 其他 profile: .env
      */
     private static void loadDotenv() {
         try {
+            // 检测 Spring Profile
+            String profile = System.getProperty("spring.profiles.active");
+            String envFile = ".env"; // 默认使用 .env
+
+            if ("prod".equals(profile)) {
+                envFile = ".env.production";
+            }
+
             Dotenv dotenv = Dotenv.configure()
-                    .filename(".env")
+                    .filename(envFile)
                     .ignoreIfMalformed()
                     .ignoreIfMissing()
                     .load();
@@ -47,7 +58,7 @@ public class HighEqApplication {
             }
 
             if (count > 0) {
-                System.out.println("=== Loaded " + count + " properties from .env file ===");
+                System.out.println("=== Loaded " + count + " properties from " + envFile + " file ===");
             }
         } catch (Exception e) {
             System.err.println("Warning: Failed to load .env file: " + e.getMessage());

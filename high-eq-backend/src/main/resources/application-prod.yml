@@ -1,0 +1,131 @@
+spring:
+  application:
+    name: high-eq-reply
+
+  datasource:
+    # Docker 部署时会通过环境变量覆盖
+    url: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:higheq}?useSSL=true&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8&useUnicode=true
+    username: ${MYSQL_USER}
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # 连接池配置（生产环境）
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: false
+        # 生产环境 SQL 慢查询阈值（秒）
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    default-property-inclusion: non_null
+    charset: UTF-8
+    # 时区设置
+    time-zone: Asia/Shanghai
+
+  # 生产环境数据验证
+  mvc:
+    throw-exception-if-no-handler-found: true
+  web:
+    resources:
+      add-mappings: false
+
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.highiq.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: true
+    lazy-loading-enabled: false  # 生产环境禁用延迟加载
+    multiple-result-sets-enabled: true
+    use-column-label: true
+    default-statement-timeout: 30000
+    default-fetch-size: 100
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+  # 生产环境 Tomcat 配置
+  tomcat:
+    threads:
+      max: 200
+      min-spare: 10
+    accept-count: 100
+    max-connections: 10000
+    connection-timeout: 20000
+  compression:
+    enabled: true
+    min-response-size: 1024
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+
+# 生产环境日志配置
+logging:
+  level:
+    root: WARN
+    com.highiq: INFO
+    org.springframework.web: WARN
+    org.hibernate.SQL: WARN
+    org.hibernate.type.descriptor.sql.BasicBinder: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: /var/log/high-eq/application.log
+  logback:
+    rollingpolicy:
+      max-file-size: 50MB
+      max-history: 30
+      total-size-cap: 1GB
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: 86400000 # 24 hours
+  refresh-expiration: 604800000 # 7 days
+
+# AI Configuration
+ai:
+  deepseek:
+    api-key: ${DEEPSEEK_API_KEY}
+    api-url: https://api.deepseek.com/v1
+    model: deepseek-chat
+    temperature: 0.7
+    max-tokens: 500
+    # 生产环境超时设置
+    timeout:
+      connect: 10000
+      read: 30000
+
+# 生产环境管理端点配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+  health:
+    defaults:
+      enabled: true

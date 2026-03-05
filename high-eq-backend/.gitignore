@@ -34,6 +34,8 @@ nbdist/
 # Application Config - IMPORTANT: Contains sensitive data!
 src/main/resources/application.yml
 .env
+.env.production
+.env.local
 *.key
 *.pem
 
