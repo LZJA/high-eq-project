@@ -42,6 +42,11 @@ services:
       dockerfile: Dockerfile
     container_name: high-eq-backend-prod
     restart: always
+    # 配置 DNS 服务器（解决构建时的 DNS 解析问题）
+    dns:
+      - 8.8.8.8
+      - 114.114.114.114
+      - 223.5.5.5
     depends_on:
       mysql:
         condition: service_healthy
