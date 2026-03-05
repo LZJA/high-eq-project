@@ -19,14 +19,17 @@ import java.util.Arrays;
 public class CorsProdConfig {
 
     @Value("${cors.allowed-origins:http://localhost:3000}")
-    private String[] allowedOrigins;
+    private String allowedOrigins;
 
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // 只允许指定的域名
-        config.setAllowedOriginPatterns(Arrays.asList(allowedOrigins));
+        // 只允许指定的域名（支持逗号分隔）
+        String[] origins = allowedOrigins.split(",");
+        for (String origin : origins) {
+            config.addAllowedOriginPattern(origin.trim());
+        }
 
         // 允许所有请求头
         config.addAllowedHeader("*");
