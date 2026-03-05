@@ -2,6 +2,7 @@
 
 # 高情商回复助手 - 完整部署脚本（前端 + 后端）
 # 使用方法: ./deploy-all.sh <前端域名> <后端域名> <邮箱> [Git仓库地址]
+# 兼容系统: Debian/Ubuntu (apt), CentOS/RHEL/Alibaba Cloud Linux (yum/dnf)
 
 set -e
 
@@ -11,6 +12,10 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
+
+# 全局变量
+PACKAGE_MANAGER=""
+NGINX_CONF_DIR=""
 
 # 函数：打印带颜色的消息
 print_info() {
@@ -27,6 +32,39 @@ print_error() {
 
 print_step() {
     echo -e "${BLUE}[STEP]${NC} $1"
+}
+
+# 检测包管理器
+detect_package_manager() {
+    if command -v apt &> /dev/null; then
+        PACKAGE_MANAGER="apt"
+        NGINX_CONF_DIR="/etc/nginx/sites-available"
+    elif command -v yum &> /dev/null; then
+        PACKAGE_MANAGER="yum"
+        NGINX_CONF_DIR="/etc/nginx/conf.d"
+    elif command -v dnf &> /dev/null; then
+        PACKAGE_MANAGER="dnf"
+        NGINX_CONF_DIR="/etc/nginx/conf.d"
+    else
+        print_error "无法检测包管理器 (apt/yum/dnf)"
+        exit 1
+    fi
+    print_info "检测到包管理器: $PACKAGE_MANAGER"
+}
+
+# 通用安装函数
+install_package() {
+    local package=$1
+    print_info "正在安装 $package..."
+
+    case $PACKAGE_MANAGER in
+        apt)
+            apt update && apt install -y $package
+            ;;
+        yum|dnf)
+            $PACKAGE_MANAGER install -y $package
+            ;;
+    esac
 }
 
 # 显示使用说明
@@ -84,6 +122,9 @@ check_root() {
 check_system() {
     print_step "检查系统环境..."
 
+    # 检测包管理器
+    detect_package_manager
+
     # 检测操作系统
     if [ -f /etc/os-release ]; then
         . /etc/os-release
@@ -123,14 +164,19 @@ check_system() {
     # 检查 Nginx
     if ! command -v nginx &> /dev/null; then
         print_warn "Nginx 未安装，正在安装..."
-        apt update && apt install -y nginx
+        install_package nginx
     fi
 
     # 检查 Node.js
     if ! command -v node &> /dev/null; then
         print_warn "Node.js 未安装，正在安装..."
-        curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
-        apt install -y nodejs
+        if [ "$PACKAGE_MANAGER" = "apt" ]; then
+            curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
+            apt install -y nodejs
+        else
+            curl -fsSL https://rpm.nodesource.com/setup_lts.x | bash -
+            $PACKAGE_MANAGER install -y nodejs
+        fi
     fi
 
     # 检查 pnpm
@@ -142,7 +188,7 @@ check_system() {
     # 检查 Git
     if ! command -v git &> /dev/null; then
         print_warn "Git 未安装，正在安装..."
-        apt update && apt install -y git
+        install_package git
     fi
 
     print_info "系统环境检查完成"
@@ -157,9 +203,15 @@ configure_firewall() {
         ufw allow 22/tcp
         ufw allow 80/tcp
         ufw allow 443/tcp
-        # ufw --force enable  # 不自动启用，让用户手动决定
         print_info "防火墙规则已添加，请手动运行: ufw enable"
     elif command -v firewall-cmd &> /dev/null; then
+        # 确保 firewalld 正在运行
+        if ! systemctl is-active --quiet firewalld; then
+            print_info "启动 firewalld 服务..."
+            systemctl start firewalld
+            systemctl enable firewalld
+        fi
+
         print_info "配置 firewalld 防火墙..."
         firewall-cmd --permanent --add-service=ssh
         firewall-cmd --permanent --add-service=http
@@ -295,12 +347,18 @@ setup_ssl() {
     # 安装 Certbot
     if ! command -v certbot &> /dev/null; then
         print_info "安装 Certbot..."
-        apt update && apt install -y certbot
+        if [ "$PACKAGE_MANAGER" = "apt" ]; then
+            apt update && apt install -y certbot
+        else
+            # 对于 CentOS/RHEL，需要先安装 EPEL
+            $PACKAGE_MANAGER install -y epel-release
+            $PACKAGE_MANAGER install -y certbot
+        fi
     fi
 
     # 创建验证目录
     mkdir -p /var/www/certbot
-    chown -R www-data:www-data /var/www/certbot 2>/dev/null || chown -R nginx:nginx /var/www/certbot 2>/dev/null
+    chown -R nginx:nginx /var/www/certbot 2>/dev/null || chown -R www-data:www-data /var/www/certbot 2>/dev/null
 
     # 为前端域名申请证书
     print_info "为前端域名申请 SSL 证书: $FRONTEND_DOMAIN"
@@ -337,12 +395,27 @@ EOF
 setup_nginx() {
     print_step "配置 Nginx..."
 
-    # 复制并配置前端 Nginx 配置
-    if [ -f "$PROJECT_DIR/deployment/nginx-front.conf" ]; then
-        sed "s/higheq.top/$FRONTEND_DOMAIN/g" "$PROJECT_DIR/deployment/nginx-front.conf" > /etc/nginx/sites-available/high-eq-front
+    # 根据操作系统选择配置目录
+    if [ "$PACKAGE_MANAGER" = "apt" ]; then
+        NGINX_CONF_DIR="/etc/nginx/sites-available"
+        NGINX_ENABLED_DIR="/etc/nginx/sites-enabled"
+        NGINX_CONF_FORMAT="debian"
     else
-        # 创建基本配置
-        cat > /etc/nginx/sites-available/high-eq-front << EOF
+        NGINX_CONF_DIR="/etc/nginx/conf.d"
+        NGINX_ENABLED_DIR="/etc/nginx/conf.d"
+        NGINX_CONF_FORMAT="rhel"
+    fi
+
+    mkdir -p $NGINX_CONF_DIR
+    mkdir -p $NGINX_ENABLED_DIR
+
+    # 复制并配置前端 Nginx 配置
+    if [ "$NGINX_CONF_FORMAT" = "debian" ]; then
+        # Debian/Ubuntu 风格
+        if [ -f "$PROJECT_DIR/deployment/nginx-front.conf" ]; then
+            sed "s/higheq.top/$FRONTEND_DOMAIN/g" "$PROJECT_DIR/deployment/nginx-front.conf" > $NGINX_CONF_DIR/high-eq-front
+        else
+            cat > $NGINX_CONF_DIR/high-eq-front << EOF
 server {
     listen 80;
     server_name $FRONTEND_DOMAIN www.$FRONTEND_DOMAIN;
@@ -370,14 +443,51 @@ server {
     }
 }
 EOF
+        fi
+
+        ln -sf $NGINX_CONF_DIR/high-eq-front $NGINX_ENABLED_DIR/
+    else
+        # RHEL/CentOS/Alibaba Cloud Linux 风格
+        if [ -f "$PROJECT_DIR/deployment/nginx-front.conf" ]; then
+            sed "s/higheq.top/$FRONTEND_DOMAIN/g" "$PROJECT_DIR/deployment/nginx-front.conf" > $NGINX_CONF_DIR/high-eq-front.conf
+        else
+            cat > $NGINX_CONF_DIR/high-eq-front.conf << EOF
+server {
+    listen 80;
+    server_name $FRONTEND_DOMAIN www.$FRONTEND_DOMAIN;
+    return 301 https://\$server_name\$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name $FRONTEND_DOMAIN www.$FRONTEND_DOMAIN;
+
+    ssl_certificate /etc/letsencrypt/live/$FRONTEND_DOMAIN/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$FRONTEND_DOMAIN/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    root /var/www/high-eq-front;
+    index index.html;
+
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
+
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+EOF
+        fi
     fi
 
     # 复制并配置后端 Nginx 配置
-    if [ -f "$PROJECT_DIR/deployment/nginx.conf" ]; then
-        sed "s/api.higheq.top/$BACKEND_DOMAIN/g" "$PROJECT_DIR/deployment/nginx.conf" > /etc/nginx/sites-available/high-eq-backend
-    else
-        # 创建基本配置
-        cat > /etc/nginx/sites-available/high-eq-backend << EOF
+    if [ "$NGINX_CONF_FORMAT" = "debian" ]; then
+        if [ -f "$PROJECT_DIR/deployment/nginx.conf" ]; then
+            sed "s/api.higheq.top/$BACKEND_DOMAIN/g" "$PROJECT_DIR/deployment/nginx.conf" > $NGINX_CONF_DIR/high-eq-backend
+        else
+            cat > $NGINX_CONF_DIR/high-eq-backend << EOF
 server {
     listen 80;
     server_name $BACKEND_DOMAIN;
@@ -401,11 +511,39 @@ server {
     }
 }
 EOF
-    fi
+        fi
 
-    # 启用配置
-    ln -sf /etc/nginx/sites-available/high-eq-front /etc/nginx/sites-enabled/
-    ln -sf /etc/nginx/sites-available/high-eq-backend /etc/nginx/sites-enabled/
+        ln -sf $NGINX_CONF_DIR/high-eq-backend $NGINX_ENABLED_DIR/
+    else
+        if [ -f "$PROJECT_DIR/deployment/nginx.conf" ]; then
+            sed "s/api.higheq.top/$BACKEND_DOMAIN/g" "$PROJECT_DIR/deployment/nginx.conf" > $NGINX_CONF_DIR/high-eq-backend.conf
+        else
+            cat > $NGINX_CONF_DIR/high-eq-backend.conf << EOF
+server {
+    listen 80;
+    server_name $BACKEND_DOMAIN;
+    return 301 https://\$server_name\$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name $BACKEND_DOMAIN;
+
+    ssl_certificate /etc/letsencrypt/live/$BACKEND_DOMAIN/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$BACKEND_DOMAIN/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:8080/api/;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+EOF
+        fi
+    fi
 
     # 测试并重载
     nginx -t
@@ -436,12 +574,12 @@ deploy_frontend() {
 
     # 创建 Nginx 目录
     mkdir -p /var/www/high-eq-front
-    chown -R www-data:www-data /var/www/high-eq-front 2>/dev/null || chown -R nginx:nginx /var/www/high-eq-front
+    chown -R nginx:nginx /var/www/high-eq-front 2>/dev/null || chown -R www-data:www-data /var/www/high-eq-front
 
     # 部署文件
     print_info "部署前端文件到 Nginx..."
     cp -r dist/* /var/www/high-eq-front/
-    chown -R www-data:www-data /var/www/high-eq-front 2>/dev/null || chown -R nginx:nginx /var/www/high-eq-front
+    chown -R nginx:nginx /var/www/high-eq-front 2>/dev/null || chown -R www-data:www-data /var/www/high-eq-front
     chmod -R 755 /var/www/high-eq-front
 
     print_info "前端部署完成"
@@ -511,7 +649,7 @@ show_result() {
     echo "  - 后端 API: https://$BACKEND_DOMAIN/api"
     echo ""
     print_info "管理命令:"
-    echo "  - 前端日志: tail -f /var/log/nginx/high-eq-front-*.log"
+    echo "  - 前端日志: tail -f /var/log/nginx/access.log"
     echo "  - 后端日志: cd $BACKEND_DIR && docker-compose -f docker-compose.prod.yml logs -f"
     echo "  - 重启后端: cd $BACKEND_DIR && docker-compose -f docker-compose.prod.yml restart"
     echo "  - 重启 Nginx: systemctl reload nginx"
