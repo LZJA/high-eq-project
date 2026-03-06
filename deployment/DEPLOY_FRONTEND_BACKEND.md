@@ -63,10 +63,18 @@ sudo ./deployment/deploy-frontend.sh
 #### 只更新后端
 ```bash
 # 1. 上传代码到服务器
-# 2. 在服务器上重新构建并启动
+# 2. 在服务器上使用启动脚本（推荐）
 cd /opt/high-eq-project/high-eq-backend
-sudo docker-compose -f docker-compose.prod.yml up -d --build
+./start-prod.sh
+
+# 或使用快速重启脚本（不重新构建）
+./restart-prod.sh
+
+# 或手动启动（指定环境文件）
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
 ```
+
+> **重要**: 后端启动必须使用 `--env-file .env.production` 参数，否则不会加载生产环境配置（如CORS_ALLOWED_ORIGINS）。
 
 ## 📋 服务器目录结构
 
@@ -181,8 +189,11 @@ JWT_SECRET=生成的密钥
 DEEPSEEK_API_KEY=你的API密钥
 
 # CORS 配置（允许的前端域名）
-CORS_ALLOWED_ORIGINS=https://higheq.top,https://www.higheq.top,https://api.higheq.top
+# 包含域名和IP地址（备案前临时使用IP）
+CORS_ALLOWED_ORIGINS=https://higheq.top,https://www.higheq.top,https://api.higheq.top,http://8.136.193.199,https://8.136.193.199
 ```
+
+> **注意**: 启动后端时必须使用 `--env-file .env.production` 参数，否则CORS配置不会生效。
 
 ## 🔄 部署流程
 
