@@ -1,10 +1,10 @@
-CREATE DATABASE IF NOT EXISTS high_eq_db
+CREATE DATABASE IF NOT EXISTS higheq
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
 
 SET NAMES utf8mb4;
 
-USE high_eq_db;
+USE higheq;
 
 CREATE TABLE IF NOT EXISTS `user` (
     `id` VARCHAR(36) PRIMARY KEY,

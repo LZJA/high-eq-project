@@ -56,3 +56,5 @@ spring-boot-*.log
 backups/
 
 # Volume data (if mounted locally)
+.mysql-dev/
+.backend-dev/
