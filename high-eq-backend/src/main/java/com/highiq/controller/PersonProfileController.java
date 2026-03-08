@@ -2,6 +2,7 @@ package com.highiq.controller;
 
 import com.highiq.dto.ApiResponse;
 import com.highiq.dto.HistoryDTO;
+import com.highiq.dto.PageResponse;
 import com.highiq.dto.PersonProfileDTO;
 import com.highiq.service.PersonProfileService;
 import com.highiq.util.JwtUtil;
@@ -133,12 +134,14 @@ public class PersonProfileController {
      * 获取与人物的聊天历史
      */
     @GetMapping("/{profileId}/history")
-    public ApiResponse<List<HistoryDTO>> getProfileHistory(
+    public ApiResponse<PageResponse<HistoryDTO>> getProfileHistory(
             @PathVariable String profileId,
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
             @RequestHeader("Authorization") String authHeader) {
         try {
             String userId = extractUserId(authHeader);
-            List<HistoryDTO> history = profileService.getProfileHistory(profileId, userId);
+            PageResponse<HistoryDTO> history = profileService.getProfileHistory(profileId, userId, page, size);
             return ApiResponse.success("获取成功", history);
         } catch (Exception e) {
             log.error("Failed to get profile history", e);

@@ -42,7 +42,7 @@ const TONE_OPTIONS = [
 
 export default function PersonProfileChat({ profileId }: PersonProfileChatProps) {
   const [, setLocation] = useLocation();
-  const { remainingQuota, isUnlimited, refresh: refreshQuota } = useQuota();
+  const { remainingQuota, isUnlimited, tier, refresh: refreshQuota } = useQuota();
 
   const [profile, setProfile] = useState<PersonProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,11 +74,20 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
   const buildRoleBackground = () => {
     if (!profile) return "";
 
-    const parts: string[] = [profile.relationship || "对方"];
-    if (profile.gender) parts.push(`性别：${profile.gender}`);
-    if (profile.age) parts.push(`年龄：${profile.age}岁`);
-    if (profile.occupation) parts.push(`职业：${profile.occupation}`);
+    const parts: string[] = [profile.name || "对方"];
+    if (profile.relationship) parts.push(profile.relationship);
+    if (profile.gender) parts.push(profile.gender);
+    if (profile.age) parts.push(`${profile.age}岁`);
+    if (profile.occupation) parts.push(profile.occupation);
     if (profile.personality) parts.push(`性格：${profile.personality}`);
+
+    const hobbies = Array.isArray(profile.hobbies) ? profile.hobbies :
+                    (typeof profile.hobbies === 'string' ? JSON.parse(profile.hobbies || '[]') : []);
+    if (hobbies.length > 0) parts.push(`兴趣：${hobbies.join('、')}`);
+
+    if (profile.zodiacSign) parts.push(profile.zodiacSign);
+    if (profile.chineseZodiac) parts.push(`属${profile.chineseZodiac}`);
+
     return parts.join("，");
   };
 
@@ -92,7 +101,10 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
       return;
     }
     if (!isUnlimited && remainingQuota <= 0) {
-      toast.error("今日配额已用完，请升级到 PRO 获取更多次数");
+      const upgradeMessage = tier === 'free'
+        ? "今日配额已用完，请升级到 Lite 获取更多次数"
+        : "今日配额已用完，请升级到 PRO 获取无限次数";
+      toast.error(upgradeMessage);
       return;
     }
 
@@ -210,12 +222,12 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
             </div>
 
             <div className="ml-auto hidden sm:block">
-              <QuotaIndicator />
+            <QuotaIndicator overrideRemainingQuota={remainingQuota} />
             </div>
           </div>
 
           <div className="sm:hidden">
-            <QuotaIndicator />
+          <QuotaIndicator overrideRemainingQuota={remainingQuota} />
           </div>
         </div>
 

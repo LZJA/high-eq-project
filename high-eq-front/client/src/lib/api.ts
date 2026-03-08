@@ -293,8 +293,10 @@ export const profileAPI = {
   /**
    * 获取人物相关的历史记录
    */
-  getProfileHistory: async (profileId: string) => {
-    const response = await apiClient.get(`/profile/${profileId}/history`);
+  getProfileHistory: async (profileId: string, page: number = 1, size: number = 10) => {
+    const response = await apiClient.get(`/profile/${profileId}/history`, {
+      params: { page, size },
+    });
     return response.data;
   },
 

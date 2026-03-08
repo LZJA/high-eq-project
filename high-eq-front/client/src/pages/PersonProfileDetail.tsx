@@ -8,6 +8,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { toast } from "sonner";
 import { ArrowLeft, Edit, Heart, MessageCircle, Trash2, User } from "lucide-react";
 import {
@@ -69,19 +77,30 @@ export default function PersonProfileDetail({ profileId }: PersonProfileDetailPr
   const [profile, setProfile] = useState<PersonProfile | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalHistory, setTotalHistory] = useState(0);
+  const [pageSize] = useState(10);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedHistory, setSelectedHistory] = useState<HistoryDetail | null>(null);
   const [isHistoryDetailOpen, setIsHistoryDetailOpen] = useState(false);
   const [isHistoryDetailLoading, setIsHistoryDetailLoading] = useState(false);
 
   useEffect(() => {
+    setCurrentPage(1);
     loadProfile();
   }, [profileId]);
 
+  useEffect(() => {
+    loadHistory();
+  }, [profileId, currentPage]);
+
   const loadHistory = async () => {
     try {
-      const response = await profileAPI.getProfileHistory(profileId);
-      setHistory(response.data || []);
+      const response = await profileAPI.getProfileHistory(profileId, currentPage, pageSize);
+      setHistory(response.data?.items || []);
+      setTotalPages(response.data?.totalPages || 1);
+      setTotalHistory(response.data?.total || 0);
     } catch (error) {
       console.error("Failed to load profile history", error);
     }
@@ -91,7 +110,6 @@ export default function PersonProfileDetail({ profileId }: PersonProfileDetailPr
     try {
       const response = await profileAPI.getProfile(profileId);
       setProfile(response.data);
-      await loadHistory();
     } catch {
       toast.error("加载人物档案失败");
       setLocation("/profiles");
@@ -182,7 +200,7 @@ export default function PersonProfileDetail({ profileId }: PersonProfileDetailPr
         <Card className="mb-6">
           <CardContent className="pt-6">
             <div className="flex items-start gap-4">
-              <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <div className="size-16 rounded-full bg-primary/4 flex items-center justify-center shrink-0">
                 {profile.avatarUrl ? (
                   <img
                     src={profile.avatarUrl}
@@ -234,7 +252,7 @@ export default function PersonProfileDetail({ profileId }: PersonProfileDetailPr
         <Tabs defaultValue="info" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="info">详细信息</TabsTrigger>
-            <TabsTrigger value="history">聊天历史 ({history.length})</TabsTrigger>
+            <TabsTrigger value="history">聊天历史 ({totalHistory})</TabsTrigger>
           </TabsList>
 
           <TabsContent value="info">
@@ -312,6 +330,36 @@ export default function PersonProfileDetail({ profileId }: PersonProfileDetailPr
                     </CardContent>
                   </Card>
                 ))}
+
+                {totalPages > 1 && (
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                          onClick={() => currentPage > 1 && setCurrentPage(p => p - 1)}
+                        />
+                      </PaginationItem>
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            className="cursor-pointer"
+                            isActive={currentPage === page}
+                            onClick={() => setCurrentPage(page)}
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      <PaginationItem>
+                        <PaginationNext
+                          className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                          onClick={() => currentPage < totalPages && setCurrentPage(p => p + 1)}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                )}
               </div>
             )}
           </TabsContent>
@@ -349,7 +397,7 @@ export default function PersonProfileDetail({ profileId }: PersonProfileDetailPr
           </DialogHeader>
 
           {isHistoryDetailLoading || !selectedHistory ? (
-            <div className="py-10 flex justify-center">
+            <div className="py-4 flex justify-center">
               <Spinner />
             </div>
           ) : (

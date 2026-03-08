@@ -3,6 +3,7 @@ package com.highiq.service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.highiq.dto.HistoryDTO;
+import com.highiq.dto.PageResponse;
 import com.highiq.dto.PersonProfileDTO;
 import com.highiq.dto.SuggestionDTO;
 import com.highiq.entity.PersonProfile;
@@ -129,18 +130,38 @@ public class PersonProfileService extends ServiceImpl<PersonProfileMapper, Perso
         baseMapper.updateById(profile);
     }
 
-    public List<HistoryDTO> getProfileHistory(String profileId, String userId) {
+    public PageResponse<HistoryDTO> getProfileHistory(String profileId, String userId, Integer page, Integer size) {
         requireProfile(profileId, userId);
 
-        QueryWrapper<ProfileChatHistory> wrapper = new QueryWrapper<>();
-        wrapper.eq("user_id", userId)
+        if (page == null || page < 1) page = 1;
+        if (size == null || size < 1) size = 10;
+
+        QueryWrapper<ProfileChatHistory> countWrapper = new QueryWrapper<>();
+        countWrapper.eq("user_id", userId)
+                .eq("person_profile_id", profileId)
+                .eq("status", 1);
+        Long total = profileChatHistoryMapper.selectCount(countWrapper);
+
+        int offset = (page - 1) * size;
+        QueryWrapper<ProfileChatHistory> dataWrapper = new QueryWrapper<>();
+        dataWrapper.eq("user_id", userId)
                 .eq("person_profile_id", profileId)
                 .eq("status", 1)
-                .orderByDesc("create_time");
+                .orderByDesc("create_time")
+                .last("LIMIT " + offset + ", " + size);
 
-        return profileChatHistoryMapper.selectList(wrapper).stream()
+        List<HistoryDTO> items = profileChatHistoryMapper.selectList(dataWrapper).stream()
                 .map(history -> convertProfileHistoryToDTO(history, false))
                 .collect(Collectors.toList());
+
+        int totalPages = (int) Math.ceil((double) total / size);
+        return PageResponse.<HistoryDTO>builder()
+                .items(items)
+                .totalPages(totalPages)
+                .total(total)
+                .currentPage(page)
+                .pageSize(size)
+                .build();
     }
 
     public HistoryDTO getProfileHistoryDetail(String profileId, String historyId, String userId) {

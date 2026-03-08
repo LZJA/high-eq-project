@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { replyAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -56,7 +56,7 @@ interface ReplySuggestion {
 
 export default function ReplyApp() {
   const { user } = useAuth();
-  const { remainingQuota, isUnlimited, refresh: refreshQuota } = useQuota();
+  const { remainingQuota: hookRemainingQuota, isUnlimited, tier, refresh: refreshQuota } = useQuota();
   const [isGenerating, setIsGenerating] = useState(false);
   const [chatContent, setChatContent] = useState("");
   const [roleBackground, setRoleBackground] = useState("");
@@ -67,6 +67,11 @@ export default function ReplyApp() {
   const [suggestions, setSuggestions] = useState<ReplySuggestion[]>([]);
   const [currentHistoryId, setCurrentHistoryId] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [remainingQuota, setRemainingQuota] = useState(hookRemainingQuota);
+
+  useEffect(() => {
+    setRemainingQuota(hookRemainingQuota);
+  }, [hookRemainingQuota]);
 
   const handleGenerate = async () => {
     if (!chatContent.trim()) {
@@ -84,7 +89,10 @@ export default function ReplyApp() {
 
     // 检查配额
     if (!isUnlimited && remainingQuota <= 0) {
-      toast.error("今日配额已用尽，请升级到 PRO 版本获取无限次数");
+      const upgradeMessage = tier === 'free'
+        ? "今日配额已用尽，请升级到 Lite 版本获取更多次数"
+        : "今日配额已用尽，请升级到 PRO 版本获取无限次数";
+      toast.error(upgradeMessage);
       return;
     }
 
@@ -101,9 +109,9 @@ export default function ReplyApp() {
 
       setSuggestions(response.data.suggestions || []);
       setCurrentHistoryId(response.data.historyId);
+      setRemainingQuota(prev => Math.max(0, prev - 1));
       toast.success("回复建议生成成功！");
-      // 刷新配额状态
-      refreshQuota();
+      setTimeout(() => refreshQuota(), 300);
     } catch (error: any) {
       toast.error(error.response?.data?.message || "生成失败，请稍后重试");
     } finally {
@@ -312,7 +320,7 @@ export default function ReplyApp() {
                 </h2>
                 <div className="flex items-center gap-3">
                   <div className="hidden sm:block">
-                    <QuotaIndicator />
+                    <QuotaIndicator overrideRemainingQuota={remainingQuota} />
                   </div>
                   {user?.username && (
                     <Badge variant="outline" className="hidden sm:inline-flex">当前用户：{user.username}</Badge>
@@ -320,7 +328,7 @@ export default function ReplyApp() {
                 </div>
               </div>
               <div className="sm:hidden mt-3">
-                <QuotaIndicator />
+                <QuotaIndicator overrideRemainingQuota={remainingQuota} />
               </div>
             </div>
 

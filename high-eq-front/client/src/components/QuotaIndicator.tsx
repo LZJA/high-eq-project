@@ -3,13 +3,21 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Zap, Crown } from 'lucide-react';
-import { Link } from 'wouter';
+import { analytics } from '@/lib/analytics';
+import { toast } from 'sonner';
 
 /**
  * 配额指示器组件
  */
-export function QuotaIndicator() {
-  const { quota, isLoading, tier, remainingQuota, isUnlimited } = useQuota();
+export function QuotaIndicator({ overrideRemainingQuota }: { overrideRemainingQuota?: number } = {}) {
+  const { quota, isLoading, tier, remainingQuota: hookRemainingQuota, isUnlimited } = useQuota();
+  const remainingQuota = overrideRemainingQuota ?? hookRemainingQuota;
+
+  const handleUpgradeClick = async () => {
+    const targetTier = tier === 'free' ? 'lite' : 'pro';
+    await analytics.trackUpgradeClick(targetTier);
+    toast.info('支付功能开发中，敬请期待');
+  };
 
   if (isLoading) {
     return (
@@ -37,8 +45,9 @@ export function QuotaIndicator() {
     );
   }
 
+  const dailyQuotaUsed = quota.dailyQuota - remainingQuota;
   const percentage = quota.dailyQuota > 0
-    ? (quota.dailyQuotaUsed / quota.dailyQuota) * 100
+    ? (dailyQuotaUsed / quota.dailyQuota) * 100
     : 100;
   const isLow = remainingQuota <= 1;
   const isExhausted = remainingQuota <= 0;
@@ -56,11 +65,9 @@ export function QuotaIndicator() {
         className={`w-20 h-2 ${isExhausted ? '[&>div]:bg-destructive' : isLow ? '[&>div]:bg-amber-500' : ''}`}
       />
       {isLow && (
-        <Link href="/subscription">
-          <Button size="sm" variant="outline" className="text-amber-600 border-amber-600 hover:bg-amber-50">
-            升级 PRO
-          </Button>
-        </Link>
+        <Button size="sm" variant="outline" className="text-amber-600 border-amber-600 hover:bg-amber-50" onClick={handleUpgradeClick}>
+          升级 {tier === 'free' ? 'Lite' : 'PRO'}
+        </Button>
       )}
     </div>
   );

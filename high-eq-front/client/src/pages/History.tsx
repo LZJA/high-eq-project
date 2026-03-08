@@ -68,6 +68,7 @@ export default function History() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [pageSize] = useState(10);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     loadHistory();
@@ -79,6 +80,7 @@ export default function History() {
       const response = await replyAPI.getHistory(currentPage, pageSize);
       setHistoryList(response.data.items || []);
       setTotalPages(response.data.totalPages || 1);
+      setTotal(response.data.total || 0);
     } catch (error: any) {
       toast.error(error.response?.data?.message || "加载历史记录失败");
     } finally {
@@ -171,7 +173,7 @@ export default function History() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">记录列表</CardTitle>
-                <CardDescription>共 {historyList.length} 条记录</CardDescription>
+                <CardDescription>共 {total} 条记录</CardDescription>
               </CardHeader>
               <CardContent>
                 {isLoading ? (

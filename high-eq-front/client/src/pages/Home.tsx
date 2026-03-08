@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
+import apiClient from "@/lib/api";
 import {
   ArrowRight,
   Brain,
@@ -16,6 +17,8 @@ import {
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { PRICING_PLANS } from "@/data/pricingPlans";
+import { analytics } from "@/lib/analytics";
+import { toast } from "sonner";
 
 const ROLE_OPTIONS = [
   { value: "同事", emoji: "💼", color: "from-blue-500 to-blue-600" },
@@ -46,6 +49,23 @@ export default function Home() {
       return;
     }
     navigate("/login");
+  };
+
+  const handleUpgradeClick = async (planId: string) => {
+    const targetTier = planId === 'lite' ? 'lite' : 'pro';
+    await analytics.trackUpgradeClick(targetTier);
+    toast.info('支付功能开发中，敬请期待');
+  };
+
+  const handleShowClicks = async () => {
+    try {
+      const response = await apiClient.get('/analytics/upgrade-clicks');
+      if (response.data.code === 200) {
+        console.log('Upgrade clicks:', response.data.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch clicks:', error);
+    }
   };
 
   const demoScenarios = [
@@ -436,7 +456,7 @@ export default function Home() {
                       : ""
                   }`}
                   variant={plan.emphasis ? "default" : "outline"}
-                  onClick={handleStart}
+                  onClick={() => plan.id === 'free' ? handleStart() : handleUpgradeClick(plan.id)}
                 >
                   {plan.ctaLabel}
                 </Button>
@@ -453,7 +473,10 @@ export default function Home() {
 
         <div className="container mx-auto px-4 relative z-10 text-center">
           <div className="max-w-2xl mx-auto">
-            <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-white/20 rounded-full backdrop-blur-sm">
+            <div
+              className="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-white/20 rounded-full backdrop-blur-sm"
+              onClick={handleShowClicks}
+            >
               <SparklesIcon className="w-4 h-4 text-yellow-300" />
               <span className="text-white/90 text-sm">准备好提升沟通技巧了吗？</span>
             </div>
