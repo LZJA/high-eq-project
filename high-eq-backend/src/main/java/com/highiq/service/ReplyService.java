@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -38,16 +39,19 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
     private final ProfileChatHistoryMapper profileChatHistoryMapper;
     private final ProfileReplySuggestionMapper profileReplySuggestionMapper;
     private final QuotaService quotaService;
+    private final PersonProfileService personProfileService;
 
     public ReplyService(AiService aiService, ReplySuggestionMapper replySuggestionMapper,
                        ProfileChatHistoryMapper profileChatHistoryMapper,
                        ProfileReplySuggestionMapper profileReplySuggestionMapper,
-                       QuotaService quotaService) {
+                       QuotaService quotaService,
+                       PersonProfileService personProfileService) {
         this.aiService = aiService;
         this.replySuggestionMapper = replySuggestionMapper;
         this.profileChatHistoryMapper = profileChatHistoryMapper;
         this.profileReplySuggestionMapper = profileReplySuggestionMapper;
         this.quotaService = quotaService;
+        this.personProfileService = personProfileService;
     }
     
     /**
@@ -270,9 +274,13 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
 
         List<History> histories = baseMapper.selectList(queryWrapper);
 
-        return histories.stream()
+        List<HistoryDTO> favoriteHistories = histories.stream()
                 .map(h -> convertToDTO(h, true))
                 .collect(Collectors.toList());
+
+        favoriteHistories.addAll(personProfileService.getFavoriteProfileHistory(userId));
+        favoriteHistories.sort(Comparator.comparing(HistoryDTO::getCreateTime, Comparator.nullsLast(String::compareTo)).reversed());
+        return favoriteHistories;
     }
     
     /**
@@ -319,6 +327,7 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
         return HistoryDTO.builder()
                 .id(history.getId())
                 .userId(history.getUserId())
+                .personProfileId(null)
                 .chatContent(history.getChatContent())
                 .roleBackground(history.getRoleBackground())
                 .userIntent(history.getUserIntent())

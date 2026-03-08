@@ -324,8 +324,13 @@ export default function History() {
                   <div className="flex items-start justify-between">
                     <div>
                       <CardTitle>记录详情</CardTitle>
-                      <CardDescription className="mt-1 flex items-center gap-2">
-                        <Badge variant="outline">{selectedHistory.roleBackground}</Badge>
+                      <CardDescription className="mt-1 flex flex-wrap items-start gap-2">
+                        <Badge
+                          variant="outline"
+                          className="max-w-full h-auto shrink justify-start whitespace-normal break-words py-1 text-left leading-relaxed"
+                        >
+                          {selectedHistory.roleBackground}
+                        </Badge>
                         <span className="text-xs">{formatDate(selectedHistory.createTime)}</span>
                       </CardDescription>
                     </div>

@@ -256,7 +256,7 @@ Response:
     "userIntent": "我想表达歉意",
     "tone": "温和友善",
     "isFavorite": false,
-    "createTime": "2024-03-03 10:00",
+    "createTime": "202603-03 10:00",
     "suggestions": [...]
   }
 }

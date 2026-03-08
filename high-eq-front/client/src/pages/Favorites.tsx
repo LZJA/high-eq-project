@@ -1,13 +1,12 @@
-import { useState, useEffect } from "react";
-
-import { replyAPI } from "@/lib/api";
+import { useEffect, useState } from "react";
+import { Link } from "wouter";
+import { profileAPI, replyAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import {
   AlertDialog,
@@ -23,29 +22,37 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
-import { ArrowLeft, Clock, Heart, Trash2, User, Copy } from "lucide-react";
-import { Link } from "wouter";
+import { ArrowLeft, Clock, Copy, Heart, Trash2, User } from "lucide-react";
 import { AppNav } from "@/components/AppNav";
+
+interface FavoriteSuggestion {
+  id: string;
+  content: string;
+  reason: string;
+  tone: string;
+}
 
 interface FavoriteItem {
   id: string;
+  personProfileId?: string | null;
   chatContent: string;
   roleBackground: string;
   userIntent: string;
   createTime: string;
-  suggestions: Array<{
-    id: string;
-    content: string;
-    reason: string;
-    tone: string;
-  }>;
+  suggestions: FavoriteSuggestion[];
+}
+
+interface ProfileSummary {
+  id: string;
+  name?: string;
+  relationship?: string;
 }
 
 export default function Favorites() {
-
   const [isLoading, setIsLoading] = useState(true);
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [profileSummaryMap, setProfileSummaryMap] = useState<Record<string, ProfileSummary>>({});
 
   useEffect(() => {
     loadFavorites();
@@ -54,8 +61,22 @@ export default function Favorites() {
   const loadFavorites = async () => {
     setIsLoading(true);
     try {
-      const response = await replyAPI.getFavoriteHistory();
-      setFavorites(response.data || []);
+      const favoritesResponse = await replyAPI.getFavoriteHistory();
+      setFavorites(favoritesResponse.data || []);
+
+      try {
+        const profilesResponse = await profileAPI.getProfiles();
+        const profiles = (profilesResponse.data || []) as ProfileSummary[];
+        const summaryMap = profiles.reduce((acc, profile) => {
+          if (profile.id) {
+            acc[profile.id] = profile;
+          }
+          return acc;
+        }, {} as Record<string, ProfileSummary>);
+        setProfileSummaryMap(summaryMap);
+      } catch {
+        setProfileSummaryMap({});
+      }
     } catch (error: any) {
       toast.error(error.response?.data?.message || "加载收藏失败");
     } finally {
@@ -63,12 +84,17 @@ export default function Favorites() {
     }
   };
 
-  const handleDelete = async (historyId: string) => {
+  const handleDelete = async (item: FavoriteItem) => {
     try {
-      await replyAPI.deleteHistory(historyId);
-      toast.success("已从收藏中移除");
-      setFavorites((prev) => prev.filter((item) => item.id !== historyId));
-      if (expandedId === historyId) {
+      if (item.personProfileId) {
+        await profileAPI.deleteProfileHistory(item.personProfileId, item.id);
+      } else {
+        await replyAPI.deleteHistory(item.id);
+      }
+
+      toast.success("已从收藏中删除");
+      setFavorites((prev) => prev.filter((favorite) => favorite.id !== item.id));
+      if (expandedId === item.id) {
         setExpandedId(null);
       }
     } catch (error: any) {
@@ -76,38 +102,31 @@ export default function Favorites() {
     }
   };
 
-  const handleToggleFavorite = async (historyId: string) => {
+  const handleToggleFavorite = async (item: FavoriteItem) => {
     try {
-      await replyAPI.toggleFavorite(historyId);
-      setFavorites((prev) => prev.filter((item) => item.id !== historyId));
+      if (item.personProfileId) {
+        await profileAPI.toggleProfileHistoryFavorite(item.personProfileId, item.id);
+      } else {
+        await replyAPI.toggleFavorite(item.id);
+      }
+
+      setFavorites((prev) => prev.filter((favorite) => favorite.id !== item.id));
+      if (expandedId === item.id) {
+        setExpandedId(null);
+      }
       toast.success("已取消收藏");
-      if (expandedId === historyId) {
-        setExpandedId(null);
-      }
     } catch (error: any) {
       toast.error(error.response?.data?.message || "操作失败");
     }
   };
 
-  const handleCopy = (content: string) => {
-    navigator.clipboard.writeText(content);
+  const handleCopy = async (content: string) => {
+    await navigator.clipboard.writeText(content);
     toast.success("已复制到剪贴板");
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString("zh-CN", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      {/* 导航栏 */}
       <AppNav activePage="favorites" />
 
       <div className="container mx-auto px-4 py-8 max-w-5xl">
@@ -125,9 +144,7 @@ export default function Favorites() {
             <Heart className="size-8 text-red-500 fill-red-500" />
             我的收藏
           </h1>
-          <p className="text-muted-foreground mt-2">
-            共 {favorites.length} 条收藏
-          </p>
+          <p className="text-muted-foreground mt-2">共 {favorites.length} 条收藏</p>
         </div>
 
         {isLoading ? (
@@ -142,7 +159,7 @@ export default function Favorites() {
               <Heart className="size-16 mx-auto mb-4 text-muted-foreground opacity-50" />
               <p className="text-lg text-muted-foreground mb-2">暂无收藏</p>
               <p className="text-sm text-muted-foreground mb-6">
-                在生成回复或查看历史记录时，点击心形图标即可收藏
+                生成回复后点击收藏，或在人物档案聊天历史中收藏记录。
               </p>
               <Link href="/app">
                 <Button>开始生成回复</Button>
@@ -152,28 +169,54 @@ export default function Favorites() {
         ) : (
           <div className="space-y-4">
             {favorites.map((item) => (
-              <Card
-                key={item.id}
-                className="shadow-sm hover:shadow-md transition-shadow"
-              >
+              <Card key={item.id} className="shadow-sm hover:shadow-md transition-shadow">
                 <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge variant="outline">{item.roleBackground}</Badge>
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Clock className="size-3" />
-                          {formatDate(item.createTime)}
-                        </span>
-                      </div>
-                      <CardDescription className="line-clamp-2">
-                        {item.chatContent}
-                      </CardDescription>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      {item.personProfileId ? (
+                        <div className="mb-2 space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge variant="outline">
+                              {profileSummaryMap[item.personProfileId]?.name || "档案人物"}
+                            </Badge>
+                            <Badge variant="secondary">
+                              {profileSummaryMap[item.personProfileId]?.relationship || "关系未设置"}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
+                              <Clock className="size-3" />
+                              {item.createTime}
+                            </span>
+                          </div>
+                          <Badge
+                            variant="secondary"
+                            className="w-fit text-xs text-muted-foreground"
+                          >
+                            人物档案
+                          </Badge>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          {item.roleBackground && (
+                            <Badge
+                              variant="outline"
+                            >
+                              {item.roleBackground}
+                            </Badge>
+                          )}
+                          <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
+                            <Clock className="size-3" />
+                            {item.createTime}
+                          </span>
+                        </div>
+                      )}
+                      <CardDescription className="line-clamp-2">{item.chatContent}</CardDescription>
                     </div>
-                    <div className="flex gap-2 ml-4">
+
+                    <div className="flex items-center gap-2 shrink-0">
                       <Button
                         variant="outline"
                         size="sm"
+                        className="h-6 px-3 text-xs"
                         onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
                       >
                         {expandedId === item.id ? "收起" : "展开"}
@@ -181,18 +224,14 @@ export default function Favorites() {
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        onClick={() => handleToggleFavorite(item.id)}
+                        onClick={() => handleToggleFavorite(item)}
                         title="取消收藏"
                       >
                         <Heart className="size-4 fill-red-500 text-red-500" />
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            title="删除"
-                          >
+                          <Button variant="ghost" size="icon-sm" title="删除记录">
                             <Trash2 className="size-4 text-destructive" />
                           </Button>
                         </AlertDialogTrigger>
@@ -200,13 +239,13 @@ export default function Favorites() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>确认删除</AlertDialogTitle>
                             <AlertDialogDescription>
-                              删除后无法恢复，确定要删除这条记录吗？
+                              删除后无法恢复，确定删除这条收藏记录吗？
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>取消</AlertDialogCancel>
                             <AlertDialogAction
-                              onClick={() => handleDelete(item.id)}
+                              onClick={() => handleDelete(item)}
                               className="bg-destructive hover:bg-destructive/90"
                             >
                               删除
@@ -220,32 +259,29 @@ export default function Favorites() {
 
                 {expandedId === item.id && (
                   <CardContent className="space-y-4 pt-0">
-                    {/* 对方聊天内容 */}
                     <div>
                       <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
                         <User className="size-4" />
                         对方聊天内容
                       </h4>
-                      <div className="bg-muted/50 rounded-md p-3 text-sm">
+                      <div className="bg-muted/50 rounded-md p-3 text-sm whitespace-pre-wrap">
                         {item.chatContent}
                       </div>
                     </div>
 
-                    {/* 用户意图 */}
                     <div>
-                      <h4 className="text-sm font-medium mb-2">您的意图</h4>
-                      <div className="bg-muted/50 rounded-md p-3 text-sm">
+                      <h4 className="text-sm font-medium mb-2">你的意图</h4>
+                      <div className="bg-muted/50 rounded-md p-3 text-sm whitespace-pre-wrap">
                         {item.userIntent}
                       </div>
                     </div>
 
-                    {/* 回复建议 */}
                     <div>
                       <h4 className="text-sm font-medium mb-3">
-                        回复建议 ({item.suggestions.length})
+                        推荐回复 ({item.suggestions?.length || 0})
                       </h4>
                       <div className="grid sm:grid-cols-2 gap-3">
-                        {item.suggestions.map((suggestion, index) => (
+                        {(item.suggestions || []).map((suggestion, index) => (
                           <Card key={suggestion.id} className="shadow-sm">
                             <CardContent className="pt-4">
                               <div className="flex items-start justify-between gap-2 mb-2">
@@ -264,6 +300,11 @@ export default function Favorites() {
                               <p className="text-sm mb-3 whitespace-pre-wrap line-clamp-4">
                                 {suggestion.content}
                               </p>
+                              {suggestion.reason && (
+                                <div className="text-xs text-muted-foreground bg-muted/50 rounded-md p-2 mb-2">
+                                  {suggestion.reason}
+                                </div>
+                              )}
                               {suggestion.tone && (
                                 <Badge variant="outline" className="text-xs">
                                   {suggestion.tone}

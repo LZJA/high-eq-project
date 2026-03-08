@@ -3,41 +3,44 @@ package com.highiq.service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.highiq.dto.HistoryDTO;
-import com.highiq.dto.PageResponse;
 import com.highiq.dto.PersonProfileDTO;
-import com.highiq.entity.History;
+import com.highiq.dto.SuggestionDTO;
 import com.highiq.entity.PersonProfile;
 import com.highiq.entity.ProfileChatHistory;
+import com.highiq.entity.ProfileReplySuggestion;
 import com.highiq.mapper.HistoryMapper;
 import com.highiq.mapper.PersonProfileMapper;
 import com.highiq.mapper.ProfileChatHistoryMapper;
+import com.highiq.mapper.ProfileReplySuggestionMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * 人物档案服务
- */
 @Slf4j
 @Service
 public class PersonProfileService extends ServiceImpl<PersonProfileMapper, PersonProfile> {
 
+    private static final DateTimeFormatter HISTORY_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
+    @SuppressWarnings("unused")
     private final HistoryMapper historyMapper;
     private final ProfileChatHistoryMapper profileChatHistoryMapper;
+    private final ProfileReplySuggestionMapper profileReplySuggestionMapper;
 
-    public PersonProfileService(HistoryMapper historyMapper, ProfileChatHistoryMapper profileChatHistoryMapper) {
+    public PersonProfileService(
+            HistoryMapper historyMapper,
+            ProfileChatHistoryMapper profileChatHistoryMapper,
+            ProfileReplySuggestionMapper profileReplySuggestionMapper) {
         this.historyMapper = historyMapper;
         this.profileChatHistoryMapper = profileChatHistoryMapper;
+        this.profileReplySuggestionMapper = profileReplySuggestionMapper;
     }
 
-    /**
-     * 创建人物档案
-     */
     @Transactional
     public PersonProfileDTO createProfile(String userId, PersonProfileDTO request) {
         PersonProfile profile = PersonProfile.builder()
@@ -62,9 +65,6 @@ public class PersonProfileService extends ServiceImpl<PersonProfileMapper, Perso
         return convertToDTO(profile);
     }
 
-    /**
-     * 获取用户的所有人物档案
-     */
     public List<PersonProfileDTO> getUserProfiles(String userId) {
         QueryWrapper<PersonProfile> wrapper = new QueryWrapper<>();
         wrapper.eq("user_id", userId)
@@ -76,26 +76,17 @@ public class PersonProfileService extends ServiceImpl<PersonProfileMapper, Perso
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 获取人物档案详情
-     */
     public PersonProfileDTO getProfileDetail(String profileId, String userId) {
-        PersonProfile profile = baseMapper.selectById(profileId);
-        if (profile == null || !profile.getUserId().equals(userId) || profile.getStatus() != 1) {
+        PersonProfile profile = requireProfile(profileId, userId);
+        if (profile.getStatus() != 1) {
             throw new RuntimeException("人物档案不存在");
         }
         return convertToDTO(profile);
     }
 
-    /**
-     * 更新人物档案
-     */
     @Transactional
     public PersonProfileDTO updateProfile(String profileId, String userId, PersonProfileDTO request) {
-        PersonProfile profile = baseMapper.selectById(profileId);
-        if (profile == null || !profile.getUserId().equals(userId)) {
-            throw new RuntimeException("人物档案不存在");
-        }
+        PersonProfile profile = requireProfile(profileId, userId);
 
         if (request.getName() != null) profile.setName(request.getName());
         if (request.getGender() != null) profile.setGender(request.getGender());
@@ -114,19 +105,12 @@ public class PersonProfileService extends ServiceImpl<PersonProfileMapper, Perso
         return convertToDTO(profile);
     }
 
-    /**
-     * 删除人物档案（软删除）
-     */
     @Transactional
     public void deleteProfile(String profileId, String userId) {
-        PersonProfile profile = baseMapper.selectById(profileId);
-        if (profile == null || !profile.getUserId().equals(userId)) {
-            throw new RuntimeException("人物档案不存在");
-        }
+        PersonProfile profile = requireProfile(profileId, userId);
         profile.setStatus(0);
         baseMapper.updateById(profile);
 
-        // 级联删除该档案的所有聊天历史记录
         QueryWrapper<ProfileChatHistory> historyWrapper = new QueryWrapper<>();
         historyWrapper.eq("person_profile_id", profileId);
         List<ProfileChatHistory> histories = profileChatHistoryMapper.selectList(historyWrapper);
@@ -138,28 +122,15 @@ public class PersonProfileService extends ServiceImpl<PersonProfileMapper, Perso
         log.info("Deleted person profile: {} and {} related histories", profileId, histories.size());
     }
 
-    /**
-     * 收藏/取消收藏人物档案
-     */
     @Transactional
     public void toggleFavorite(String profileId, String userId) {
-        PersonProfile profile = baseMapper.selectById(profileId);
-        if (profile == null || !profile.getUserId().equals(userId)) {
-            throw new RuntimeException("人物档案不存在");
-        }
+        PersonProfile profile = requireProfile(profileId, userId);
         profile.setIsFavorite(profile.getIsFavorite() == 0 ? 1 : 0);
         baseMapper.updateById(profile);
     }
 
-    /**
-     * 获取与人物的聊天历史
-     */
     public List<HistoryDTO> getProfileHistory(String profileId, String userId) {
-        // 验证人物档案属于该用户
-        PersonProfile profile = baseMapper.selectById(profileId);
-        if (profile == null || !profile.getUserId().equals(userId)) {
-            throw new RuntimeException("人物档案不存在");
-        }
+        requireProfile(profileId, userId);
 
         QueryWrapper<ProfileChatHistory> wrapper = new QueryWrapper<>();
         wrapper.eq("user_id", userId)
@@ -167,15 +138,65 @@ public class PersonProfileService extends ServiceImpl<PersonProfileMapper, Perso
                 .eq("status", 1)
                 .orderByDesc("create_time");
 
-        List<ProfileChatHistory> histories = profileChatHistoryMapper.selectList(wrapper);
-        return histories.stream()
-                .map(h -> convertProfileHistoryToDTO(h))
+        return profileChatHistoryMapper.selectList(wrapper).stream()
+                .map(history -> convertProfileHistoryToDTO(history, false))
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 转换为 DTO
-     */
+    public HistoryDTO getProfileHistoryDetail(String profileId, String historyId, String userId) {
+        requireProfile(profileId, userId);
+        return convertProfileHistoryToDTO(requireProfileHistory(profileId, historyId, userId), true);
+    }
+
+    @Transactional
+    public void toggleHistoryFavorite(String profileId, String historyId, String userId) {
+        requireProfile(profileId, userId);
+
+        ProfileChatHistory history = requireProfileHistory(profileId, historyId, userId);
+        history.setIsFavorite(history.getIsFavorite() != null && history.getIsFavorite() == 1 ? 0 : 1);
+        profileChatHistoryMapper.updateById(history);
+    }
+
+    @Transactional
+    public void deleteProfileHistory(String profileId, String historyId, String userId) {
+        requireProfile(profileId, userId);
+
+        ProfileChatHistory history = requireProfileHistory(profileId, historyId, userId);
+        history.setStatus(0);
+        profileChatHistoryMapper.updateById(history);
+    }
+
+    public List<HistoryDTO> getFavoriteProfileHistory(String userId) {
+        QueryWrapper<ProfileChatHistory> wrapper = new QueryWrapper<>();
+        wrapper.eq("user_id", userId)
+                .eq("status", 1)
+                .eq("is_favorite", 1)
+                .orderByDesc("create_time");
+
+        return profileChatHistoryMapper.selectList(wrapper).stream()
+                .map(history -> convertProfileHistoryToDTO(history, true))
+                .collect(Collectors.toList());
+    }
+
+    private PersonProfile requireProfile(String profileId, String userId) {
+        PersonProfile profile = baseMapper.selectById(profileId);
+        if (profile == null || !profile.getUserId().equals(userId)) {
+            throw new RuntimeException("人物档案不存在");
+        }
+        return profile;
+    }
+
+    private ProfileChatHistory requireProfileHistory(String profileId, String historyId, String userId) {
+        ProfileChatHistory history = profileChatHistoryMapper.selectById(historyId);
+        if (history == null
+                || !history.getUserId().equals(userId)
+                || !history.getPersonProfileId().equals(profileId)
+                || history.getStatus() != 1) {
+            throw new RuntimeException("聊天历史不存在");
+        }
+        return history;
+    }
+
     private PersonProfileDTO convertToDTO(PersonProfile profile) {
         return PersonProfileDTO.builder()
                 .id(profile.getId())
@@ -197,41 +218,55 @@ public class PersonProfileService extends ServiceImpl<PersonProfileMapper, Perso
                 .build();
     }
 
-    /**
-     * 转换 History 为 DTO（简化版，不含建议列表）
-     */
-    private HistoryDTO convertHistoryToDTO(History history) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private HistoryDTO convertProfileHistoryToDTO(ProfileChatHistory history, boolean includeSuggestions) {
+        List<SuggestionDTO> suggestions = includeSuggestions
+                ? getSuggestionsForProfileHistory(history.getId(), history.getTone())
+                : null;
+
         return HistoryDTO.builder()
                 .id(history.getId())
                 .userId(history.getUserId())
+                .personProfileId(history.getPersonProfileId())
                 .chatContent(history.getChatContent())
                 .roleBackground(history.getRoleBackground())
                 .userIntent(history.getUserIntent())
                 .modelUsed(history.getModelUsed())
                 .tone(history.getTone())
                 .isFavorite(history.getIsFavorite() != null && history.getIsFavorite() == 1)
-                .createTime(history.getCreateTime() != null ? history.getCreateTime().format(formatter) : null)
-                .suggestions(null)
+                .createTime(history.getCreateTime() != null ? history.getCreateTime().format(HISTORY_TIME_FORMATTER) : null)
+                .suggestions(suggestions)
                 .build();
     }
 
-    /**
-     * 转换 ProfileChatHistory 为 DTO
-     */
-    private HistoryDTO convertProfileHistoryToDTO(ProfileChatHistory history) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-        return HistoryDTO.builder()
-                .id(history.getId())
-                .userId(history.getUserId())
-                .chatContent(history.getChatContent())
-                .roleBackground(history.getRoleBackground())
-                .userIntent(history.getUserIntent())
-                .modelUsed(history.getModelUsed())
-                .tone(history.getTone())
-                .isFavorite(history.getIsFavorite() != null && history.getIsFavorite() == 1)
-                .createTime(history.getCreateTime() != null ? history.getCreateTime().format(formatter) : null)
-                .suggestions(null)
-                .build();
+    private List<SuggestionDTO> getSuggestionsForProfileHistory(String historyId, String tone) {
+        QueryWrapper<ProfileReplySuggestion> wrapper = new QueryWrapper<>();
+        wrapper.eq("history_id", historyId)
+                .orderByAsc("order_index");
+
+        String displayTone = tone != null && !tone.isEmpty() ? tone : "自然得体";
+
+        return profileReplySuggestionMapper.selectList(wrapper).stream()
+                .map(suggestion -> {
+                    String storedText = suggestion.getSuggestionText();
+                    String content;
+                    String reason;
+
+                    if (storedText != null && storedText.contains("|||REASON|||")) {
+                        String[] parts = storedText.split("\\|\\|\\|REASON\\|\\|\\|", 2);
+                        content = parts[0];
+                        reason = parts.length > 1 ? parts[1] : "基于人物档案生成的推荐回复";
+                    } else {
+                        content = storedText;
+                        reason = "使用" + displayTone + "语气生成的推荐回复";
+                    }
+
+                    return SuggestionDTO.builder()
+                            .id(suggestion.getId())
+                            .content(content)
+                            .reason(reason)
+                            .tone(displayTone)
+                            .build();
+                })
+                .collect(Collectors.toList());
     }
 }

@@ -305,15 +305,22 @@ export default function ReplyApp() {
 
           {/* 右侧回复建议 */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">
-                回复建议 {suggestions.length > 0 && `(${suggestions.length})`}
-              </h2>
-              <div className="flex items-center gap-3">
+            <div>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <h2 className="text-lg font-semibold">
+                  回复建议 {suggestions.length > 0 && `(${suggestions.length})`}
+                </h2>
+                <div className="flex items-center gap-3">
+                  <div className="hidden sm:block">
+                    <QuotaIndicator />
+                  </div>
+                  {user?.username && (
+                    <Badge variant="outline" className="hidden sm:inline-flex">当前用户：{user.username}</Badge>
+                  )}
+                </div>
+              </div>
+              <div className="sm:hidden mt-3">
                 <QuotaIndicator />
-                {user?.username && (
-                  <Badge variant="outline">当前用户：{user.username}</Badge>
-                )}
               </div>
             </div>
 
@@ -321,7 +328,7 @@ export default function ReplyApp() {
               <Card className="shadow-sm">
                 <CardContent className="py-12 text-center text-muted-foreground">
                   <Wand2 className="size-12 mx-auto mb-4 opacity-50" />
-                  <p>填写左侧信息后点击"生成回复建议"</p>
+                  <p>填写信息后点击"生成回复建议"</p>
                   <p className="text-sm mt-2">AI 将为您生成多条高情商回复</p>
                 </CardContent>
               </Card>

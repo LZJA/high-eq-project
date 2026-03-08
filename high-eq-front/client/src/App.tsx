@@ -59,13 +59,6 @@ function Router() {
           </ProtectedRoute>
         )}
       </Route>
-      <Route path={"/profiles/:profileId"}>
-        {({ profileId }: { profileId: string }) => (
-          <ProtectedRoute>
-            <PersonProfileDetail profileId={profileId} />
-          </ProtectedRoute>
-        )}
-      </Route>
       <Route path={"/profiles/:profileId/edit"}>
         {({ profileId }: { profileId: string }) => (
           <ProtectedRoute>
@@ -77,6 +70,13 @@ function Router() {
         {({ profileId }: { profileId: string }) => (
           <ProtectedRoute>
             <PersonProfileChat profileId={profileId} />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path={"/profiles/:profileId"}>
+        {({ profileId }: { profileId: string }) => (
+          <ProtectedRoute>
+            <PersonProfileDetail profileId={profileId} />
           </ProtectedRoute>
         )}
       </Route>

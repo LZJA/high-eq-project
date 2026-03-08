@@ -21,7 +21,6 @@ interface ModelSelectorProps {
  */
 export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps) {
   const { tier } = useQuota();
-  const isPro = tier === 'pro';
 
   return (
     <Select value={value} onValueChange={onChange} disabled={disabled}>
@@ -30,7 +29,7 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
       </SelectTrigger>
       <SelectContent>
         {AI_MODELS.map((model) => {
-          const isAllowed = model.tier.includes(tier as 'free' | 'pro');
+          const isAllowed = model.tier.includes(tier as 'free' | 'lite' | 'pro');
 
           return (
             <SelectItem
@@ -43,7 +42,7 @@ export function ModelSelector({ value, onChange, disabled }: ModelSelectorProps)
                 {!isAllowed && (
                   <Badge variant="outline" className="ml-auto text-amber-600 border-amber-600 text-xs">
                     <Lock className="size-3 mr-1" />
-                    PRO
+                    {model.description}
                   </Badge>
                 )}
               </div>

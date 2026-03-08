@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
-import { Plus, User, Heart, Trash2, MessageCircle, Pencil } from "lucide-react";
+import { Plus, User, Heart, Trash2, MessageCircle, Pencil, Eye } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -141,13 +141,18 @@ export default function PersonProfiles() {
                   )}
 
                   <div className="flex gap-2 mt-4">
-                    <Link href={`/profiles/${profile.id}/chat`} className="flex-1">
+                    <Link href={`/profiles/${profile.id}/chat`} className="flex-1" onClick={(e) => e.stopPropagation()}>
                       <Button variant="default" size="sm" className="w-full">
                         <MessageCircle className="size-4 mr-1" />
                         开始聊天
                       </Button>
                     </Link>
-                    <Link href={`/profiles/${profile.id}/edit`}>
+                    <Link href={`/profiles/${profile.id}`} onClick={(e) => e.stopPropagation()}>
+                      <Button variant="outline" size="sm">
+                        <Eye className="size-4" />
+                      </Button>
+                    </Link>
+                    <Link href={`/profiles/${profile.id}/edit`} onClick={(e) => e.stopPropagation()}>
                       <Button variant="outline" size="sm">
                         <Pencil className="size-4" />
                       </Button>
@@ -155,7 +160,10 @@ export default function PersonProfiles() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setDeleteId(profile.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteId(profile.id);
+                      }}
                     >
                       <Trash2 className="size-4 text-destructive" />
                     </Button>

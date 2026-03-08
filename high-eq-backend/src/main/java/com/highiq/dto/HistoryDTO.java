@@ -21,6 +21,8 @@ public class HistoryDTO {
 
     private String userId;
 
+    private String personProfileId;
+
     private String chatContent;
 
     private String roleBackground;

@@ -297,6 +297,30 @@ export const profileAPI = {
     const response = await apiClient.get(`/profile/${profileId}/history`);
     return response.data;
   },
+
+  /**
+   * 获取人物档案聊天历史详情
+   */
+  getProfileHistoryDetail: async (profileId: string, historyId: string) => {
+    const response = await apiClient.get(`/profile/${profileId}/history/${historyId}`);
+    return response.data;
+  },
+
+  /**
+   * 删除人物档案聊天历史
+   */
+  deleteProfileHistory: async (profileId: string, historyId: string) => {
+    const response = await apiClient.delete(`/profile/${profileId}/history/${historyId}`);
+    return response.data;
+  },
+
+  /**
+   * 收藏/取消收藏人物档案聊天历史
+   */
+  toggleProfileHistoryFavorite: async (profileId: string, historyId: string) => {
+    const response = await apiClient.post(`/profile/${profileId}/history/${historyId}/favorite`);
+    return response.data;
+  },
 };
 
 export default apiClient;

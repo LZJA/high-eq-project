@@ -147,6 +147,57 @@ public class PersonProfileController {
     }
 
     /**
+     * 获取人物档案聊天历史详情
+     */
+    @GetMapping("/{profileId}/history/{historyId}")
+    public ApiResponse<HistoryDTO> getProfileHistoryDetail(
+            @PathVariable String profileId,
+            @PathVariable String historyId,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            String userId = extractUserId(authHeader);
+            HistoryDTO history = profileService.getProfileHistoryDetail(profileId, historyId, userId);
+            return ApiResponse.success("获取成功", history);
+        } catch (Exception e) {
+            log.error("Failed to get profile history detail", e);
+            return ApiResponse.error(500, e.getMessage());
+        }
+    }
+
+    /**
+     * 收藏/取消收藏人物档案聊天历史
+     */
+    @PostMapping("/{profileId}/history/{historyId}/favorite")
+    public ApiResponse<Void> toggleProfileHistoryFavorite(
+            @PathVariable String profileId,
+            @PathVariable String historyId,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            String userId = extractUserId(authHeader);
+            profileService.toggleHistoryFavorite(profileId, historyId, userId);
+            return ApiResponse.success("操作成功", null);
+        } catch (Exception e) {
+            log.error("Failed to toggle profile history favorite", e);
+            return ApiResponse.error(500, e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{profileId}/history/{historyId}")
+    public ApiResponse<Void> deleteProfileHistory(
+            @PathVariable String profileId,
+            @PathVariable String historyId,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            String userId = extractUserId(authHeader);
+            profileService.deleteProfileHistory(profileId, historyId, userId);
+            return ApiResponse.success("删除成功", null);
+        } catch (Exception e) {
+            log.error("Failed to delete profile history", e);
+            return ApiResponse.error(500, e.getMessage());
+        }
+    }
+
+    /**
      * 从 Authorization header 中提取用户ID
      */
     private String extractUserId(String authHeader) {

@@ -8,6 +8,7 @@ import lombok.Getter;
 @Getter
 public enum SubscriptionTier {
     FREE("free", 5, new String[]{"deepseek-chat"}),
+    LITE("lite", 50, new String[]{"deepseek-chat", "gpt-4"}),
     PRO("pro", -1, new String[]{"deepseek-chat", "gpt-4", "gpt-4-turbo", "claude-3"});
 
     private final String code;

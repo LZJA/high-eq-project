@@ -1,5 +1,5 @@
 // 订阅类型
-export type SubscriptionTier = 'free' | 'pro';
+export type SubscriptionTier = 'free' | 'lite' | 'pro';
 
 // 配额状态
 export interface QuotaStatus {
@@ -41,10 +41,9 @@ export interface AiModel {
 }
 
 export const AI_MODELS: AiModel[] = [
-  { value: "deepseek-chat", label: "DeepSeek (推荐)", tier: ['free', 'pro'] },
-  { value: "gpt-4", label: "GPT-4", tier: ['pro'], description: "PRO 专属" },
-  { value: "gpt-4-turbo", label: "GPT-4 Turbo", tier: ['pro'], description: "PRO 专属" },
-  { value: "claude-3", label: "Claude 3", tier: ['pro'], description: "PRO 专属" },
+  { value: "deepseek-chat", label: "普通模型", tier: ['free', 'lite', 'pro'] },
+  { value: "doubao-chat", label: "高级模型", tier: ['lite', 'pro'], description: "Lite/PRO" },
+  { value: "glm-chat", label: "专业模型", tier: ['pro'], description: "PRO 专属" },
 ];
 
 // 星座

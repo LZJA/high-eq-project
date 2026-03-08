@@ -349,17 +349,17 @@ export default function Home() {
               </div>
               <h3 className="font-bold text-lg mb-2">AI 驱动</h3>
               <p className="text-gray-600 dark:text-gray-400 text-sm">
-                采用 DeepSeek 等先进大模型，深入理解语境和情感
+                采用先进大模型，深入理解语境和情感
               </p>
             </Card>
 
             <Card className="p-6 text-center hover:shadow-xl transition-all border-2 hover:border-purple-300 dark:hover:border-purple-700">
               <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
-                <Heart className="w-6 h-6 text-white" />
+                <Users className="w-6 h-6 text-white" />
               </div>
-              <h3 className="font-bold text-lg mb-2">情商优先</h3>
+              <h3 className="font-bold text-lg mb-2">人物档案</h3>
               <p className="text-gray-600 dark:text-gray-400 text-sm">
-                每条回复都经过精心设计，既表达意图又照顾感受
+                创建常联系人档案，AI 生成更贴合对方性格的回复
               </p>
             </Card>
 
@@ -386,7 +386,7 @@ export default function Home() {
               </span>
             </h2>
             <p className="text-gray-600 dark:text-gray-400">
-              HighEQ 先验证真正有价值的权益，再决定最终定价。当前更适合用免费版体验，再观察 Pro 和点数包的需求强度。
+              HighEQ 提供三档订阅方案，满足不同使用需求。免费版体验基础功能，Lite 版适合中频使用，Pro 版无限畅用。
             </p>
           </div>
 
@@ -488,7 +488,7 @@ export default function Home() {
             <span className="font-bold text-white">HighEQ</span>
           </div>
           <p className="text-sm">高情商回复生成助手 · 让沟通更有温度</p>
-          <p className="text-xs mt-4 text-gray-500">© 2024 HighEQ. All rights reserved.</p>
+          <p className="text-xs mt-4 text-gray-500">© 2026 HighEQ. All rights reserved.</p>
         </div>
       </footer>
     </div>

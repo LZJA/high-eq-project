@@ -173,7 +173,7 @@ export default function PersonProfileForm({ profileId }: PersonProfileFormProps)
               <div className="space-y-2">
                 <Label htmlFor="gender">性别</Label>
                 <Select value={gender} onValueChange={setGender}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="选择性别" />
                   </SelectTrigger>
                   <SelectContent>
@@ -211,8 +211,8 @@ export default function PersonProfileForm({ profileId }: PersonProfileFormProps)
 
             <div className="space-y-2">
               <Label htmlFor="relationship">与您的关系</Label>
-              <Select value={relationship} onValueChange={setRelationship}>
-                <SelectTrigger>
+              <Select  value={relationship} onValueChange={setRelationship}>
+                <SelectTrigger className="w-[48.7%]">
                   <SelectValue placeholder="选择关系" />
                 </SelectTrigger>
                 <SelectContent>
@@ -241,7 +241,7 @@ export default function PersonProfileForm({ profileId }: PersonProfileFormProps)
               <div className="space-y-2">
                 <Label>星座</Label>
                 <Select value={zodiacSign} onValueChange={setZodiacSign}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="选择星座" />
                   </SelectTrigger>
                   <SelectContent>
@@ -256,7 +256,7 @@ export default function PersonProfileForm({ profileId }: PersonProfileFormProps)
               <div className="space-y-2">
                 <Label>属相</Label>
                 <Select value={chineseZodiac} onValueChange={setChineseZodiac}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="选择属相" />
                   </SelectTrigger>
                   <SelectContent>
