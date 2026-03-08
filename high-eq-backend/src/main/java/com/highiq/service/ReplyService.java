@@ -8,8 +8,12 @@ import com.highiq.dto.HistoryDTO;
 import com.highiq.dto.PageResponse;
 import com.highiq.dto.SuggestionDTO;
 import com.highiq.entity.History;
+import com.highiq.entity.ProfileChatHistory;
+import com.highiq.entity.ProfileReplySuggestion;
 import com.highiq.entity.ReplySuggestion;
 import com.highiq.mapper.HistoryMapper;
+import com.highiq.mapper.ProfileChatHistoryMapper;
+import com.highiq.mapper.ProfileReplySuggestionMapper;
 import com.highiq.mapper.ReplySuggestionMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -31,11 +35,18 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
 
     private final AiService aiService;
     private final ReplySuggestionMapper replySuggestionMapper;
+    private final ProfileChatHistoryMapper profileChatHistoryMapper;
+    private final ProfileReplySuggestionMapper profileReplySuggestionMapper;
     private final QuotaService quotaService;
 
-    public ReplyService(AiService aiService, ReplySuggestionMapper replySuggestionMapper, QuotaService quotaService) {
+    public ReplyService(AiService aiService, ReplySuggestionMapper replySuggestionMapper,
+                       ProfileChatHistoryMapper profileChatHistoryMapper,
+                       ProfileReplySuggestionMapper profileReplySuggestionMapper,
+                       QuotaService quotaService) {
         this.aiService = aiService;
         this.replySuggestionMapper = replySuggestionMapper;
+        this.profileChatHistoryMapper = profileChatHistoryMapper;
+        this.profileReplySuggestionMapper = profileReplySuggestionMapper;
         this.quotaService = quotaService;
     }
     
@@ -71,46 +82,72 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
             // 保存到数据库
             String historyId = UUID.randomUUID().toString();
             String selectedTone = request.getTone() != null && !request.getTone().isEmpty() ? request.getTone() : "自然得体";
+            String modelUsed = request.getModelPreference() != null ? request.getModelPreference() : "deepseek-chat";
 
-            History history = History.builder()
-                    .id(historyId)
-                    .userId(userId)
-                    .chatContent(request.getChatContent())
-                    .roleBackground(request.getRoleBackground())
-                    .userIntent(request.getUserIntent())
-                    .modelUsed(request.getModelPreference() != null ? request.getModelPreference() : "deepseek-chat")
-                    .tone(selectedTone)
-                    .personProfileId(request.getPersonProfileId())
-                    .status(1)
-                    .isFavorite(0)
-                    .build();
+            // 判断是否为人物档案聊天
+            if (request.getPersonProfileId() != null && !request.getPersonProfileId().isEmpty()) {
+                // 保存到人物档案聊天记录表
+                ProfileChatHistory profileHistory = ProfileChatHistory.builder()
+                        .id(historyId)
+                        .personProfileId(request.getPersonProfileId())
+                        .userId(userId)
+                        .chatContent(request.getChatContent())
+                        .roleBackground(request.getRoleBackground())
+                        .userIntent(request.getUserIntent())
+                        .modelUsed(modelUsed)
+                        .tone(selectedTone)
+                        .status(1)
+                        .isFavorite(0)
+                        .build();
+                profileChatHistoryMapper.insert(profileHistory);
+            } else {
+                // 保存到全局历史记录表
+                History history = History.builder()
+                        .id(historyId)
+                        .userId(userId)
+                        .chatContent(request.getChatContent())
+                        .roleBackground(request.getRoleBackground())
+                        .userIntent(request.getUserIntent())
+                        .modelUsed(modelUsed)
+                        .tone(selectedTone)
+                        .status(1)
+                        .isFavorite(0)
+                        .build();
+                baseMapper.insert(history);
+            }
 
-            baseMapper.insert(history);
-
-            // 构建返回的建议列表（包含 id, content, reason, tone）
+            // 构建返回的建议列表
             List<SuggestionDTO> suggestionDTOs = new ArrayList<>();
 
-            // 保存回复建议到数据库并构建 DTO
+            // 保存回复建议到对应的表
             for (int i = 0; i < aiSuggestions.size(); i++) {
                 String suggestionId = UUID.randomUUID().toString();
                 String aiSuggestion = aiSuggestions.get(i);
 
-                // 解析 AI 返回的格式：内容|||REASON|||理由
                 String[] parts = aiSuggestion.split("\\|\\|\\|REASON\\|\\|\\|", 2);
                 String content = parts[0];
                 String reason = parts.length > 1 ? parts[1] : "这是一条高情商回复，能得体地表达意图";
 
-                // 保存完整内容到数据库（包含理由，方便后续解析）
-                ReplySuggestion suggestion = ReplySuggestion.builder()
-                        .id(suggestionId)
-                        .historyId(historyId)
-                        .suggestionText(aiSuggestion)
-                        .orderIndex(i + 1)
-                        .isSelected(0)
-                        .build();
-                replySuggestionMapper.insert(suggestion);
+                if (request.getPersonProfileId() != null && !request.getPersonProfileId().isEmpty()) {
+                    ProfileReplySuggestion suggestion = ProfileReplySuggestion.builder()
+                            .id(suggestionId)
+                            .historyId(historyId)
+                            .suggestionText(aiSuggestion)
+                            .orderIndex(i + 1)
+                            .isSelected(0)
+                            .build();
+                    profileReplySuggestionMapper.insert(suggestion);
+                } else {
+                    ReplySuggestion suggestion = ReplySuggestion.builder()
+                            .id(suggestionId)
+                            .historyId(historyId)
+                            .suggestionText(aiSuggestion)
+                            .orderIndex(i + 1)
+                            .isSelected(0)
+                            .build();
+                    replySuggestionMapper.insert(suggestion);
+                }
 
-                // 构建 DTO - 使用 AI 生成的推荐理由
                 SuggestionDTO dto = SuggestionDTO.builder()
                         .id(suggestionId)
                         .content(content)

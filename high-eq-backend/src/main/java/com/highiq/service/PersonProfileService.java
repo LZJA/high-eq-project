@@ -7,8 +7,10 @@ import com.highiq.dto.PageResponse;
 import com.highiq.dto.PersonProfileDTO;
 import com.highiq.entity.History;
 import com.highiq.entity.PersonProfile;
+import com.highiq.entity.ProfileChatHistory;
 import com.highiq.mapper.HistoryMapper;
 import com.highiq.mapper.PersonProfileMapper;
+import com.highiq.mapper.ProfileChatHistoryMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,9 +28,11 @@ import java.util.stream.Collectors;
 public class PersonProfileService extends ServiceImpl<PersonProfileMapper, PersonProfile> {
 
     private final HistoryMapper historyMapper;
+    private final ProfileChatHistoryMapper profileChatHistoryMapper;
 
-    public PersonProfileService(HistoryMapper historyMapper) {
+    public PersonProfileService(HistoryMapper historyMapper, ProfileChatHistoryMapper profileChatHistoryMapper) {
         this.historyMapper = historyMapper;
+        this.profileChatHistoryMapper = profileChatHistoryMapper;
     }
 
     /**
@@ -122,13 +126,13 @@ public class PersonProfileService extends ServiceImpl<PersonProfileMapper, Perso
         profile.setStatus(0);
         baseMapper.updateById(profile);
 
-        // 级联删除该档案的所有历史记录
-        QueryWrapper<History> historyWrapper = new QueryWrapper<>();
+        // 级联删除该档案的所有聊天历史记录
+        QueryWrapper<ProfileChatHistory> historyWrapper = new QueryWrapper<>();
         historyWrapper.eq("person_profile_id", profileId);
-        List<History> histories = historyMapper.selectList(historyWrapper);
-        for (History history : histories) {
+        List<ProfileChatHistory> histories = profileChatHistoryMapper.selectList(historyWrapper);
+        for (ProfileChatHistory history : histories) {
             history.setStatus(0);
-            historyMapper.updateById(history);
+            profileChatHistoryMapper.updateById(history);
         }
 
         log.info("Deleted person profile: {} and {} related histories", profileId, histories.size());
@@ -157,15 +161,15 @@ public class PersonProfileService extends ServiceImpl<PersonProfileMapper, Perso
             throw new RuntimeException("人物档案不存在");
         }
 
-        QueryWrapper<History> wrapper = new QueryWrapper<>();
+        QueryWrapper<ProfileChatHistory> wrapper = new QueryWrapper<>();
         wrapper.eq("user_id", userId)
                 .eq("person_profile_id", profileId)
                 .eq("status", 1)
                 .orderByDesc("create_time");
 
-        List<History> histories = historyMapper.selectList(wrapper);
+        List<ProfileChatHistory> histories = profileChatHistoryMapper.selectList(wrapper);
         return histories.stream()
-                .map(h -> convertHistoryToDTO(h))
+                .map(h -> convertProfileHistoryToDTO(h))
                 .collect(Collectors.toList());
     }
 
@@ -197,6 +201,25 @@ public class PersonProfileService extends ServiceImpl<PersonProfileMapper, Perso
      * 转换 History 为 DTO（简化版，不含建议列表）
      */
     private HistoryDTO convertHistoryToDTO(History history) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        return HistoryDTO.builder()
+                .id(history.getId())
+                .userId(history.getUserId())
+                .chatContent(history.getChatContent())
+                .roleBackground(history.getRoleBackground())
+                .userIntent(history.getUserIntent())
+                .modelUsed(history.getModelUsed())
+                .tone(history.getTone())
+                .isFavorite(history.getIsFavorite() != null && history.getIsFavorite() == 1)
+                .createTime(history.getCreateTime() != null ? history.getCreateTime().format(formatter) : null)
+                .suggestions(null)
+                .build();
+    }
+
+    /**
+     * 转换 ProfileChatHistory 为 DTO
+     */
+    private HistoryDTO convertProfileHistoryToDTO(ProfileChatHistory history) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
         return HistoryDTO.builder()
                 .id(history.getId())
