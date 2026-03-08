@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { PRICING_PLANS } from "@/data/pricingPlans";
 
 const ROLE_OPTIONS = [
   { value: "同事", emoji: "💼", color: "from-blue-500 to-blue-600" },
@@ -371,6 +372,76 @@ export default function Home() {
                 收藏精彩回复，建立你的个人沟通智慧库
               </p>
             </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* 价格验证区 */}
+      <section className="py-20 bg-white dark:bg-gray-950">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                先免费用，再决定要不要升级
+              </span>
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400">
+              HighEQ 先验证真正有价值的权益，再决定最终定价。当前更适合用免费版体验，再观察 Pro 和点数包的需求强度。
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {PRICING_PLANS.map((plan) => (
+              <Card
+                key={plan.id}
+                className={`p-6 border-2 transition-all hover:-translate-y-1 hover:shadow-xl ${
+                  plan.emphasis
+                    ? "border-purple-300 dark:border-purple-700 shadow-lg"
+                    : "border-gray-200 dark:border-gray-800"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div>
+                    <div className="text-xl font-bold">{plan.name}</div>
+                    <div className="text-2xl font-bold mt-2 text-gray-900 dark:text-gray-100">
+                      {plan.priceLabel}
+                    </div>
+                  </div>
+                  {plan.badge && (
+                    <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                      {plan.badge}
+                    </span>
+                  )}
+                </div>
+
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-5">
+                  {plan.description}
+                </p>
+
+                <div className="space-y-3 mb-6">
+                  {plan.features.map((feature) => (
+                    <div key={feature} className="flex items-start gap-2 text-sm">
+                      <div className="mt-1 size-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600" />
+                      <span className="text-gray-700 dark:text-gray-300">
+                        {feature}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <Button
+                  className={`w-full ${
+                    plan.emphasis
+                      ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700"
+                      : ""
+                  }`}
+                  variant={plan.emphasis ? "default" : "outline"}
+                  onClick={handleStart}
+                >
+                  {plan.ctaLabel}
+                </Button>
+              </Card>
+            ))}
           </div>
         </div>
       </section>

@@ -28,13 +28,15 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class ReplyService extends ServiceImpl<HistoryMapper, History> {
-    
+
     private final AiService aiService;
     private final ReplySuggestionMapper replySuggestionMapper;
-    
-    public ReplyService(AiService aiService, ReplySuggestionMapper replySuggestionMapper) {
+    private final QuotaService quotaService;
+
+    public ReplyService(AiService aiService, ReplySuggestionMapper replySuggestionMapper, QuotaService quotaService) {
         this.aiService = aiService;
         this.replySuggestionMapper = replySuggestionMapper;
+        this.quotaService = quotaService;
     }
     
     /**
@@ -45,6 +47,18 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
         long startTime = System.currentTimeMillis();
 
         try {
+            // === 配额检查 ===
+            if (!quotaService.checkAndConsumeQuota(userId)) {
+                throw new RuntimeException("今日配额已用尽，请升级到 PRO 版本获取无限次数");
+            }
+
+            // === 模型检查 ===
+            String requestedModel = request.getModelPreference() != null ?
+                    request.getModelPreference() : "deepseek-chat";
+            if (!quotaService.isModelAvailable(userId, requestedModel)) {
+                throw new RuntimeException("当前订阅级别不支持使用 " + requestedModel + " 模型，请升级到 PRO 版本");
+            }
+
             // 调用 AI 服务生成回复
             List<String> aiSuggestions = aiService.generateReplies(
                     request.getChatContent(),
@@ -66,6 +80,7 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                     .userIntent(request.getUserIntent())
                     .modelUsed(request.getModelPreference() != null ? request.getModelPreference() : "deepseek-chat")
                     .tone(selectedTone)
+                    .personProfileId(request.getPersonProfileId())
                     .status(1)
                     .isFavorite(0)
                     .build();
@@ -134,6 +149,7 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
         QueryWrapper<History> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("user_id", userId)
                 .eq("status", 1)
+                .isNull("person_profile_id")
                 .orderByDesc("create_time");
 
         // 获取总数
@@ -212,6 +228,7 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
         queryWrapper.eq("user_id", userId)
                 .eq("status", 1)
                 .eq("is_favorite", 1)
+                .isNull("person_profile_id")
                 .orderByDesc("create_time");
 
         List<History> histories = baseMapper.selectList(queryWrapper);

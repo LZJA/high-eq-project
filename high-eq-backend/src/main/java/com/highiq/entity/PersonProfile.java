@@ -7,38 +7,49 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
 /**
- * 会话历史实体类
+ * 人物档案实体类
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@TableName("history")
-public class History {
+@TableName("person_profile")
+public class PersonProfile {
 
     @TableId(type = IdType.ASSIGN_UUID)
     private String id;
 
     private String userId;
 
-    private String chatContent;
+    private String name;
 
-    private String roleBackground;
+    private String gender;
 
-    private String userIntent;
+    private Integer age;
 
-    private String modelUsed;
+    private String personality;
 
-    private String tone;  // 语气/风格
+    private String occupation;
 
-    private String personProfileId;  // 人物档案ID
+    private String zodiacSign;
 
-    private Integer status;
+    private String chineseZodiac;
+
+    private String hobbies;  // JSON array
+
+    private String relationship;
+
+    private String notes;
+
+    private String avatarUrl;
 
     private Integer isFavorite;
+
+    private Integer status;
 
     private LocalDateTime createTime;
 

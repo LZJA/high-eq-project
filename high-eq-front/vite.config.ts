@@ -55,7 +55,7 @@ export default defineConfig({
     // 开发环境 API 代理到后端
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: 'http://121.41.191.53',
         changeOrigin: true,
       },
     },

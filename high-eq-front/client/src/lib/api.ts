@@ -152,6 +152,7 @@ export const replyAPI = {
     replyCount?: number;
     modelPreference?: string;
     tone?: string;
+    personProfileId?: string;
   }) => {
     const response = await apiClient.post('/reply/generate', data);
     return response.data;
@@ -204,6 +205,96 @@ export const replyAPI = {
    */
   getFavoriteHistory: async () => {
     const response = await apiClient.get('/reply/history/favorite');
+    return response.data;
+  },
+};
+
+/**
+ * 配额相关 API
+ */
+export const quotaAPI = {
+  /**
+   * 获取配额状态
+   */
+  getQuotaStatus: async () => {
+    const response = await apiClient.get('/quota/status');
+    return response.data;
+  },
+};
+
+/**
+ * 人物档案相关 API
+ */
+export const profileAPI = {
+  /**
+   * 获取人物档案列表
+   */
+  getProfiles: async () => {
+    const response = await apiClient.get('/profile');
+    return response.data;
+  },
+
+  /**
+   * 获取单个人物档案
+   */
+  getProfile: async (profileId: string) => {
+    const response = await apiClient.get(`/profile/${profileId}`);
+    return response.data;
+  },
+
+  /**
+   * 创建人物档案
+   */
+  createProfile: async (data: {
+    name: string;
+    gender?: string;
+    age?: number;
+    personality?: string;
+    occupation?: string;
+    zodiacSign?: string;
+    chineseZodiac?: string;
+    hobbies?: string[];
+    relationship?: string;
+    notes?: string;
+    avatarUrl?: string;
+  }) => {
+    const response = await apiClient.post('/profile', data);
+    return response.data;
+  },
+
+  /**
+   * 更新人物档案
+   */
+  updateProfile: async (profileId: string, data: Partial<{
+    name: string;
+    gender: string;
+    age: number;
+    personality: string;
+    occupation: string;
+    zodiacSign: string;
+    chineseZodiac: string;
+    hobbies: string[];
+    relationship: string;
+    notes: string;
+    avatarUrl: string;
+  }>) => {
+    const response = await apiClient.put(`/profile/${profileId}`, data);
+    return response.data;
+  },
+
+  /**
+   * 删除人物档案
+   */
+  deleteProfile: async (profileId: string) => {
+    const response = await apiClient.delete(`/profile/${profileId}`);
+    return response.data;
+  },
+
+  /**
+   * 获取人物相关的历史记录
+   */
+  getProfileHistory: async (profileId: string) => {
+    const response = await apiClient.get(`/profile/${profileId}/history`);
     return response.data;
   },
 };

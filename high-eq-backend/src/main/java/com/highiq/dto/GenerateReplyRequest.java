@@ -23,4 +23,6 @@ public class GenerateReplyRequest {
     private Integer replyCount;  // 生成回复的数量，默认 3
 
     private String tone;  // 语气/风格：温和友善、正式得体、幽默风趣、真诚直接、委婉含蓄
+
+    private String personProfileId;  // 人物档案ID（可选）
 }

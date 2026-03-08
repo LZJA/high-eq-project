@@ -11,6 +11,10 @@ import Register from "./pages/Register";
 import ReplyApp from "./pages/ReplyApp";
 import History from "./pages/History";
 import Favorites from "./pages/Favorites";
+import PersonProfiles from "./pages/PersonProfiles";
+import PersonProfileForm from "./pages/PersonProfileForm";
+import PersonProfileChat from "./pages/PersonProfileChat";
+import PersonProfileDetail from "./pages/PersonProfileDetail";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 
@@ -38,6 +42,41 @@ function Router() {
         {() => (
           <ProtectedRoute>
             <Favorites />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path={"/profiles"}>
+        {() => (
+          <ProtectedRoute>
+            <PersonProfiles />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path={"/profiles/new"}>
+        {() => (
+          <ProtectedRoute>
+            <PersonProfileForm />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path={"/profiles/:profileId"}>
+        {({ profileId }: { profileId: string }) => (
+          <ProtectedRoute>
+            <PersonProfileDetail profileId={profileId} />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path={"/profiles/:profileId/edit"}>
+        {({ profileId }: { profileId: string }) => (
+          <ProtectedRoute>
+            <PersonProfileForm profileId={profileId} />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path={"/profiles/:profileId/chat"}>
+        {({ profileId }: { profileId: string }) => (
+          <ProtectedRoute>
+            <PersonProfileChat profileId={profileId} />
           </ProtectedRoute>
         )}
       </Route>

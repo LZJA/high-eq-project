@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl:*)",
+      "Bash(ssh:*)",
+      "Bash(scp:*)",
+      "Bash(ssh-copy-id:*)",
+      "Bash(del:*)",
+      "Bash(test:*)",
+      "Bash(mvn clean package:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIzZmRjNzMyYS1mZjgwLTQ3NTUtYWEwMC0xNTgzNmE2MGI1M2QiLCJpYXQiOjE3NzI4MDk4ODUsImV4cCI6MTc3Mjg5NjI4NX0.h3E8TYU_XOXh9I52lf-Jy0T1kTN4OoNYVDIelTom76c\")",
+      "Bash(xargs -I {} curl -s \"http://localhost:3000/api/quota/status\" -H \"Authorization: Bearer {}\")",
+      "Bash(ssh -i ~/.ssh/id_rsa root@121.41.191.53 \"docker ps | grep backend && echo ''---'' && curl -s http://localhost:8080/api/auth/login -X POST -H ''Content-Type: application/json'' -d ''{\"\"username\"\":\"\"test\"\"}'' | head -5\")",
+      "Bash(ssh -i ~/.ssh/id_rsa root@121.41.191.53 \"docker ps | grep backend && echo ''---'' && curl -s http://localhost:8080/api/auth/login -X POST -H ''Content-Type: application/json'' -d ''{\"\"username\"\":\"\"test\"\"}''\")",
+      "Bash(docker exec -i high-eq-mysql mysql -uhigheq -phigheq123 higheq -e \"ALTER TABLE history ADD COLUMN person_profile_id VARCHAR\\(255\\) DEFAULT NULL;\")",
+      "Bash(ssh-keyscan -H 47.115.229.78)",
+      "Bash(~/.ssh/known_hosts)",
+      "Bash(ssh-keyscan -H 121.41.191.53)",
+      "Bash(ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N \"\")"
+    ]
+  }
+}

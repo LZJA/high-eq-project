@@ -22,6 +22,9 @@ import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { Copy, Heart, Wand2 } from "lucide-react";
 import { AppNav } from "@/components/AppNav";
+import { QuotaIndicator } from "@/components/QuotaIndicator";
+import { ModelSelector } from "@/components/ModelSelector";
+import { useQuota } from "@/hooks/useQuota";
 
 // 预设角色
 const PRESET_ROLES = [
@@ -33,13 +36,6 @@ const PRESET_ROLES = [
   { value: "陌生人", label: "陌生人" },
   { value: "伴侣", label: "伴侣" },
   { value: "老师", label: "老师" },
-];
-
-// AI 模型选项
-const AI_MODELS = [
-  { value: "deepseek", label: "DeepSeek (推荐)" },
-  // { value: "doubao", label: "豆包" },
-  // { value: "wenxin", label: "百度文心一言" },
 ];
 
 // 语气/风格选项
@@ -60,12 +56,13 @@ interface ReplySuggestion {
 
 export default function ReplyApp() {
   const { user } = useAuth();
+  const { remainingQuota, isUnlimited, refresh: refreshQuota } = useQuota();
   const [isGenerating, setIsGenerating] = useState(false);
   const [chatContent, setChatContent] = useState("");
   const [roleBackground, setRoleBackground] = useState("");
   const [userIntent, setUserIntent] = useState("");
   const [replyCount, setReplyCount] = useState(3);
-  const [modelPreference, setModelPreference] = useState("deepseek");
+  const [modelPreference, setModelPreference] = useState("deepseek-chat");
   const [tone, setTone] = useState("");
   const [suggestions, setSuggestions] = useState<ReplySuggestion[]>([]);
   const [currentHistoryId, setCurrentHistoryId] = useState<string | null>(null);
@@ -85,6 +82,12 @@ export default function ReplyApp() {
       return;
     }
 
+    // 检查配额
+    if (!isUnlimited && remainingQuota <= 0) {
+      toast.error("今日配额已用尽，请升级到 PRO 版本获取无限次数");
+      return;
+    }
+
     setIsGenerating(true);
     try {
       const response = await replyAPI.generateReplies({
@@ -99,6 +102,8 @@ export default function ReplyApp() {
       setSuggestions(response.data.suggestions || []);
       setCurrentHistoryId(response.data.historyId);
       toast.success("回复建议生成成功！");
+      // 刷新配额状态
+      refreshQuota();
     } catch (error: any) {
       toast.error(error.response?.data?.message || "生成失败，请稍后重试");
     } finally {
@@ -263,22 +268,11 @@ export default function ReplyApp() {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">AI 模型</label>
-                  <Select
+                  <ModelSelector
                     value={modelPreference}
-                    onValueChange={setModelPreference}
+                    onChange={setModelPreference}
                     disabled={isGenerating}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {AI_MODELS.map((model) => (
-                        <SelectItem key={model.value} value={model.value}>
-                          {model.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  />
                 </div>
               </div>
 
@@ -315,6 +309,12 @@ export default function ReplyApp() {
               <h2 className="text-lg font-semibold">
                 回复建议 {suggestions.length > 0 && `(${suggestions.length})`}
               </h2>
+              <div className="flex items-center gap-3">
+                <QuotaIndicator />
+                {user?.username && (
+                  <Badge variant="outline">当前用户：{user.username}</Badge>
+                )}
+              </div>
             </div>
 
             {suggestions.length === 0 ? (

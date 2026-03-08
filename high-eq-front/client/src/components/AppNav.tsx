@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
 
-type ActivePage = "app" | "history" | "favorites";
+type ActivePage = "app" | "history" | "favorites" | "profiles";
 
 interface AppNavProps {
   /** 当前所在页面，用于高亮或隐藏对应导航项 */
@@ -14,6 +14,7 @@ interface AppNavProps {
 
 const NAV_LINKS: { href: string; label: string; page: ActivePage }[] = [
   { href: "/app", label: "回复生成器", page: "app" },
+  { href: "/profiles", label: "人物档案", page: "profiles" },
   { href: "/history", label: "历史记录", page: "history" },
   { href: "/favorites", label: "收藏", page: "favorites" },
 ];
