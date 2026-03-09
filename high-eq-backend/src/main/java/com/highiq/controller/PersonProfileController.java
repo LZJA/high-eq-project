@@ -4,9 +4,12 @@ import com.highiq.dto.ApiResponse;
 import com.highiq.dto.HistoryDTO;
 import com.highiq.dto.PageResponse;
 import com.highiq.dto.PersonProfileDTO;
+import com.highiq.exception.ProfileLimitExceededException;
 import com.highiq.service.PersonProfileService;
 import com.highiq.util.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,16 +35,21 @@ public class PersonProfileController {
      * 创建人物档案
      */
     @PostMapping
-    public ApiResponse<PersonProfileDTO> createProfile(
+    public ResponseEntity<ApiResponse<PersonProfileDTO>> createProfile(
             @RequestBody PersonProfileDTO request,
             @RequestHeader("Authorization") String authHeader) {
         try {
             String userId = extractUserId(authHeader);
             PersonProfileDTO profile = profileService.createProfile(userId, request);
-            return ApiResponse.success("创建成功", profile);
+            return ResponseEntity.ok(ApiResponse.success("创建成功", profile));
+        } catch (ProfileLimitExceededException e) {
+            log.warn("Profile creation blocked by tier limit: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error(403, e.getMessage()));
         } catch (Exception e) {
             log.error("Failed to create profile", e);
-            return ApiResponse.error(500, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(500, e.getMessage()));
         }
     }
 

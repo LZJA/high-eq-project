@@ -19,6 +19,7 @@ import { useLocation } from "wouter";
 import { PRICING_PLANS } from "@/data/pricingPlans";
 import { analytics } from "@/lib/analytics";
 import { toast } from "sonner";
+import ContactSidebar from "@/components/ContactSidebar";
 
 const ROLE_OPTIONS = [
   { value: "同事", emoji: "💼", color: "from-blue-500 to-blue-600" },
@@ -91,6 +92,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950">
+      <ContactSidebar />
       {/* Navigation */}
       <nav className="fixed top-0 w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md z-50 border-b border-gray-200 dark:border-gray-800">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">

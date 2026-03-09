@@ -17,8 +17,8 @@ export const PRICING_PLANS: PricingPlan[] = [
     description: "适合第一次体验 HighEQ 的用户",
     features: [
       "每日 5 次回复生成",
+      "仅 1 个人物档案",
       "仅普通模型可用",
-      "历史记录与收藏功能",
     ],
     ctaLabel: "免费开始使用",
   },
@@ -29,8 +29,8 @@ export const PRICING_PLANS: PricingPlan[] = [
     description: "适合中频使用的用户",
     features: [
       "每日 50 次回复生成",
+      "最多 10 个人物档案",
       "普通模型 + 高级模型",
-      "历史记录与收藏功能",
     ],
     ctaLabel: "升级 Lite",
   },
@@ -42,8 +42,8 @@ export const PRICING_PLANS: PricingPlan[] = [
     badge: "推荐",
     features: [
       "无限次数回复生成",
+      "无限人物档案",
       "全部模型可用（含专业模型）",
-      "历史记录与收藏功能",
     ],
     ctaLabel: "升级 Pro",
     emphasis: true,

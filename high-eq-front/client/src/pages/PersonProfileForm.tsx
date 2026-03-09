@@ -110,7 +110,7 @@ export default function PersonProfileForm({ profileId }: PersonProfileFormProps)
         setLocation("/profiles");
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "保存失败");
+      toast.error(error.response?.data?.message || error.message || "保存失败");
     } finally {
       setIsSaving(false);
     }

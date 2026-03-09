@@ -9,10 +9,14 @@ import com.highiq.dto.SuggestionDTO;
 import com.highiq.entity.PersonProfile;
 import com.highiq.entity.ProfileChatHistory;
 import com.highiq.entity.ProfileReplySuggestion;
+import com.highiq.entity.User;
+import com.highiq.enums.SubscriptionTier;
+import com.highiq.exception.ProfileLimitExceededException;
 import com.highiq.mapper.HistoryMapper;
 import com.highiq.mapper.PersonProfileMapper;
 import com.highiq.mapper.ProfileChatHistoryMapper;
 import com.highiq.mapper.ProfileReplySuggestionMapper;
+import com.highiq.mapper.UserMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,20 +34,25 @@ public class PersonProfileService extends ServiceImpl<PersonProfileMapper, Perso
 
     @SuppressWarnings("unused")
     private final HistoryMapper historyMapper;
+    private final UserMapper userMapper;
     private final ProfileChatHistoryMapper profileChatHistoryMapper;
     private final ProfileReplySuggestionMapper profileReplySuggestionMapper;
 
     public PersonProfileService(
             HistoryMapper historyMapper,
+            UserMapper userMapper,
             ProfileChatHistoryMapper profileChatHistoryMapper,
             ProfileReplySuggestionMapper profileReplySuggestionMapper) {
         this.historyMapper = historyMapper;
+        this.userMapper = userMapper;
         this.profileChatHistoryMapper = profileChatHistoryMapper;
         this.profileReplySuggestionMapper = profileReplySuggestionMapper;
     }
 
     @Transactional
     public PersonProfileDTO createProfile(String userId, PersonProfileDTO request) {
+        validateProfileCreationLimit(userId);
+
         PersonProfile profile = PersonProfile.builder()
                 .userId(userId)
                 .name(request.getName())
@@ -64,6 +73,36 @@ public class PersonProfileService extends ServiceImpl<PersonProfileMapper, Perso
         baseMapper.insert(profile);
         log.info("Created person profile: {} for user: {}", profile.getId(), userId);
         return convertToDTO(profile);
+    }
+
+    private void validateProfileCreationLimit(String userId) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+
+        SubscriptionTier tier = SubscriptionTier.fromCode(user.getSubscriptionTier());
+        int maxProfiles = switch (tier) {
+            case FREE -> 1;
+            case LITE -> 10;
+            case PRO -> -1;
+        };
+
+        if (maxProfiles == -1) {
+            return;
+        }
+
+        QueryWrapper<PersonProfile> wrapper = new QueryWrapper<>();
+        wrapper.eq("user_id", userId).eq("status", 1);
+        Long profileCount = baseMapper.selectCount(wrapper);
+        if (profileCount != null && profileCount >= maxProfiles) {
+            String message = switch (tier) {
+                case FREE -> "免费版最多只能创建1个人物档案，请升级到Lite或PRO";
+                case LITE -> "Lite版最多只能创建10个人物档案，请升级到PRO";
+                case PRO -> "人物档案数量已达上限";
+            };
+            throw new ProfileLimitExceededException(message);
+        }
     }
 
     public List<PersonProfileDTO> getUserProfiles(String userId) {

@@ -254,10 +254,10 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">
-                  你的真实意图 <span className="text-destructive">*</span>
+                  您的真实意图 <span className="text-destructive">*</span>
                 </label>
                 <Textarea
-                  placeholder="描述你想达到的目标..."
+                  placeholder="描述您想要达到的目的，比如：委婉拒绝、表达感谢、缓和气氛..."
                   value={userIntent}
                   onChange={(e) => setUserIntent(e.target.value)}
                   rows={2}
