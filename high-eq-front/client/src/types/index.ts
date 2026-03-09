@@ -10,6 +10,9 @@ export interface QuotaStatus {
   isUnlimited: boolean;
   resetDate: string | null;
   availableModels: string[];
+  subscriptionEndTime: string | null;
+  subscriptionRemainingSeconds: number | null;
+  subscriptionExpired: boolean;
 }
 
 // 人物档案

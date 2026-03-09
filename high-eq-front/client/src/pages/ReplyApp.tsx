@@ -322,9 +322,9 @@ export default function ReplyApp() {
                   <div className="hidden sm:block">
                     <QuotaIndicator overrideRemainingQuota={remainingQuota} />
                   </div>
-                  {user?.username && (
+                  {/* {user?.username && (
                     <Badge variant="outline" className="hidden sm:inline-flex">当前用户：{user.username}</Badge>
-                  )}
+                  )} */}
                 </div>
               </div>
               <div className="sm:hidden mt-3">

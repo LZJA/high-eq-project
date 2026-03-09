@@ -4,12 +4,14 @@ import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * 高情商回复生成助手 - 后端应用启动类
  */
 @SpringBootApplication
 @EnableAsync
+@EnableScheduling
 public class HighEqApplication {
 
     public static void main(String[] args) {

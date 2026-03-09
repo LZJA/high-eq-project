@@ -2,8 +2,10 @@ package com.highiq.controller;
 
 import com.highiq.dto.ApiResponse;
 import com.highiq.dto.QuotaStatusDTO;
+import com.highiq.dto.UpgradeSubscriptionRequest;
 import com.highiq.service.QuotaService;
 import com.highiq.util.JwtUtil;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,6 +39,23 @@ public class QuotaController {
         } catch (Exception e) {
             log.error("Failed to get quota status", e);
             return ApiResponse.error(500, e.getMessage());
+        }
+    }
+
+    /**
+     * 升级订阅（支付成功后调用）
+     */
+    @PostMapping("/upgrade")
+    public ApiResponse<QuotaStatusDTO> upgradeSubscription(
+            @Valid @RequestBody UpgradeSubscriptionRequest request,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            String userId = extractUserId(authHeader);
+            QuotaStatusDTO status = quotaService.upgradeSubscription(userId, request.getTargetTier(), request.getDurationMonths());
+            return ApiResponse.success("升级成功", status);
+        } catch (Exception e) {
+            log.error("Failed to upgrade subscription", e);
+            return ApiResponse.error(400, e.getMessage());
         }
     }
 

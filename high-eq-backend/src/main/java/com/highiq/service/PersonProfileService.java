@@ -29,22 +29,24 @@ import java.util.stream.Collectors;
 @Service
 public class PersonProfileService extends ServiceImpl<PersonProfileMapper, PersonProfile> {
 
-    private static final DateTimeFormatter HISTORY_TIME_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+    private static final DateTimeFormatter HISTORY_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     @SuppressWarnings("unused")
     private final HistoryMapper historyMapper;
     private final UserMapper userMapper;
+    private final QuotaService quotaService;
     private final ProfileChatHistoryMapper profileChatHistoryMapper;
     private final ProfileReplySuggestionMapper profileReplySuggestionMapper;
 
     public PersonProfileService(
             HistoryMapper historyMapper,
             UserMapper userMapper,
+            QuotaService quotaService,
             ProfileChatHistoryMapper profileChatHistoryMapper,
             ProfileReplySuggestionMapper profileReplySuggestionMapper) {
         this.historyMapper = historyMapper;
         this.userMapper = userMapper;
+        this.quotaService = quotaService;
         this.profileChatHistoryMapper = profileChatHistoryMapper;
         this.profileReplySuggestionMapper = profileReplySuggestionMapper;
     }
@@ -81,6 +83,7 @@ public class PersonProfileService extends ServiceImpl<PersonProfileMapper, Perso
             throw new RuntimeException("用户不存在");
         }
 
+        user = quotaService.ensureSubscriptionValid(user);
         SubscriptionTier tier = SubscriptionTier.fromCode(user.getSubscriptionTier());
         int maxProfiles = switch (tier) {
             case FREE -> 1;

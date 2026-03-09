@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 export function QuotaIndicator({ overrideRemainingQuota }: { overrideRemainingQuota?: number } = {}) {
   const { quota, isLoading, tier, remainingQuota: hookRemainingQuota, isUnlimited } = useQuota();
   const remainingQuota = overrideRemainingQuota ?? hookRemainingQuota;
+  const subscriptionRemainingText = formatSubscriptionRemaining(quota?.subscriptionRemainingSeconds);
 
   const handleUpgradeClick = async () => {
     const targetTier = tier === 'free' ? 'lite' : 'pro';
@@ -32,16 +33,20 @@ export function QuotaIndicator({ overrideRemainingQuota }: { overrideRemainingQu
     return null;
   }
 
-  // PRO 用户显示无限徽章
   if (isUnlimited) {
     return (
-      <Badge
-        variant="default"
-        className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0"
-      >
-        <Crown className="size-3 mr-1" />
-        PRO 无限次数
-      </Badge>
+      <div className="flex items-center gap-2">
+        <Badge
+          variant="default"
+          className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0"
+        >
+          <Crown className="size-3 mr-1" />
+          PRO 无限次数
+        </Badge>
+        {subscriptionRemainingText && (
+          <span className="text-xs text-muted-foreground">到期剩余: {subscriptionRemainingText}</span>
+        )}
+      </div>
     );
   }
 
@@ -53,7 +58,7 @@ export function QuotaIndicator({ overrideRemainingQuota }: { overrideRemainingQu
   const isExhausted = remainingQuota <= 0;
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3 flex-wrap">
       <div className="flex items-center gap-2">
         <Zap className={`size-4 ${isExhausted ? 'text-destructive' : isLow ? 'text-amber-500' : 'text-muted-foreground'}`} />
         <span className={`text-sm ${isExhausted ? 'text-destructive font-medium' : ''}`}>
@@ -69,6 +74,9 @@ export function QuotaIndicator({ overrideRemainingQuota }: { overrideRemainingQu
           升级 {tier === 'free' ? 'Lite' : 'PRO'}
         </Button>
       )}
+      {subscriptionRemainingText && (
+        <span className="text-xs text-muted-foreground">到期剩余: {subscriptionRemainingText}</span>
+      )}
     </div>
   );
 }
@@ -78,6 +86,7 @@ export function QuotaIndicator({ overrideRemainingQuota }: { overrideRemainingQu
  */
 export function QuotaIndicatorCompact() {
   const { quota, isLoading, isUnlimited, remainingQuota } = useQuota();
+  const subscriptionRemainingText = formatSubscriptionRemaining(quota?.subscriptionRemainingSeconds);
 
   if (isLoading || !quota) {
     return null;
@@ -85,25 +94,53 @@ export function QuotaIndicatorCompact() {
 
   if (isUnlimited) {
     return (
-      <Badge
-        variant="default"
-        className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 text-xs"
-      >
-        <Crown className="size-3 mr-1" />
-        PRO
-      </Badge>
+      <div className="flex items-center gap-2">
+        <Badge
+          variant="default"
+          className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 text-xs"
+        >
+          <Crown className="size-3 mr-1" />
+          PRO
+        </Badge>
+        {subscriptionRemainingText && (
+          <span className="text-[11px] text-muted-foreground">{subscriptionRemainingText}</span>
+        )}
+      </div>
     );
   }
 
   const isLow = remainingQuota <= 1;
 
   return (
-    <Badge
-      variant={isLow ? "destructive" : "secondary"}
-      className="text-xs"
-    >
-      <Zap className="size-3 mr-1" />
-      {remainingQuota}/{quota.dailyQuota}
-    </Badge>
+    <div className="flex items-center gap-2">
+      <Badge
+        variant={isLow ? 'destructive' : 'secondary'}
+        className="text-xs"
+      >
+        <Zap className="size-3 mr-1" />
+        {remainingQuota}/{quota.dailyQuota}
+      </Badge>
+      {subscriptionRemainingText && (
+        <span className="text-[11px] text-muted-foreground">{subscriptionRemainingText}</span>
+      )}
+    </div>
   );
+}
+
+function formatSubscriptionRemaining(seconds?: number | null): string | null {
+  if (seconds == null || seconds <= 0) {
+    return null;
+  }
+
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+
+  if (days > 0) {
+    return `${days}天${hours}小时`;
+  }
+  if (hours > 0) {
+    return `${hours}小时${minutes}分钟`;
+  }
+  return `${Math.max(1, minutes)}分钟`;
 }

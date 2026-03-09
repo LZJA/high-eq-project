@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * 配额状态 DTO
@@ -50,4 +51,19 @@ public class QuotaStatusDTO {
      * 可用的模型列表
      */
     private String[] availableModels;
+
+    /**
+     * 订阅到期时间（免费版为 null）
+     */
+    private LocalDateTime subscriptionEndTime;
+
+    /**
+     * 订阅剩余秒数（免费版为 null）
+     */
+    private Long subscriptionRemainingSeconds;
+
+    /**
+     * 当前订阅是否已过期
+     */
+    private Boolean subscriptionExpired;
 }

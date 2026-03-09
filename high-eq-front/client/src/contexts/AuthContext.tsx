@@ -58,7 +58,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     const token = localStorage.getItem("access_token");
     if (token) {
       // 验证 token 是否有效
-      authAPI.getCurrentUser()
+      authAPI.validateToken()
         .then(() => {
           // token 有效，从 localStorage 中恢复用户信息
           const savedUser = localStorage.getItem("user");

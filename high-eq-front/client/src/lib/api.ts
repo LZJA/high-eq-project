@@ -130,10 +130,10 @@ export const authAPI = {
   },
 
   /**
-   * 获取当前用户信息
+   * 校验 access token 是否有效
    */
-  getCurrentUser: async () => {
-    const response = await apiClient.get('/auth/me');
+  validateToken: async () => {
+    const response = await apiClient.get('/auth/token/validate');
     return response.data;
   },
 };
@@ -218,6 +218,14 @@ export const quotaAPI = {
    */
   getQuotaStatus: async () => {
     const response = await apiClient.get('/quota/status');
+    return response.data;
+  },
+
+  /**
+   * 升级订阅（支付成功后调用）
+   */
+  upgradeSubscription: async (data: { targetTier: 'lite' | 'pro'; durationMonths?: number }) => {
+    const response = await apiClient.post('/quota/upgrade', data);
     return response.data;
   },
 };

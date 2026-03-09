@@ -18,13 +18,13 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/auth")
 @CrossOrigin(origins = "*", maxAge = 3600)
 public class AuthController {
-    
+
     private final UserService userService;
-    
+
     public AuthController(UserService userService) {
         this.userService = userService;
     }
-    
+
     /**
      * 用户注册
      */
@@ -38,7 +38,7 @@ public class AuthController {
             return ApiResponse.error(400, e.getMessage());
         }
     }
-    
+
     /**
      * 用户登录
      */
@@ -52,7 +52,7 @@ public class AuthController {
             return ApiResponse.error(401, e.getMessage());
         }
     }
-    
+
     /**
      * 刷新 Token
      */
@@ -67,19 +67,29 @@ public class AuthController {
             return ApiResponse.error(401, e.getMessage());
         }
     }
-    
+
     /**
-     * 获取当前用户信息
+     * 校验 access token 是否有效
      */
-    @GetMapping("/me")
-    public ApiResponse<UserDTO> getCurrentUser(@RequestHeader("Authorization") String authHeader) {
+    @GetMapping("/token/validate")
+    public ApiResponse<Void> validateToken(@RequestHeader("Authorization") String authHeader) {
         try {
             String token = authHeader.replace("Bearer ", "");
-            // 这里需要从 token 中提取用户 ID，实际应用中应该使用 Spring Security 的 SecurityContext
-            return ApiResponse.success("获取成功", null);
+            if (token.isBlank()) {
+                return ApiResponse.error(401, "Token 无效");
+            }
+            return ApiResponse.success("Token 有效", null);
         } catch (Exception e) {
-            log.error("Get current user failed", e);
+            log.error("Validate token failed", e);
             return ApiResponse.error(401, e.getMessage());
         }
+    }
+
+    /**
+     * 兼容旧接口：仅校验 token，不返回用户信息
+     */
+    @GetMapping("/me")
+    public ApiResponse<Void> getCurrentUser(@RequestHeader("Authorization") String authHeader) {
+        return validateToken(authHeader);
     }
 }
