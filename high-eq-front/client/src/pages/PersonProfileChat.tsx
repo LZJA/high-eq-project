@@ -298,43 +298,51 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
                 />
                 {(supportsImage || !!chatImage) && (
                   <div className="flex items-center gap-2">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      id="profile-image-upload"
-                      disabled={isGenerating || isUploadingImage}
-                    />
-                    <label htmlFor="profile-image-upload">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={isGenerating || isUploadingImage}
-                        asChild
-                      >
-                        <span className="cursor-pointer">
-                          <Upload className="h-4 w-4 mr-2" />
-                          {isUploadingImage ? "图片上传中..." : "上传聊天截图"}
-                        </span>
-                      </Button>
-                    </label>
+                    {!chatImage && (
+                      <>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                          id="profile-image-upload"
+                          disabled={isGenerating || isUploadingImage}
+                        />
+                        <label htmlFor="profile-image-upload" className="flex-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={isGenerating || isUploadingImage}
+                            className="w-full"
+                            asChild
+                          >
+                            <span className="cursor-pointer">
+                              <Upload className="h-4 w-4 mr-2" />
+                              {isUploadingImage ? "图片上传中..." : "上传聊天截图"}
+                            </span>
+                          </Button>
+                        </label>
+                      </>
+                    )}
                     {chatImage && (
                       <div className="relative inline-block">
                         <img
                           src={chatImage}
                           alt="聊天截图"
-                          className="h-16 w-16 object-cover rounded cursor-pointer hover:opacity-80"
+                          className="h-20 w-20 object-cover rounded border cursor-pointer hover:opacity-80"
                           onClick={() => setPreviewImage(chatImage)}
                         />
-                        <button
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon-sm"
+                          className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
                           onClick={handleRemoveImage}
-                          className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1"
                           disabled={isGenerating || isUploadingImage}
                         >
-                          <X className="h-3 w-3" />
-                        </button>
+                          <X className="w-4 h-4" />
+                        </Button>
                       </div>
                     )}
                   </div>

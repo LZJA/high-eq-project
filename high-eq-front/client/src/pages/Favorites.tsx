@@ -24,6 +24,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { ArrowLeft, Clock, Copy, Heart, Trash2, User } from "lucide-react";
 import { AppNav } from "@/components/AppNav";
+import { ImagePreview } from "@/components/ImagePreview";
 
 interface FavoriteSuggestion {
   id: string;
@@ -36,6 +37,7 @@ interface FavoriteItem {
   id: string;
   personProfileId?: string | null;
   chatContent: string;
+  chatImage?: string;
   roleBackground: string;
   userIntent: string;
   createTime: string;
@@ -53,6 +55,7 @@ export default function Favorites() {
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [profileSummaryMap, setProfileSummaryMap] = useState<Record<string, ProfileSummary>>({});
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
     loadFavorites();
@@ -209,7 +212,15 @@ export default function Favorites() {
                           </span>
                         </div>
                       )}
-                      <CardDescription className="line-clamp-2">{item.chatContent}</CardDescription>
+                      {item.chatImage && (
+                        <img
+                          src={item.chatImage}
+                          alt="聊天截图"
+                          className="w-16 h-16 object-cover rounded mb-2 cursor-pointer"
+                          onClick={() => setPreviewImage(item.chatImage!)}
+                        />
+                      )}
+                      <CardDescription className="line-clamp-2">{item.chatContent || "（图片内容）"}</CardDescription>
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0">
@@ -259,13 +270,25 @@ export default function Favorites() {
 
                 {expandedId === item.id && (
                   <CardContent className="space-y-4 pt-0">
+                    {item.chatImage && (
+                      <div>
+                        <h4 className="text-sm font-medium mb-2">聊天截图</h4>
+                        <img
+                          src={item.chatImage}
+                          alt="聊天截图"
+                          className="w-32 h-32 object-cover rounded cursor-pointer"
+                          onClick={() => setPreviewImage(item.chatImage!)}
+                        />
+                      </div>
+                    )}
+
                     <div>
                       <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
                         <User className="size-4" />
                         对方聊天内容
                       </h4>
                       <div className="bg-muted/50 rounded-md p-3 text-sm whitespace-pre-wrap">
-                        {item.chatContent}
+                        {item.chatContent || "（图片内容）"}
                       </div>
                     </div>
 
@@ -322,6 +345,12 @@ export default function Favorites() {
           </div>
         )}
       </div>
+
+      <ImagePreview
+        src={previewImage}
+        open={!!previewImage}
+        onOpenChange={(open) => !open && setPreviewImage(null)}
+      />
     </div>
   );
 }

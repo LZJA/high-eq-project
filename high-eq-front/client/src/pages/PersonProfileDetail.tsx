@@ -35,6 +35,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ImagePreview } from "@/components/ImagePreview";
 
 interface PersonProfileDetailProps {
   profileId: string;
@@ -54,6 +55,7 @@ interface HistoryItem {
   userIntent: string;
   createTime: string;
   isFavorite: boolean;
+  chatImage?: string;
 }
 
 interface HistoryDetail extends HistoryItem {
@@ -69,11 +71,12 @@ export default function PersonProfileDetail({ profileId }: PersonProfileDetailPr
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalHistory, setTotalHistory] = useState(0);
-  const [pageSize] = useState(10);
+  const [pageSize] = useState(5);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [selectedHistory, setSelectedHistory] = useState<HistoryDetail | null>(null);
   const [isHistoryDetailOpen, setIsHistoryDetailOpen] = useState(false);
   const [isHistoryDetailLoading, setIsHistoryDetailLoading] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -297,8 +300,19 @@ export default function PersonProfileDetail({ profileId }: PersonProfileDetailPr
                     <CardContent className="pt-4">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="flex-1 min-w-0">
+                          {item.chatImage && (
+                            <img
+                              src={item.chatImage}
+                              alt="聊天截图"
+                              className="w-16 h-16 object-cover rounded mb-2 cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPreviewImage(item.chatImage!);
+                              }}
+                            />
+                          )}
                           <p className="text-sm text-muted-foreground line-clamp-1">
-                            {item.chatContent}
+                            {item.chatContent || "（图片内容）"}
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">{item.createTime}</p>
                         </div>
@@ -411,10 +425,22 @@ export default function PersonProfileDetail({ profileId }: PersonProfileDetailPr
                 </Button>
               </div>
 
+              {selectedHistory.chatImage && (
+                <div>
+                  <p className="text-sm font-medium mb-2">聊天截图</p>
+                  <img
+                    src={selectedHistory.chatImage}
+                    alt="聊天截图"
+                    className="w-32 h-32 object-cover rounded border cursor-pointer hover:opacity-80"
+                    onClick={() => setPreviewImage(selectedHistory.chatImage!)}
+                  />
+                </div>
+              )}
+
               <div>
                 <p className="text-sm font-medium mb-2">对方聊天内容</p>
                 <div className="bg-muted/50 rounded-md p-3 text-sm whitespace-pre-wrap">
-                  {selectedHistory.chatContent}
+                  {selectedHistory.chatContent || "（图片内容）"}
                 </div>
               </div>
 
@@ -448,6 +474,12 @@ export default function PersonProfileDetail({ profileId }: PersonProfileDetailPr
           )}
         </DialogContent>
       </Dialog>
+
+      <ImagePreview
+        src={previewImage}
+        open={!!previewImage}
+        onOpenChange={(open) => !open && setPreviewImage(null)}
+      />
     </div>
   );
 }

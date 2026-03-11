@@ -34,10 +34,12 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { ImagePreview } from "@/components/ImagePreview";
 
 interface HistoryItem {
   id: string;
   chatContent: string;
+  chatImage?: string;
   roleBackground: string;
   userIntent: string;
   createTime: string;
@@ -47,6 +49,7 @@ interface HistoryItem {
 interface HistoryDetail {
   id: string;
   chatContent: string;
+  chatImage?: string;
   roleBackground: string;
   userIntent: string;
   suggestions: Array<{
@@ -67,8 +70,9 @@ export default function History() {
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [pageSize] = useState(10);
+  const [pageSize] = useState(5);
   const [total, setTotal] = useState(0);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
     loadHistory();
@@ -244,8 +248,19 @@ export default function History() {
                             </AlertDialog>
                           </div>
                         </div>
+                        {item.chatImage && (
+                          <img
+                            src={item.chatImage}
+                            alt="聊天截图"
+                            className="w-16 h-16 object-cover rounded mb-2 cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreviewImage(item.chatImage!);
+                            }}
+                          />
+                        )}
                         <p className="text-sm text-muted-foreground line-clamp-2">
-                          {item.chatContent}
+                          {item.chatContent || "（图片内容）"}
                         </p>
                         <p className="text-xs text-muted-foreground mt-2">
                           {formatDate(item.createTime)}
@@ -346,6 +361,19 @@ export default function History() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  {/* 聊天截图 */}
+                  {selectedHistory.chatImage && (
+                    <div>
+                      <h3 className="text-sm font-medium mb-2">聊天截图</h3>
+                      <img
+                        src={selectedHistory.chatImage}
+                        alt="聊天截图"
+                        className="w-32 h-32 object-cover rounded cursor-pointer"
+                        onClick={() => setPreviewImage(selectedHistory.chatImage!)}
+                      />
+                    </div>
+                  )}
+
                   {/* 对方聊天内容 */}
                   <div>
                     <h3 className="text-sm font-medium mb-2 flex items-center gap-2">
@@ -353,7 +381,7 @@ export default function History() {
                       对方聊天内容
                     </h3>
                     <div className="bg-muted/50 rounded-md p-3 text-sm">
-                      {selectedHistory.chatContent}
+                      {selectedHistory.chatContent || "（图片内容）"}
                     </div>
                   </div>
 
@@ -410,6 +438,12 @@ export default function History() {
           </div>
         </div>
       </div>
+
+      <ImagePreview
+        src={previewImage}
+        open={!!previewImage}
+        onOpenChange={(open) => !open && setPreviewImage(null)}
+      />
     </div>
   );
 }
