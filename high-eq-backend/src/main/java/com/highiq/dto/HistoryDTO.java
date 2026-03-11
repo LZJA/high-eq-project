@@ -33,6 +33,8 @@ public class HistoryDTO {
 
     private String tone;  // 语气/风格
 
+    private String chatImage;  // 聊天截图
+
     private Boolean isFavorite;
 
     private String createTime;  // 格式化后的时间字符串

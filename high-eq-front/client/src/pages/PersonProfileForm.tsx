@@ -60,15 +60,7 @@ export default function PersonProfileForm({ profileId }: PersonProfileFormProps)
       setOccupation(profile.occupation || "");
       setZodiacSign(profile.zodiacSign || "");
       setChineseZodiac(profile.chineseZodiac || "");
-      // hobbies 可能是 JSON 字符串或数组
-      if (profile.hobbies) {
-        try {
-          const parsed = JSON.parse(profile.hobbies);
-          setHobbies(Array.isArray(parsed) ? parsed.join(", ") : profile.hobbies);
-        } catch {
-          setHobbies(profile.hobbies);
-        }
-      }
+      setHobbies(profile.hobbies || "");
       setRelationship(profile.relationship || "");
       setNotes(profile.notes || "");
     } catch (error) {
@@ -95,7 +87,7 @@ export default function PersonProfileForm({ profileId }: PersonProfileFormProps)
         occupation: occupation.trim() || undefined,
         zodiacSign: zodiacSign || undefined,
         chineseZodiac: chineseZodiac || undefined,
-        hobbies: hobbies.trim() ? JSON.stringify(hobbies.split(",").map((h) => h.trim())) : undefined,
+        hobbies: hobbies.trim() || undefined,
         relationship: relationship || undefined,
         notes: notes.trim() || undefined,
       };
@@ -319,3 +311,4 @@ export default function PersonProfileForm({ profileId }: PersonProfileFormProps)
     </div>
   );
 }
+

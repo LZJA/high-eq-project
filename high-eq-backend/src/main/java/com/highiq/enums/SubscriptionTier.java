@@ -8,8 +8,8 @@ import lombok.Getter;
 @Getter
 public enum SubscriptionTier {
     FREE("free", 5, new String[]{"deepseek-chat"}),
-    LITE("lite", 50, new String[]{"deepseek-chat", "gpt-4"}),
-    PRO("pro", -1, new String[]{"deepseek-chat", "gpt-4", "gpt-4-turbo", "claude-3"});
+    LITE("lite", 50, new String[]{"deepseek-chat", "qwen-vl-plus"}),
+    PRO("pro", -1, new String[]{"deepseek-chat", "qwen-vl-plus", "doubao-seed-1-8-251228"});
 
     private final String code;
     private final int dailyQuota;  // -1 表示无限制

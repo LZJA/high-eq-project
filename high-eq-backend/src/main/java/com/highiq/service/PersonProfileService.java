@@ -295,6 +295,7 @@ public class PersonProfileService extends ServiceImpl<PersonProfileMapper, Perso
                 .userIntent(history.getUserIntent())
                 .modelUsed(history.getModelUsed())
                 .tone(history.getTone())
+                .chatImage(history.getChatImage())
                 .isFavorite(history.getIsFavorite() != null && history.getIsFavorite() == 1)
                 .createTime(history.getCreateTime() != null ? history.getCreateTime().format(HISTORY_TIME_FORMATTER) : null)
                 .suggestions(suggestions)

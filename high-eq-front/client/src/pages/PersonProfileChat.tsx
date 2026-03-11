@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { profileAPI, replyAPI } from "@/lib/api";
-import { PersonProfile } from "@/types";
+import { AI_MODELS, PersonProfile } from "@/types";
 import { AppNav } from "@/components/AppNav";
 import { QuotaIndicator } from "@/components/QuotaIndicator";
 import { ModelSelector } from "@/components/ModelSelector";
@@ -19,7 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Copy, Heart, MessageCircle, User, Wand2 } from "lucide-react";
+import { ArrowLeft, Copy, Heart, MessageCircle, User, Wand2, Upload, X } from "lucide-react";
+import { ImagePreview } from "@/components/ImagePreview";
+import { uploadChatImageToOss } from "@/lib/oss";
 
 interface PersonProfileChatProps {
   profileId: string;
@@ -54,10 +56,22 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
   const [suggestions, setSuggestions] = useState<ReplySuggestion[]>([]);
   const [generatedHistoryId, setGeneratedHistoryId] = useState<string | null>(null);
   const [isGeneratedFavorite, setIsGeneratedFavorite] = useState(false);
+  const [chatImage, setChatImage] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  const selectedModel = AI_MODELS.find((m) => m.value === modelPreference);
+  const supportsImage = selectedModel?.supportsImage || false;
 
   useEffect(() => {
     loadProfile();
   }, [profileId]);
+
+  useEffect(() => {
+    if (!supportsImage && chatImage) {
+      setChatImage(null);
+    }
+  }, [supportsImage, chatImage]);
 
   const loadProfile = async () => {
     try {
@@ -80,24 +94,54 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
     if (profile.age) parts.push(`${profile.age}岁`);
     if (profile.occupation) parts.push(profile.occupation);
     if (profile.personality) parts.push(`性格：${profile.personality}`);
-
-    const hobbies = Array.isArray(profile.hobbies) ? profile.hobbies :
-                    (typeof profile.hobbies === 'string' ? JSON.parse(profile.hobbies || '[]') : []);
-    if (hobbies.length > 0) parts.push(`兴趣：${hobbies.join('、')}`);
-
+    if (profile.hobbies) parts.push(`兴趣爱好：${profile.hobbies}`);
     if (profile.zodiacSign) parts.push(profile.zodiacSign);
-    if (profile.chineseZodiac) parts.push(`属${profile.chineseZodiac}`);
+    if (profile.chineseZodiac) parts.push(`${profile.chineseZodiac}`);
 
     return parts.join("，");
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error("请上传图片文件");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("图片大小不能超过5MB");
+      return;
+    }
+    setIsUploadingImage(true);
+    uploadChatImageToOss(file)
+      .then((publicUrl: string) => {
+        setChatImage(publicUrl);
+        toast.success("图片上传成功");
+      })
+      .catch((error: any) => {
+        toast.error(error?.message || "图片上传失败");
+      })
+      .finally(() => {
+        setIsUploadingImage(false);
+        e.target.value = "";
+      });
+  };
+
+  const handleRemoveImage = () => {
+    setChatImage(null);
+  };
+
   const handleGenerate = async () => {
-    if (!chatContent.trim()) {
-      toast.error("请输入对方聊天内容");
+    if (!chatContent.trim() && !chatImage) {
+      toast.error("请输入对方聊天内容或上传聊天截图");
+      return;
+    }
+    if (isUploadingImage) {
+      toast.error("图片上传中，请稍后再试");
       return;
     }
     if (!userIntent.trim()) {
-      toast.error("请输入你的真实意图");
+      toast.error("请输入您的真实意图");
       return;
     }
     if (!isUnlimited && remainingQuota <= 0) {
@@ -118,6 +162,7 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
         modelPreference,
         tone,
         personProfileId: profileId,
+        chatImage,
       });
 
       setSuggestions(response.data.suggestions || []);
@@ -155,6 +200,7 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
 
   const handleReset = () => {
     setChatContent("");
+    setChatImage(null);
     setUserIntent("");
     setTone("");
     setSuggestions([]);
@@ -236,20 +282,63 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
             <CardContent className="space-y-4">
               <div className="flex items-center gap-2 text-muted-foreground mb-4">
                 <MessageCircle className="size-4" />
-                <span className="text-sm">与 {profile.name} 的对话</span>
+                <span className="text-sm">{profile.name} 的对话</span>
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">
-                  {profile.name} 说的话 <span className="text-destructive">*</span>
+                  {profile.name} 说的话<span className="text-destructive">*</span>
                 </label>
                 <Textarea
                   placeholder={`输入 ${profile.name} 对你说的话...`}
                   value={chatContent}
                   onChange={(e) => setChatContent(e.target.value)}
                   rows={4}
-                  disabled={isGenerating}
+                  disabled={isGenerating || isUploadingImage}
                 />
+                {(supportsImage || !!chatImage) && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      id="profile-image-upload"
+                      disabled={isGenerating || isUploadingImage}
+                    />
+                    <label htmlFor="profile-image-upload">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={isGenerating || isUploadingImage}
+                        asChild
+                      >
+                        <span className="cursor-pointer">
+                          <Upload className="h-4 w-4 mr-2" />
+                          {isUploadingImage ? "图片上传中..." : "上传聊天截图"}
+                        </span>
+                      </Button>
+                    </label>
+                    {chatImage && (
+                      <div className="relative inline-block">
+                        <img
+                          src={chatImage}
+                          alt="聊天截图"
+                          className="h-16 w-16 object-cover rounded cursor-pointer hover:opacity-80"
+                          onClick={() => setPreviewImage(chatImage)}
+                        />
+                        <button
+                          onClick={handleRemoveImage}
+                          className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1"
+                          disabled={isGenerating || isUploadingImage}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -287,23 +376,28 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
                   <ModelSelector
                     value={modelPreference}
                     onChange={setModelPreference}
-                    disabled={isGenerating}
+                    disabled={isGenerating || isUploadingImage}
                   />
                 </div>
               </div>
 
               <div className="flex gap-2">
-                <Button onClick={handleGenerate} disabled={isGenerating} className="flex-1">
+                <Button onClick={handleGenerate} disabled={isGenerating || isUploadingImage} className="flex-1">
                   {isGenerating ? (
                     <>
                       <Spinner className="mr-2" />
                       生成中...
                     </>
+                  ) : isUploadingImage ? (
+                    <>
+                      <Spinner className="mr-2" />
+                      图片上传中...
+                    </>
                   ) : (
                     "生成回复建议"
                   )}
                 </Button>
-                <Button variant="outline" onClick={handleReset} disabled={isGenerating}>
+                <Button variant="outline" onClick={handleReset} disabled={isGenerating || isUploadingImage}>
                   重置
                 </Button>
               </div>
@@ -356,7 +450,7 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
                       <p className="text-base mb-3 whitespace-pre-wrap">{suggestion.content}</p>
                       {suggestion.reason && (
                         <div className="text-sm text-muted-foreground bg-muted/50 rounded-md p-2">
-                          <span className="font-medium">推荐理由：</span>
+                          <span className="font-medium">推荐理由</span>
                           {suggestion.reason}
                         </div>
                       )}
@@ -373,6 +467,8 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
           </div>
         </div>
       </div>
+      <ImagePreview src={previewImage} open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)} />
     </div>
   );
 }
+

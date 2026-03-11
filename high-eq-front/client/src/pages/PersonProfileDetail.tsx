@@ -60,17 +60,6 @@ interface HistoryDetail extends HistoryItem {
   suggestions: HistorySuggestion[];
 }
 
-function parseHobbies(hobbies?: string[] | string): string[] {
-  if (!hobbies) return [];
-  if (Array.isArray(hobbies)) return hobbies;
-
-  try {
-    const parsed = JSON.parse(hobbies);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
 
 export default function PersonProfileDetail({ profileId }: PersonProfileDetailProps) {
   const [, setLocation] = useLocation();
@@ -185,7 +174,6 @@ export default function PersonProfileDetail({ profileId }: PersonProfileDetailPr
     return null;
   }
 
-  const hobbies = parseHobbies(profile.hobbies);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -272,16 +260,10 @@ export default function PersonProfileDetail({ profileId }: PersonProfileDetailPr
                   </div>
                 )}
 
-                {hobbies.length > 0 && (
+                {profile.hobbies && (
                   <div>
                     <p className="text-sm text-muted-foreground">兴趣爱好</p>
-                    <div className="flex flex-wrap gap-2 mt-1">
-                      {hobbies.map((hobby) => (
-                        <Badge key={hobby} variant="outline">
-                          {hobby}
-                        </Badge>
-                      ))}
-                    </div>
+                    <p className="font-medium mt-1">{profile.hobbies}</p>
                   </div>
                 )}
 
@@ -469,3 +451,4 @@ export default function PersonProfileDetail({ profileId }: PersonProfileDetailPr
     </div>
   );
 }
+

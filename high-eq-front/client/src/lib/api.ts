@@ -2,13 +2,13 @@ import axios, { AxiosInstance } from 'axios';
 
 // API 基础 URL
 // 开发环境：使用 Vite 代理 /api
-// 生产环境：使用环境变量 VITE_API_URL 或相对路径
+// 生产环境：使用环境变�?VITE_API_URL 或相对路�?
 const API_BASE_URL = import.meta.env.MODE === 'development'
   ? '/api'
   : (import.meta.env.VITE_API_URL || '/api');
 
 /**
- * API 客户端配置
+ * API 客户端配�?
  */
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -19,7 +19,7 @@ const apiClient: AxiosInstance = axios.create({
 });
 
 /**
- * 请求拦截器 - 添加 JWT Token
+ * 请求拦截�?- 添加 JWT Token
  */
 apiClient.interceptors.request.use(
   (config) => {
@@ -35,14 +35,14 @@ apiClient.interceptors.request.use(
 );
 
 /**
- * 响应拦截器 - 处理 Token 过期和权限错误
+ * 响应拦截�?- 处理 Token 过期和权限错�?
  */
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // 处理 401 (未授权) 和 403 (禁止访问) 错误
+    // 处理 401 (未授�? �?403 (禁止访问) 错误
     if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
       originalRequest._retry = true;
 
@@ -64,7 +64,7 @@ apiClient.interceptors.response.use(
           return apiClient(originalRequest);
         }
       } catch (refreshError) {
-        // 刷新失败，清除所有认证信息并跳转登录页
+        // 刷新失败，清除所有认证信息并跳转登录�?
         clearAuthData();
         window.location.href = '/login';
       }
@@ -82,10 +82,10 @@ function clearAuthData() {
   localStorage.removeItem('refresh_token');
   localStorage.removeItem('user');
 
-  // 触发自定义事件，通知 AuthContext 清除用户状态
+  // 触发自定义事件，通知 AuthContext 清除用户状�?
   window.dispatchEvent(new Event('auth_logout'));
 
-  // 延迟跳转，确保 AuthContext 先更新状态
+  // 延迟跳转，确�?AuthContext 先更新状�?
   setTimeout(() => {
     window.location.href = '/login';
   }, 100);
@@ -143,10 +143,11 @@ export const authAPI = {
  */
 export const replyAPI = {
   /**
-   * 生成高情商回复
+   * 生成高情商回�?
    */
   generateReplies: async (data: {
     chatContent: string;
+    chatImage?: string | null;
     roleBackground: string;
     userIntent: string;
     replyCount?: number;
@@ -177,7 +178,7 @@ export const replyAPI = {
   },
 
   /**
-   * 获取历史记录的回复建议
+   * 获取历史记录的回复建�?
    */
   getHistorySuggestions: async (historyId: string) => {
     const response = await apiClient.get(`/reply/history/${historyId}/suggestions`);
@@ -201,7 +202,7 @@ export const replyAPI = {
   },
 
   /**
-   * 获取收藏的历史记录
+   * 获取收藏的历史记�?
    */
   getFavoriteHistory: async () => {
     const response = await apiClient.get('/reply/history/favorite');
@@ -214,7 +215,7 @@ export const replyAPI = {
  */
 export const quotaAPI = {
   /**
-   * 获取配额状态
+   * 获取配额状�?
    */
   getQuotaStatus: async () => {
     const response = await apiClient.get('/quota/status');
@@ -222,10 +223,16 @@ export const quotaAPI = {
   },
 
   /**
-   * 升级订阅（支付成功后调用）
-   */
+   * 升级订阅（支付成功后调用�?   */
   upgradeSubscription: async (data: { targetTier: 'lite' | 'pro'; durationMonths?: number }) => {
     const response = await apiClient.post('/quota/upgrade', data);
+    return response.data;
+  },
+};
+
+export const ossAPI = {
+  getPresignedUploadUrl: async (data: { fileName: string; contentType: string }) => {
+    const response = await apiClient.post('/oss/presign', data);
     return response.data;
   },
 };
@@ -261,7 +268,7 @@ export const profileAPI = {
     occupation?: string;
     zodiacSign?: string;
     chineseZodiac?: string;
-    hobbies?: string[];
+    hobbies?: string;
     relationship?: string;
     notes?: string;
     avatarUrl?: string;
@@ -281,7 +288,7 @@ export const profileAPI = {
     occupation: string;
     zodiacSign: string;
     chineseZodiac: string;
-    hobbies: string[];
+    hobbies: string;
     relationship: string;
     notes: string;
     avatarUrl: string;
@@ -299,7 +306,7 @@ export const profileAPI = {
   },
 
   /**
-   * 获取人物相关的历史记录
+   * 获取人物相关的历史记�?
    */
   getProfileHistory: async (profileId: string, page: number = 1, size: number = 10) => {
     const response = await apiClient.get(`/profile/${profileId}/history`, {
@@ -334,3 +341,4 @@ export const profileAPI = {
 };
 
 export default apiClient;
+

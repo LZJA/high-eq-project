@@ -26,7 +26,7 @@ export interface PersonProfile {
   occupation?: string;
   zodiacSign?: string;
   chineseZodiac?: string;
-  hobbies?: string[];
+  hobbies?: string;
   relationship?: string;
   notes?: string;
   avatarUrl?: string;
@@ -41,12 +41,13 @@ export interface AiModel {
   label: string;
   tier: SubscriptionTier[];
   description?: string;
+  supportsImage?: boolean;
 }
 
 export const AI_MODELS: AiModel[] = [
   { value: "deepseek-chat", label: "普通模型", tier: ['free', 'lite', 'pro'] },
-  { value: "doubao-chat", label: "高级模型", tier: ['lite', 'pro'], description: "Lite/PRO" },
-  { value: "glm-chat", label: "专业模型", tier: ['pro'], description: "PRO 专属" },
+  { value: "qwen-vl-plus", label: "高级模型（支持截图）", tier: ['lite', 'pro'], description: "Lite/PRO", supportsImage: true },
+  { value: "doubao-seed-1-8-251228", label: "专业模型（支持截图）", tier: ['pro'], description: "PRO 专属", supportsImage: true },
 ];
 
 // 星座

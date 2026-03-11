@@ -20,11 +20,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
-import { Copy, Heart, Wand2 } from "lucide-react";
+import { Copy, Heart, Wand2, Upload, X } from "lucide-react";
+import { AI_MODELS } from "@/types";
 import { AppNav } from "@/components/AppNav";
 import { QuotaIndicator } from "@/components/QuotaIndicator";
 import { ModelSelector } from "@/components/ModelSelector";
 import { useQuota } from "@/hooks/useQuota";
+import { ImagePreview } from "@/components/ImagePreview";
+import { uploadChatImageToOss } from "@/lib/oss";
 
 // 预设角色
 const PRESET_ROLES = [
@@ -59,6 +62,7 @@ export default function ReplyApp() {
   const { remainingQuota: hookRemainingQuota, isUnlimited, tier, refresh: refreshQuota } = useQuota();
   const [isGenerating, setIsGenerating] = useState(false);
   const [chatContent, setChatContent] = useState("");
+  const [chatImage, setChatImage] = useState<string | null>(null);
   const [roleBackground, setRoleBackground] = useState("");
   const [userIntent, setUserIntent] = useState("");
   const [replyCount, setReplyCount] = useState(3);
@@ -68,14 +72,63 @@ export default function ReplyApp() {
   const [currentHistoryId, setCurrentHistoryId] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [remainingQuota, setRemainingQuota] = useState(hookRemainingQuota);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  const selectedModel = AI_MODELS.find(m => m.value === modelPreference);
+  const supportsImage = selectedModel?.supportsImage || false;
 
   useEffect(() => {
     setRemainingQuota(hookRemainingQuota);
   }, [hookRemainingQuota]);
 
+  useEffect(() => {
+    if (!supportsImage && chatImage) {
+      setChatImage(null);
+    }
+  }, [supportsImage, chatImage]);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error("请上传图片文件");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("图片大小不能超过5MB");
+      return;
+    }
+
+    setIsUploadingImage(true);
+    uploadChatImageToOss(file)
+      .then((publicUrl: string) => {
+        console.log(publicUrl);
+        setChatImage(publicUrl);
+        toast.success("图片上传成功");
+      })
+      .catch((error: any) => {
+        toast.error(error?.message || "图片上传失败");
+      })
+      .finally(() => {
+        setIsUploadingImage(false);
+        e.target.value = "";
+      });
+  };
+
+  const handleRemoveImage = () => {
+    setChatImage(null);
+  };
+
   const handleGenerate = async () => {
-    if (!chatContent.trim()) {
-      toast.error("请输入对方聊天内容");
+    if (!chatContent.trim() && !chatImage) {
+      toast.error("请输入对方聊天内容或上传聊天截图");
+      return;
+    }
+    if (isUploadingImage) {
+      toast.error("图片上传中，请稍后再试");
       return;
     }
     if (!roleBackground) {
@@ -100,6 +153,7 @@ export default function ReplyApp() {
     try {
       const response = await replyAPI.generateReplies({
         chatContent,
+        chatImage,
         roleBackground,
         userIntent,
         replyCount,
@@ -147,6 +201,7 @@ export default function ReplyApp() {
 
   const handleReset = () => {
     setChatContent("");
+    setChatImage(null);
     setRoleBackground("");
     setUserIntent("");
     setTone("");
@@ -185,9 +240,57 @@ export default function ReplyApp() {
                   value={chatContent}
                   onChange={(e) => setChatContent(e.target.value)}
                   rows={4}
-                  disabled={isGenerating}
+                  disabled={isGenerating || isUploadingImage}
                   className="resize-none"
                 />
+                {(supportsImage || !!chatImage) && (
+                  <div className="space-y-2">
+                    {!chatImage ? (
+                      <div>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                          id="chat-image-upload"
+                          disabled={isGenerating || isUploadingImage}
+                        />
+                        <label htmlFor="chat-image-upload">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full"
+                            disabled={isGenerating || isUploadingImage}
+                            onClick={() => document.getElementById('chat-image-upload')?.click()}
+                          >
+                            <Upload className="w-4 h-4 mr-2" />
+                            {isUploadingImage ? "图片上传中..." : "或上传聊天截图"}
+                          </Button>
+                        </label>
+                      </div>
+                    ) : (
+                      <div className="relative inline-block">
+                        <img
+                          src={chatImage}
+                          alt="聊天截图"
+                          className="h-20 w-20 object-cover rounded border cursor-pointer hover:opacity-80"
+                          onClick={() => setPreviewImage(chatImage)}
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon-sm"
+                          className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                          onClick={handleRemoveImage}
+                          disabled={isGenerating || isUploadingImage}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* 角色背景 */}
@@ -198,7 +301,7 @@ export default function ReplyApp() {
                 <Select
                   value={roleBackground}
                   onValueChange={setRoleBackground}
-                  disabled={isGenerating}
+                  disabled={isGenerating || isUploadingImage}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="选择对方的角色" />
@@ -234,7 +337,7 @@ export default function ReplyApp() {
                 <Select
                   value={tone}
                   onValueChange={setTone}
-                  disabled={isGenerating}
+                  disabled={isGenerating || isUploadingImage}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="选择回复语气" />
@@ -261,7 +364,7 @@ export default function ReplyApp() {
                   <Select
                     value={replyCount.toString()}
                     onValueChange={(v) => setReplyCount(parseInt(v))}
-                    disabled={isGenerating}
+                    disabled={isGenerating || isUploadingImage}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue />
@@ -288,13 +391,18 @@ export default function ReplyApp() {
               <div className="flex gap-2">
                 <Button
                   onClick={handleGenerate}
-                  disabled={isGenerating}
+                  disabled={isGenerating || isUploadingImage}
                   className="flex-1"
                 >
                   {isGenerating ? (
                     <>
                       <Spinner className="mr-2" />
                       生成中...
+                    </>
+                  ) : isUploadingImage ? (
+                    <>
+                      <Spinner className="mr-2" />
+                      图片上传中...
                     </>
                   ) : (
                     "生成回复建议"
@@ -303,7 +411,7 @@ export default function ReplyApp() {
                 <Button
                   variant="outline"
                   onClick={handleReset}
-                  disabled={isGenerating}
+                  disabled={isGenerating || isUploadingImage}
                 >
                   重置
                 </Button>
@@ -394,6 +502,7 @@ export default function ReplyApp() {
           </div>
         </div>
       </div>
+      <ImagePreview src={previewImage} open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)} />
     </div>
   );
 }

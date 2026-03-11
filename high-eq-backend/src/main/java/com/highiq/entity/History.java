@@ -34,6 +34,8 @@ public class History {
 
     private String tone;  // 语气/风格
 
+    private String chatImage;  // 聊天截图
+
     private String personProfileId;  // 人物档案ID
 
     private Integer status;

@@ -22,6 +22,7 @@ public class ProfileChatHistory {
     private String userIntent;
     private String modelUsed;
     private String tone;
+    private String chatImage;
     private Integer status;
     private Integer isFavorite;
     private LocalDateTime createTime;

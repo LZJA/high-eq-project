@@ -1,5 +1,5 @@
-# Application Configuration
-# 复制此文件为 application.yml 并填写真实的配置值
+﻿# Application Configuration
+# 复制此文件为 application.yml 并填入真实配置
 
 spring:
   datasource:
@@ -15,8 +15,13 @@ jwt:
 # AI 服务配置
 ai:
   deepseek:
-    api-key: your_deepseek_api_key_here  # 你的 DeepSeek API Key
+    api-key: your_deepseek_api_key_here
     api-url: https://api.deepseek.com/v1
     model: deepseek-chat
     temperature: 0.7
     max-tokens: 500
+  doubao:
+    api-key: ${DOUBAO_API_KEY:your_doubao_api_key_here}
+    api-url: ${DOUBAO_API_URL:https://ark.cn-beijing.volces.com/api/v3}
+    # 可填模型名（如 doubao-seed-1.8）或方舟推理接入点 ID（ep-xxxx）
+    model: ${DOUBAO_MODEL:doubao-seed-1.8}

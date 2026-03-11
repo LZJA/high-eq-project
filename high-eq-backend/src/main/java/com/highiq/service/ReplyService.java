@@ -35,18 +35,23 @@ import java.util.stream.Collectors;
 public class ReplyService extends ServiceImpl<HistoryMapper, History> {
 
     private final AiService aiService;
+    private final QwenVisionService qwenVisionService;
+    private final DoubaoVisionService doubaoVisionService;
     private final ReplySuggestionMapper replySuggestionMapper;
     private final ProfileChatHistoryMapper profileChatHistoryMapper;
     private final ProfileReplySuggestionMapper profileReplySuggestionMapper;
     private final QuotaService quotaService;
     private final PersonProfileService personProfileService;
 
-    public ReplyService(AiService aiService, ReplySuggestionMapper replySuggestionMapper,
+    public ReplyService(AiService aiService, QwenVisionService qwenVisionService, DoubaoVisionService doubaoVisionService,
+                       ReplySuggestionMapper replySuggestionMapper,
                        ProfileChatHistoryMapper profileChatHistoryMapper,
                        ProfileReplySuggestionMapper profileReplySuggestionMapper,
                        QuotaService quotaService,
                        PersonProfileService personProfileService) {
         this.aiService = aiService;
+        this.qwenVisionService = qwenVisionService;
+        this.doubaoVisionService = doubaoVisionService;
         this.replySuggestionMapper = replySuggestionMapper;
         this.profileChatHistoryMapper = profileChatHistoryMapper;
         this.profileReplySuggestionMapper = profileReplySuggestionMapper;
@@ -75,13 +80,34 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
             }
 
             // 调用 AI 服务生成回复
-            List<String> aiSuggestions = aiService.generateReplies(
-                    request.getChatContent(),
-                    request.getRoleBackground(),
-                    request.getUserIntent(),
-                    request.getReplyCount(),
-                    request.getTone()
-            );
+            List<String> aiSuggestions;
+            if ("qwen-vl-plus".equals(requestedModel)) {
+                aiSuggestions = qwenVisionService.generateRepliesWithImage(
+                        request.getChatImage(),
+                        request.getChatContent(),
+                        request.getRoleBackground(),
+                        request.getUserIntent(),
+                        request.getReplyCount(),
+                        request.getTone()
+                );
+            } else if ("doubao-seed-1-8-251228".equals(requestedModel)) {
+                aiSuggestions = doubaoVisionService.generateRepliesWithImage(
+                        request.getChatImage(),
+                        request.getChatContent(),
+                        request.getRoleBackground(),
+                        request.getUserIntent(),
+                        request.getReplyCount(),
+                        request.getTone()
+                );
+            } else {
+                aiSuggestions = aiService.generateReplies(
+                        request.getChatContent(),
+                        request.getRoleBackground(),
+                        request.getUserIntent(),
+                        request.getReplyCount(),
+                        request.getTone()
+                );
+            }
 
             // 保存到数据库
             String historyId = UUID.randomUUID().toString();
@@ -100,6 +126,7 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                         .userIntent(request.getUserIntent())
                         .modelUsed(modelUsed)
                         .tone(selectedTone)
+                        .chatImage(request.getChatImage())
                         .status(1)
                         .isFavorite(0)
                         .build();
@@ -114,6 +141,7 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                         .userIntent(request.getUserIntent())
                         .modelUsed(modelUsed)
                         .tone(selectedTone)
+                        .chatImage(request.getChatImage())
                         .status(1)
                         .isFavorite(0)
                         .build();
@@ -333,6 +361,7 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                 .userIntent(history.getUserIntent())
                 .modelUsed(history.getModelUsed())
                 .tone(history.getTone())
+                .chatImage(history.getChatImage())
                 .isFavorite(history.getIsFavorite() != null && history.getIsFavorite() == 1)
                 .createTime(history.getCreateTime() != null ? history.getCreateTime().format(formatter) : null)
                 .suggestions(suggestions)

@@ -70,6 +70,24 @@ public class ReplyController {
     }
     
     /**
+     * 获取收藏的历史记录
+     */
+    @GetMapping("/history/favorite")
+    public ApiResponse<List<HistoryDTO>> getFavoriteHistory(
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            String token = authHeader.replace("Bearer ", "");
+            String userId = jwtUtil.getUserIdFromToken(token);
+
+            List<HistoryDTO> favorites = replyService.getFavoriteHistory(userId);
+            return ApiResponse.success("获取成功", favorites);
+        } catch (Exception e) {
+            log.error("Failed to get favorite history", e);
+            return ApiResponse.error(500, e.getMessage());
+        }
+    }
+
+    /**
      * 获取历史记录详情
      */
     @GetMapping("/history/{historyId}")
@@ -79,7 +97,7 @@ public class ReplyController {
         try {
             String token = authHeader.replace("Bearer ", "");
             String userId = jwtUtil.getUserIdFromToken(token);
-            
+
             HistoryDTO history = replyService.getHistoryDetail(historyId, userId);
             return ApiResponse.success("获取成功", history);
         } catch (Exception e) {
@@ -87,7 +105,7 @@ public class ReplyController {
             return ApiResponse.error(500, e.getMessage());
         }
     }
-    
+
     /**
      * 获取历史记录的回复建议
      */
@@ -98,7 +116,7 @@ public class ReplyController {
         try {
             String token = authHeader.replace("Bearer ", "");
             String userId = jwtUtil.getUserIdFromToken(token);
-            
+
             List<String> suggestions = replyService.getHistorySuggestions(historyId, userId);
             return ApiResponse.success("获取成功", suggestions);
         } catch (Exception e) {
@@ -106,7 +124,7 @@ public class ReplyController {
             return ApiResponse.error(500, e.getMessage());
         }
     }
-    
+
     /**
      * 删除历史记录
      */
@@ -117,7 +135,7 @@ public class ReplyController {
         try {
             String token = authHeader.replace("Bearer ", "");
             String userId = jwtUtil.getUserIdFromToken(token);
-            
+
             replyService.deleteHistory(historyId, userId);
             return ApiResponse.success("删除成功", null);
         } catch (Exception e) {
@@ -125,7 +143,7 @@ public class ReplyController {
             return ApiResponse.error(500, e.getMessage());
         }
     }
-    
+
     /**
      * 收藏/取消收藏历史记录
      */
@@ -136,29 +154,11 @@ public class ReplyController {
         try {
             String token = authHeader.replace("Bearer ", "");
             String userId = jwtUtil.getUserIdFromToken(token);
-            
+
             replyService.toggleFavorite(historyId, userId);
             return ApiResponse.success("操作成功", null);
         } catch (Exception e) {
             log.error("Failed to toggle favorite", e);
-            return ApiResponse.error(500, e.getMessage());
-        }
-    }
-    
-    /**
-     * 获取收藏的历史记录
-     */
-    @GetMapping("/history/favorite")
-    public ApiResponse<List<HistoryDTO>> getFavoriteHistory(
-            @RequestHeader("Authorization") String authHeader) {
-        try {
-            String token = authHeader.replace("Bearer ", "");
-            String userId = jwtUtil.getUserIdFromToken(token);
-            
-            List<HistoryDTO> favorites = replyService.getFavoriteHistory(userId);
-            return ApiResponse.success("获取成功", favorites);
-        } catch (Exception e) {
-            log.error("Failed to get favorite history", e);
             return ApiResponse.error(500, e.getMessage());
         }
     }

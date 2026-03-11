@@ -69,3 +69,20 @@ ai:
     model: deepseek-chat
     temperature: 0.7
     max-tokens: 500
+  qwen:
+    api-key: ${QWEN_API_KEY:}
+    api-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+  doubao:
+    api-key: ${DOUBAO_API_KEY:}
+    api-url: https://ark.cn-beijing.volces.com/api/v3
+
+aliyun:
+  oss:
+    region: ${ALIYUN_OSS_REGION:}
+    endpoint: ${ALIYUN_OSS_ENDPOINT:}
+    bucket-name: ${ALIYUN_OSS_BUCKET_NAME:}
+    public-url-base: ${ALIYUN_OSS_PUBLIC_URL_BASE:}
+    chat-image-prefix: ${ALIYUN_OSS_CHAT_IMAGE_PREFIX:chat-images/}
+    access-key-id: ${ALIYUN_OSS_ACCESS_KEY_ID:}
+    access-key-secret: ${ALIYUN_OSS_ACCESS_KEY_SECRET:}
+    presign-expire-seconds: ${ALIYUN_OSS_PRESIGN_EXPIRE_SECONDS:300}

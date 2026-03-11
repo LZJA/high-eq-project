@@ -9,8 +9,9 @@ import lombok.Data;
 @Data
 public class GenerateReplyRequest {
 
-    @NotBlank(message = "聊天内容不能为空")
     private String chatContent;
+
+    private String chatImage;  // 聊天截图 URL
 
     @NotBlank(message = "角色背景不能为空")
     private String roleBackground;

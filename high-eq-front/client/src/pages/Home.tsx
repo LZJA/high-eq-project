@@ -407,9 +407,9 @@ export default function Home() {
                 先免费用，再决定要不要升级
               </span>
             </h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              HighEQ 提供三档订阅方案，满足不同使用需求。免费版体验基础功能，Lite 版适合中频使用，Pro 版无限畅用。
-            </p>
+              <p className="text-gray-600 dark:text-gray-400">
+                HighEQ 提供三档订阅方案，满足不同使用需求。免费版体验基础功能，不支持上传聊天截图；Lite 版和 Pro 版支持上传聊天截图。
+              </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
