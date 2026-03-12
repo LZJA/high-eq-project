@@ -514,6 +514,11 @@ export default function Home() {
           </div>
           <p className="text-sm">高情商回复生成助手 · 让沟通更有温度</p>
           <p className="text-xs mt-4 text-gray-500">© 2026 HighEQ. All rights reserved.</p>
+          <p className="text-xs mt-2">
+            <a href="http://beian.miit.gov.cn" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-400">
+              浙ICP备2025210322号-2
+            </a>
+          </p>
         </div>
       </footer>
     </div>
