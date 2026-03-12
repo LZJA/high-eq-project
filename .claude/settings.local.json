@@ -16,7 +16,12 @@
       "Bash(ssh-keyscan -H 47.115.229.78)",
       "Bash(~/.ssh/known_hosts)",
       "Bash(ssh-keyscan -H 121.41.191.53)",
-      "Bash(ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N \"\")"
+      "Bash(ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa -N \"\")",
+      "Bash(git pull:*)",
+      "Bash(ls:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }

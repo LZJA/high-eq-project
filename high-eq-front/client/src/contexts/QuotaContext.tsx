@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { quotaAPI } from '@/lib/api';
 import { QuotaStatus, SubscriptionTier } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface QuotaContextType {
   quota: QuotaStatus | null;
@@ -15,6 +16,7 @@ interface QuotaContextType {
 const QuotaContext = createContext<QuotaContextType | undefined>(undefined);
 
 export function QuotaProvider({ children }: { children: ReactNode }) {
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [quota, setQuota] = useState<QuotaStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,8 +40,19 @@ export function QuotaProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (isAuthLoading) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      setQuota(null);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
     loadQuota();
-  }, []);
+  }, [isAuthenticated, isAuthLoading, loadQuota]);
 
   const tier: SubscriptionTier = (quota?.tier as SubscriptionTier) || 'free';
   const remainingQuota = quota?.remainingQuota ?? 0;
