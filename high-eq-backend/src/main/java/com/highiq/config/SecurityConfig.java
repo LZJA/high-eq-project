@@ -43,7 +43,7 @@ public class SecurityConfig {
             // 配置授权规则
             .authorizeHttpRequests(auth -> auth
                 // 注册和登录接口允许匿名访问
-                .requestMatchers("/auth/register", "/auth/login").permitAll()
+                .requestMatchers("/auth/register", "/auth/login", "/status").permitAll()
                 // 其他所有请求需要认证
                 .anyRequest().authenticated()
             );
