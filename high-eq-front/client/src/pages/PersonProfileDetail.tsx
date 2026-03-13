@@ -179,16 +179,20 @@ export default function PersonProfileDetail({ profileId }: PersonProfileDetailPr
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative overflow-hidden">
+      {/* 背景装饰 */}
+      <div className="absolute top-20 left-10 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+
       <AppNav showLogout />
 
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto px-4 py-8 max-w-4xl relative z-10">
         <Button variant="ghost" className="mb-4" onClick={handleGoBack}>
           <ArrowLeft className="size-4 mr-2" />
           返回列表
         </Button>
 
-        <Card className="mb-6">
+        <Card className="mb-6 animate-fade-in-up">
           <CardContent className="pt-6">
             <div className="flex items-start gap-4">
               <div className="size-16 rounded-full bg-primary/4 flex items-center justify-center shrink-0">

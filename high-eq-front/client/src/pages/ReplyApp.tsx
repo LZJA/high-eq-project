@@ -211,15 +211,19 @@ export default function ReplyApp() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 relative overflow-hidden">
+      {/* 背景装饰 */}
+      <div className="absolute top-20 left-10 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl animate-pulse" />
+      <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+
       {/* 导航栏 */}
       <AppNav activePage="app" showLogout />
 
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="container mx-auto px-4 py-8 max-w-6xl relative z-10">
         {/* 输入区域 */}
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* 左侧输入表单 */}
-          <Card className="shadow-lg">
+          <Card className="shadow-lg animate-fade-in-up">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Wand2 className="size-5 text-blue-600" />
@@ -241,7 +245,7 @@ export default function ReplyApp() {
                   onChange={(e) => setChatContent(e.target.value)}
                   rows={4}
                   disabled={isGenerating || isUploadingImage}
-                  className="resize-none"
+                  className="resize-none transition-transform focus:scale-[1.02]"
                 />
                 {(supportsImage || !!chatImage) && (
                   <div className="space-y-2">
@@ -303,7 +307,7 @@ export default function ReplyApp() {
                   onValueChange={setRoleBackground}
                   disabled={isGenerating || isUploadingImage}
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full transition-transform focus:scale-[1.02]">
                     <SelectValue placeholder="选择对方的角色" />
                   </SelectTrigger>
                   <SelectContent>
@@ -327,7 +331,7 @@ export default function ReplyApp() {
                   onChange={(e) => setUserIntent(e.target.value)}
                   rows={2}
                   disabled={isGenerating}
-                  className="resize-none"
+                  className="resize-none transition-transform focus:scale-[1.02]"
                 />
               </div>
 
@@ -339,7 +343,7 @@ export default function ReplyApp() {
                   onValueChange={setTone}
                   disabled={isGenerating || isUploadingImage}
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full transition-transform focus:scale-[1.02]">
                     <SelectValue placeholder="选择回复语气" />
                   </SelectTrigger>
                   <SelectContent>
@@ -366,7 +370,7 @@ export default function ReplyApp() {
                     onValueChange={(v) => setReplyCount(parseInt(v))}
                     disabled={isGenerating || isUploadingImage}
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className="w-full transition-transform focus:scale-[1.02]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -392,7 +396,7 @@ export default function ReplyApp() {
                 <Button
                   onClick={handleGenerate}
                   disabled={isGenerating || isUploadingImage}
-                  className="flex-1"
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                 >
                   {isGenerating ? (
                     <>
@@ -420,7 +424,7 @@ export default function ReplyApp() {
           </Card>
 
           {/* 右侧回复建议 */}
-          <div className="space-y-4">
+          <div className="space-y-4 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
             <div>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <h2 className="text-lg font-semibold">
