@@ -7,12 +7,14 @@ import {
   Brain,
   Sparkles,
   Heart,
-  History,
   Star,
   Users,
   SparklesIcon,
   Wand2,
-  ChevronRight
+  ChevronRight,
+  Image,
+  UserCircle,
+  BookmarkCheck
 } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
@@ -172,6 +174,14 @@ export default function Home() {
             {/* 信任指标 */}
             <div className="mt-12 flex flex-wrap justify-center gap-8 text-gray-500 dark:text-gray-400">
               <div className="flex items-center gap-2">
+                <Image className="w-5 h-5" />
+                <span>截图识别</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <UserCircle className="w-5 h-5" />
+                <span>人物档案</span>
+              </div>
+              <div className="flex items-center gap-2">
                 <Users className="w-5 h-5" />
                 <span>多角色适配</span>
               </div>
@@ -180,8 +190,8 @@ export default function Home() {
                 <span>5种语气风格</span>
               </div>
               <div className="flex items-center gap-2">
-                <Heart className="w-5 h-5" />
-                <span>收藏历史记录</span>
+                <BookmarkCheck className="w-5 h-5" />
+                <span>收藏历史</span>
               </div>
             </div>
           </div>
@@ -367,17 +377,17 @@ export default function Home() {
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             <Card className="p-6 text-center hover:shadow-xl transition-all border-2 hover:border-blue-300 dark:hover:border-blue-700">
               <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                <Sparkles className="w-6 h-6 text-white" />
+                <Image className="w-6 h-6 text-white" />
               </div>
-              <h3 className="font-bold text-lg mb-2">AI 驱动</h3>
+              <h3 className="font-bold text-lg mb-2">截图识别</h3>
               <p className="text-gray-600 dark:text-gray-400 text-sm">
-                采用先进大模型，深入理解语境和情感
+                上传聊天截图，AI 自动识别提取对话内容
               </p>
             </Card>
 
             <Card className="p-6 text-center hover:shadow-xl transition-all border-2 hover:border-purple-300 dark:hover:border-purple-700">
               <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
-                <Users className="w-6 h-6 text-white" />
+                <UserCircle className="w-6 h-6 text-white" />
               </div>
               <h3 className="font-bold text-lg mb-2">人物档案</h3>
               <p className="text-gray-600 dark:text-gray-400 text-sm">
@@ -387,9 +397,9 @@ export default function Home() {
 
             <Card className="p-6 text-center hover:shadow-xl transition-all border-2 hover:border-pink-300 dark:hover:border-pink-700">
               <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center shadow-lg shadow-pink-500/30">
-                <History className="w-6 h-6 text-white" />
+                <BookmarkCheck className="w-6 h-6 text-white" />
               </div>
-              <h3 className="font-bold text-lg mb-2">随时回顾</h3>
+              <h3 className="font-bold text-lg mb-2">收藏历史</h3>
               <p className="text-gray-600 dark:text-gray-400 text-sm">
                 收藏精彩回复，建立你的个人沟通智慧库
               </p>
