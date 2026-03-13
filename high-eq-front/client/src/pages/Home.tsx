@@ -16,7 +16,7 @@ import {
   UserCircle,
   BookmarkCheck
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { PRICING_PLANS } from "@/data/pricingPlans";
 import { analytics } from "@/lib/analytics";
@@ -44,6 +44,11 @@ export default function Home() {
   const { isAuthenticated } = useAuth();
   const [, navigate] = useLocation();
   const [activeDemo, setActiveDemo] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
 
   const handleStart = () => {
     const hasToken = !!localStorage.getItem("access_token");
@@ -110,7 +115,7 @@ export default function Home() {
             </span>
           </div>
           <Button
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg shadow-blue-500/30"
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg shadow-blue-500/30 transition-all duration-300 hover:scale-105"
             onClick={handleStart}
           >
             开始使用 <ChevronRight className="ml-1 w-4 h-4" />
@@ -118,22 +123,22 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Hero Section - 炫酷渐变背景 */}
+      {/* Hero Section - 温暖渐变背景 */}
       <section className="pt-32 pb-20 relative overflow-hidden">
         {/* 动态背景 */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-blue-900/20">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM5Q0IzRjgiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yIDItNCAyLTRzLTItMi00LTJjMCAwIDItMiAyLTRzMi00IDItNHoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-50"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/10 dark:to-pink-900/10">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM4QjVDRjYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0YzAtMiAyLTQgMi00cy0yLTItNC0yYzAgMCAyLTIgMi00czItNCAyLTR6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-50"></div>
         </div>
 
         {/* 浮动装饰 */}
-        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
+        <div className="absolute top-20 left-10 w-96 h-96 bg-blue-300/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-300/20 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
 
-        <div className="container mx-auto px-4 relative z-10">
+        <div className={`container mx-auto px-4 relative z-10 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <div className="max-w-4xl mx-auto text-center">
             {/* 标签 */}
-            <div className="inline-flex items-center gap-2 mb-8 px-4 py-2 bg-white dark:bg-gray-800 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 animate-bounce">
-              <Sparkles className="w-4 h-4 text-purple-500" />
+            <div className="inline-flex items-center gap-2 mb-8 px-4 py-2 bg-white/80 dark:bg-gray-800/80 rounded-full shadow-lg border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300 animate-float">
+              <Sparkles className="w-4 h-4 text-blue-500 animate-pulse" />
               <span className="text-sm font-medium bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 AI 驱动的高情商沟通助手
               </span>
@@ -147,24 +152,24 @@ export default function Home() {
             </h1>
 
             <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-8 leading-relaxed max-w-2xl mx-auto">
-              面对棘手的聊天场景，<span className="font-semibold text-purple-600">HighEQ</span> 帮你生成
+              面对棘手的聊天场景，<span className="font-semibold text-blue-600">HighEQ</span> 帮你生成
               <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent font-semibold"> 既得体又高情商</span> 的完美回复
             </p>
 
             {/* CTA 按钮 */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center opacity-0 animate-fade-in-up animation-delay-200">
               <Button
                 size="lg"
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-lg px-8 py-6 shadow-xl shadow-blue-500/30 hover:shadow-blue-500/50 transition-all"
+                className="group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-lg px-8 py-6 shadow-xl shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105"
                 onClick={handleStart}
               >
-                <Wand2 className="mr-2 w-5 h-5" />
+                <Wand2 className="mr-2 w-5 h-5 group-hover:rotate-12 transition-transform duration-300" />
                 立即体验
               </Button>
               <Button
                 size="lg"
                 variant="outline"
-                className="border-2 border-gray-300 dark:border-gray-600 text-lg px-8 py-6 hover:bg-gray-50 dark:hover:bg-gray-800"
+                className="border-2 border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400 text-lg px-8 py-6 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-300 hover:scale-105"
                 onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
               >
                 查看演示
@@ -172,24 +177,24 @@ export default function Home() {
             </div>
 
             {/* 信任指标 */}
-            <div className="mt-12 flex flex-wrap justify-center gap-8 text-gray-500 dark:text-gray-400">
-              <div className="flex items-center gap-2">
+            <div className="mt-12 flex flex-wrap justify-center gap-8 text-gray-500 dark:text-gray-400 opacity-0 animate-fade-in-up animation-delay-400">
+              <div className="flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 hover:scale-110 cursor-pointer">
                 <Image className="w-5 h-5" />
                 <span>截图识别</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-300 hover:scale-110 cursor-pointer">
                 <UserCircle className="w-5 h-5" />
                 <span>人物档案</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 hover:text-pink-600 dark:hover:text-pink-400 transition-all duration-300 hover:scale-110 cursor-pointer">
                 <Users className="w-5 h-5" />
                 <span>多角色适配</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 hover:scale-110 cursor-pointer">
                 <Sparkles className="w-5 h-5" />
                 <span>5种语气风格</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-300 hover:scale-110 cursor-pointer">
                 <BookmarkCheck className="w-5 h-5" />
                 <span>收藏历史</span>
               </div>
@@ -203,7 +208,7 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
                 看看它是如何工作的
               </span>
             </h2>
@@ -211,15 +216,15 @@ export default function Home() {
           </div>
 
           {/* 演示卡片 */}
-          <Card className="max-w-3xl mx-auto overflow-hidden shadow-2xl border-0">
+          <Card className="max-w-3xl mx-auto overflow-hidden shadow-2xl border-0 hover:shadow-blue-500/20 transition-all duration-500 hover:scale-[1.02]">
             <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-4">
               <div className="flex items-center justify-between">
                 <div className="flex gap-2">
-                  <div className="w-3 h-3 rounded-full bg-white/30"></div>
-                  <div className="w-3 h-3 rounded-full bg-white/30"></div>
-                  <div className="w-3 h-3 rounded-full bg-white/30"></div>
+                  <div className="w-3 h-3 rounded-full bg-white/40 animate-pulse"></div>
+                  <div className="w-3 h-3 rounded-full bg-white/40 animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                  <div className="w-3 h-3 rounded-full bg-white/40 animate-pulse" style={{animationDelay: '0.4s'}}></div>
                 </div>
-                <span className="text-white/80 text-sm">HighEQ 演示</span>
+                <span className="text-white/90 text-sm font-medium">HighEQ 演示</span>
               </div>
             </div>
 
@@ -230,10 +235,10 @@ export default function Home() {
                   <button
                     key={index}
                     onClick={() => setActiveDemo(index)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
                       activeDemo === index
-                        ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg"
-                        : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                        ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:scale-105"
+                        : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:scale-105"
                     }`}
                   >
                     {scenario.role}
@@ -301,7 +306,7 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
                 灵活适配各种关系场景
               </span>
             </h2>
@@ -312,7 +317,7 @@ export default function Home() {
             {ROLE_OPTIONS.map((role) => (
               <Card
                 key={role.value}
-                className="p-4 text-center hover:shadow-xl transition-all hover:-translate-y-1 cursor-pointer border-2 hover:border-purple-300 dark:hover:border-purple-700 group"
+                className="p-4 text-center hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:scale-105 cursor-pointer border-2 hover:border-purple-300 dark:hover:border-purple-700 group"
               >
                 <div className={`text-4xl mb-2 transform group-hover:scale-110 transition-transform`}>
                   {role.emoji}
@@ -335,7 +340,7 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
                 五种语气，灵活切换
               </span>
             </h2>
@@ -346,7 +351,7 @@ export default function Home() {
             {TONE_OPTIONS.map((tone) => (
               <Card
                 key={tone.value}
-                className="p-6 text-center hover:shadow-xl transition-all hover:-translate-y-1 cursor-pointer group"
+                className="p-6 text-center hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:scale-105 cursor-pointer group"
               >
                 <div className="text-3xl mb-3 transform group-hover:scale-110 transition-transform">
                   {tone.emoji}
@@ -368,7 +373,7 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
                 为什么选择 HighEQ
               </span>
             </h2>

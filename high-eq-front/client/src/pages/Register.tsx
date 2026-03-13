@@ -60,10 +60,14 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
-      <Card className="w-full max-w-md shadow-xl">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/10 dark:to-pink-900/10 p-4 relative overflow-hidden">
+      {/* 背景装饰 */}
+      <div className="absolute top-20 left-10 w-96 h-96 bg-blue-300/20 rounded-full blur-3xl animate-pulse"></div>
+      <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-300/20 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
+
+      <Card className="w-full max-w-md shadow-2xl border-0 relative z-10 opacity-0 animate-fade-in-up">
         <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
             HighEQ
           </CardTitle>
           <CardDescription className="text-base">
@@ -91,6 +95,7 @@ export default function Register() {
                 autoComplete="username"
                 required
                 minLength={3}
+                className="transition-all duration-300 focus:scale-[1.02]"
               />
             </div>
             <div className="space-y-2">
@@ -109,6 +114,7 @@ export default function Register() {
                 autoComplete="new-password"
                 required
                 minLength={6}
+                className="transition-all duration-300 focus:scale-[1.02]"
               />
             </div>
             <div className="space-y-2">
@@ -126,6 +132,7 @@ export default function Register() {
                 disabled={isLoading}
                 autoComplete="new-password"
                 required
+                className="transition-all duration-300 focus:scale-[1.02]"
               />
             </div>
             <div className="space-y-2">
@@ -140,6 +147,7 @@ export default function Register() {
                 }
                 disabled={isLoading}
                 autoComplete="email"
+                className="transition-all duration-300 focus:scale-[1.02]"
               />
             </div>
             <div className="space-y-2">
@@ -154,11 +162,12 @@ export default function Register() {
                 }
                 disabled={isLoading}
                 autoComplete="tel"
+                className="transition-all duration-300 focus:scale-[1.02]"
               />
             </div>
             <Button
               type="submit"
-              className="w-full"
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-300 hover:scale-105"
               disabled={isLoading}
             >
               {isLoading ? "注册中..." : "注册"}
@@ -166,7 +175,7 @@ export default function Register() {
           </form>
           <div className="mt-4 text-center text-sm text-muted-foreground">
             已有账户？{" "}
-            <Link href="/login" className="text-primary hover:underline font-medium">
+            <Link href="/login" className="text-blue-600 hover:text-purple-600 hover:underline font-medium transition-colors duration-300">
               立即登录
             </Link>
           </div>
