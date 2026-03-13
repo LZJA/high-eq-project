@@ -73,12 +73,12 @@ docker compose -f docker-compose.prod.yml --env-file .env.production down
 
 备案前（使用IP）:
 ```bash
-CORS_ALLOWED_ORIGINS=https://higheq.top,https://www.higheq.top,https://api.higheq.top,http://8.136.193.199,https://8.136.193.199
+CORS_ALLOWED_ORIGINS=https://higheq.top,https://www.higheq.top,http://8.136.193.199,https://8.136.193.199
 ```
 
 备案后（使用域名）:
 ```bash
-CORS_ALLOWED_ORIGINS=https://higheq.top,https://www.higheq.top,https://api.higheq.top
+CORS_ALLOWED_ORIGINS=https://higheq.top,https://www.higheq.top
 ```
 
 修改配置后执行 `./restart-prod.sh` 即可。
