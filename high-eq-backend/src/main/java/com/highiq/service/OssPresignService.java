@@ -62,7 +62,7 @@ public class OssPresignService {
 
             URL uploadUrl = ossClient.generatePresignedUrl(request);
             return OssPresignResponse.builder()
-                    .uploadUrl(uploadUrl.toString())
+                    .uploadUrl(resolveUploadUrl(uploadUrl))
                     .publicUrl(resolvePublicUrl(objectKey))
                     .objectKey(objectKey)
                     .contentType(contentType)
@@ -117,6 +117,35 @@ public class OssPresignService {
             return trimTrailingSlash(publicUrlBase) + "/" + objectKey;
         }
         return "https://" + bucketName + "." + trimProtocol(endpoint) + "/" + objectKey;
+    }
+
+    private String resolveUploadUrl(URL uploadUrl) {
+        String scheme = resolvePreferredScheme();
+        String value = uploadUrl.toString();
+        if ("https".equalsIgnoreCase(scheme) && value.startsWith("http://")) {
+            return "https://" + value.substring("http://".length());
+        }
+        return value;
+    }
+
+    private String resolvePreferredScheme() {
+        if (!isBlank(publicUrlBase)) {
+            return extractScheme(publicUrlBase);
+        }
+        if (!isBlank(endpoint)) {
+            return extractScheme(endpoint);
+        }
+        return "https";
+    }
+
+    private String extractScheme(String value) {
+        if (value.startsWith("https://")) {
+            return "https";
+        }
+        if (value.startsWith("http://")) {
+            return "http";
+        }
+        return "https";
     }
 
     private String trimProtocol(String value) {

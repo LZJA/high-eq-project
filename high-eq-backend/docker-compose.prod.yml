@@ -9,6 +9,8 @@ services:
     image: mysql:8.0
     container_name: high-eq-mysql-prod
     restart: always
+    env_file:
+      - .env.production
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
@@ -42,6 +44,8 @@ services:
       dockerfile: Dockerfile
     container_name: high-eq-backend-prod
     restart: always
+    env_file:
+      - .env.production
     # 配置 DNS 服务器（解决构建时的 DNS 解析问题）
     dns:
       - 8.8.8.8
