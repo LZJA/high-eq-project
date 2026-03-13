@@ -20,6 +20,14 @@ fi
 echo "✅ 配置文件检查通过"
 echo ""
 
+# 导出 .env 里的变量，供 Spring Boot 读取
+set -a
+source ./.env
+set +a
+
+echo "✅ 已加载 .env 环境变量"
+echo ""
+
 # 检查 Java 版本
 echo "📋 检查 Java 版本..."
 java -version
