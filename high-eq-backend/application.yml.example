@@ -23,5 +23,3 @@ ai:
   doubao:
     api-key: ${DOUBAO_API_KEY:your_doubao_api_key_here}
     api-url: ${DOUBAO_API_URL:https://ark.cn-beijing.volces.com/api/v3}
-    # 可填模型名（如 doubao-seed-1.8）或方舟推理接入点 ID（ep-xxxx）
-    model: ${DOUBAO_MODEL:doubao-seed-1.8}

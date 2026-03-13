@@ -23,7 +23,9 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(grep:*)",
-      "Bash(pnpm add:*)"
+      "Bash(pnpm add:*)",
+      "Bash(docker-compose logs:*)",
+      "Bash(docker-compose restart:*)"
     ]
   }
 }
