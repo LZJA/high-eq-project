@@ -74,7 +74,7 @@ ai:
     api-url: https://dashscope.aliyuncs.com/compatible-mode/v1
   doubao:
     api-key: ${DOUBAO_API_KEY:your_doubao_api_key_here}
-    api-url: ${DOUBAO_API_URL:https://ark.cn-beijing.volces.com/api/v3}
+    api-url: https://ark.cn-beijing.volces.com/api/v3
 
 aliyun:
   oss:
