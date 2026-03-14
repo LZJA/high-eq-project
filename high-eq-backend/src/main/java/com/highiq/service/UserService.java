@@ -149,13 +149,17 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         if (!jwtUtil.validateToken(refreshToken)) {
             throw new RuntimeException("刷新 Token 无效或已过期");
         }
-        
+
         String userId = jwtUtil.getUserIdFromToken(refreshToken);
         String newToken = jwtUtil.generateToken(userId);
         String newRefreshToken = jwtUtil.generateRefreshToken(userId);
-        
+
         User user = baseMapper.selectById(userId);
-        
+
+        // 更新当前token，用于互踢
+        user.setCurrentToken(newToken);
+        baseMapper.updateById(user);
+
         return LoginResponse.builder()
                 .token(newToken)
                 .refreshToken(newRefreshToken)
