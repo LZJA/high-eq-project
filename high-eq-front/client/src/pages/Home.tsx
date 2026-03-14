@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import apiClient from "@/lib/api";
+import SEO from "@/components/SEO";
 import {
   ArrowRight,
   Brain,
@@ -94,6 +95,22 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950">
+      <SEO />
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebApplication",
+          "name": "高情商回复生成助手",
+          "description": "AI 智能生成高情商聊天回复,帮你在各种社交场景下说出得体的话。",
+          "url": "https://www.higheq.top",
+          "applicationCategory": "UtilitiesApplication",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "CNY"
+          }
+        })}
+      </script>
       <ContactSidebar />
       {/* Navigation */}
       <nav className="fixed top-0 w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md z-50 border-b border-gray-200 dark:border-gray-800">
@@ -142,7 +159,7 @@ export default function Home() {
             {/* 主标题 */}
             <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
               <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                说话是一种艺术
+                沟通是一种艺术
               </span>
             </h1>
 
