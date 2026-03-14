@@ -108,8 +108,8 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
       toast.error("请上传图片文件");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("图片大小不能超过5MB");
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("图片大小不能超过10MB");
       return;
     }
     setIsUploadingImage(true);
