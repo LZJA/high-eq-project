@@ -95,7 +95,11 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         // 生成 Token
         String token = jwtUtil.generateToken(user.getId());
         String refreshToken = jwtUtil.generateRefreshToken(user.getId());
-        
+
+        // 保存当前token，用于互踢
+        user.setCurrentToken(token);
+        baseMapper.updateById(user);
+
         log.info("User logged in successfully: {}", user.getUsername());
         
         return LoginResponse.builder()

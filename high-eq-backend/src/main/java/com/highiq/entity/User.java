@@ -49,6 +49,8 @@ public class User {
 
     private LocalDate quotaResetDate;     // 配额重置日期
 
+    private String currentToken;          // 当前有效token，用于互踢
+
     private LocalDateTime createTime;
     
     private LocalDateTime updateTime;
