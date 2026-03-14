@@ -186,24 +186,24 @@ export default function PersonProfileDetail({ profileId }: PersonProfileDetailPr
 
       <AppNav showLogout />
 
-      <div className="container mx-auto px-4 py-8 max-w-4xl relative z-10">
-        <Button variant="ghost" className="mb-4" onClick={handleGoBack}>
+      <div className="container mx-auto px-4 py-4 sm:py-8 max-w-4xl relative z-10">
+        <Button variant="ghost" className="mb-3 sm:mb-4" onClick={handleGoBack}>
           <ArrowLeft className="size-4 mr-2" />
           返回列表
         </Button>
 
-        <Card className="mb-6 animate-fade-in-up">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-4">
-              <div className="size-16 rounded-full bg-primary/4 flex items-center justify-center shrink-0">
+        <Card className="mb-4 sm:mb-6 animate-fade-in-up">
+          <CardContent>
+            <div className="flex items-start gap-2 sm:gap-4">
+              <div className="size-12 sm:size-16 rounded-full bg-primary/4 flex items-center justify-center shrink-0">
                 {profile.avatarUrl ? (
                   <img
                     src={profile.avatarUrl}
                     alt={profile.name}
-                    className="size-16 rounded-full object-cover"
+                    className="size-12 sm:size-16 rounded-full object-cover"
                   />
                 ) : (
-                  <User className="size-8 text-primary" />
+                  <User className="size-6 sm:size-8 text-primary" />
                 )}
               </div>
 

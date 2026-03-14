@@ -202,9 +202,7 @@ export default function ReplyApp() {
   const handleReset = () => {
     setChatContent("");
     setChatImage(null);
-    setRoleBackground("");
     setUserIntent("");
-    setTone("");
     setSuggestions([]);
     setCurrentHistoryId(null);
     setFavorites(new Set());
@@ -219,9 +217,9 @@ export default function ReplyApp() {
       {/* 导航栏 */}
       <AppNav activePage="app" showLogout />
 
-      <div className="container mx-auto px-4 py-8 max-w-6xl relative z-10">
+      <div className="container mx-auto px-4 py-4 sm:py-8 max-w-6xl relative z-10">
         {/* 输入区域 */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
+        <div className="grid md:grid-cols-2 gap-6 mb-6 sm:mb-8">
           {/* 左侧输入表单 */}
           <Card className="shadow-lg animate-fade-in-up">
             <CardHeader>

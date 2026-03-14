@@ -14,15 +14,15 @@ export const PRICING_PLANS: PricingPlan[] = [
     id: "free",
     name: "免费版",
     priceLabel: "注册即享",
-    description: "适合第一次体验 HighEQ 的用户",
+    description: "适合轻度使用的用户",
     features: [
-      "每日 5 次回复生成",
-      "仅 1 个人物档案",
+      "每日 20 次回复生成",
+      "最多 3 个人物档案",
       "仅普通模型可用",
       "不支持上传聊天截图",
       "历史记录和收藏功能",
     ],
-    ctaLabel: "免费开始使用",
+    ctaLabel: "免费注册",
   },
   {
     id: "lite",
@@ -30,7 +30,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     priceLabel: "4.99 元/月",
     description: "适合中频使用的用户",
     features: [
-      "每日 50 次回复生成",
+      "每日 100 次回复生成",
       "最多 10 个人物档案",
       "高级模型可用",
       "支持上传聊天截图",

@@ -62,8 +62,8 @@ export default function PersonProfiles() {
 
       <AppNav activePage="profiles" showLogout />
 
-      <div className="container mx-auto px-4 py-8 max-w-6xl relative z-10">
-        <div className="flex justify-between items-center mb-6">
+      <div className="container mx-auto px-4 py-4 sm:py-8 max-w-6xl relative z-10">
+        <div className="flex justify-between items-center mb-4 sm:mb-6">
           <div>
             <h1 className="text-3xl font-bold">人物档案</h1>
             <p className="text-muted-foreground mt-1">
@@ -103,7 +103,7 @@ export default function PersonProfiles() {
                 className="hover:shadow-md transition-shadow cursor-pointer"
                 onClick={() => setLocation(`/profiles/${profile.id}`)}
               >
-                <CardContent className="pt-4">
+                <CardContent>
                   <div className="flex items-start gap-3">
                     <div className="size-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                       {profile.avatarUrl ? (

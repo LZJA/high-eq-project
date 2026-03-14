@@ -86,7 +86,7 @@ public class PersonProfileService extends ServiceImpl<PersonProfileMapper, Perso
         user = quotaService.ensureSubscriptionValid(user);
         SubscriptionTier tier = SubscriptionTier.fromCode(user.getSubscriptionTier());
         int maxProfiles = switch (tier) {
-            case FREE -> 1;
+            case FREE -> 3;
             case LITE -> 10;
             case PRO -> -1;
         };
@@ -100,7 +100,7 @@ public class PersonProfileService extends ServiceImpl<PersonProfileMapper, Perso
         Long profileCount = baseMapper.selectCount(wrapper);
         if (profileCount != null && profileCount >= maxProfiles) {
             String message = switch (tier) {
-                case FREE -> "免费版最多只能创建1个人物档案，请升级到Lite或PRO";
+                case FREE -> "免费版最多只能创建3个人物档案，请升级到Lite或PRO";
                 case LITE -> "Lite版最多只能创建10个人物档案，请升级到PRO";
                 case PRO -> "人物档案数量已达上限";
             };

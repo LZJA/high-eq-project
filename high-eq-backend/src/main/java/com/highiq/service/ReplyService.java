@@ -406,4 +406,49 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                 })
                 .collect(Collectors.toList());
     }
+
+    /**
+     * 游客生成回复（不保存数据库）
+     */
+    public GenerateReplyResponse generateRepliesForGuest(GenerateReplyRequest request) {
+        long startTime = System.currentTimeMillis();
+
+        try {
+            List<String> aiSuggestions = aiService.generateReplies(
+                    request.getChatContent(),
+                    request.getRoleBackground(),
+                    request.getUserIntent(),
+                    request.getReplyCount(),
+                    request.getTone()
+            );
+
+            String selectedTone = request.getTone() != null && !request.getTone().isEmpty() ? request.getTone() : "自然得体";
+            List<SuggestionDTO> suggestionDTOs = new ArrayList<>();
+
+            for (String aiSuggestion : aiSuggestions) {
+                String[] parts = aiSuggestion.split("\\|\\|\\|REASON\\|\\|\\|", 2);
+                String content = parts[0];
+                String reason = parts.length > 1 ? parts[1] : "这是一条高情商回复，能得体地表达意图";
+
+                SuggestionDTO dto = SuggestionDTO.builder()
+                        .id(UUID.randomUUID().toString())
+                        .content(content)
+                        .reason(reason)
+                        .tone(selectedTone)
+                        .build();
+                suggestionDTOs.add(dto);
+            }
+
+            long endTime = System.currentTimeMillis();
+            return GenerateReplyResponse.builder()
+                    .historyId(null)
+                    .suggestions(suggestionDTOs)
+                    .modelUsed("deepseek-chat")
+                    .generatedTime(endTime - startTime)
+                    .build();
+        } catch (Exception e) {
+            log.error("Failed to generate replies for guest", e);
+            throw new RuntimeException("生成回复失败: " + e.getMessage());
+        }
+    }
 }

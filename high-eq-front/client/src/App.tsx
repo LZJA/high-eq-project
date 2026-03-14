@@ -10,6 +10,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ReplyApp from "./pages/ReplyApp";
+import GuestReplyApp from "./pages/GuestReplyApp";
 import History from "./pages/History";
 import Favorites from "./pages/Favorites";
 import PersonProfiles from "./pages/PersonProfiles";
@@ -17,19 +18,24 @@ import PersonProfileForm from "./pages/PersonProfileForm";
 import PersonProfileChat from "./pages/PersonProfileChat";
 import PersonProfileDetail from "./pages/PersonProfileDetail";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { useAuth } from "./contexts/AuthContext";
 
 
 function Router() {
+  const { user } = useAuth();
+
   return (
     <Switch>
       <Route path={"/"} component={Home} />
       <Route path={"/login"} component={Login} />
       <Route path={"/register"} component={Register} />
       <Route path={"/app"}>
-        {() => (
+        {() => user ? (
           <ProtectedRoute>
             <ReplyApp />
           </ProtectedRoute>
+        ) : (
+          <GuestReplyApp />
         )}
       </Route>
       <Route path={"/history"}>

@@ -51,12 +51,7 @@ export default function Home() {
   }, []);
 
   const handleStart = () => {
-    const hasToken = !!localStorage.getItem("access_token");
-    if (isAuthenticated || hasToken) {
-      navigate("/app");
-      return;
-    }
-    navigate("/login");
+    navigate("/app");
   };
 
   const handleUpgradeClick = async (planId: string) => {
@@ -164,7 +159,7 @@ export default function Home() {
                 onClick={handleStart}
               >
                 <Wand2 className="mr-2 w-5 h-5 group-hover:rotate-12 transition-transform duration-300" />
-                立即体验
+                免费试用
               </Button>
               <Button
                 size="lg"
@@ -175,6 +170,11 @@ export default function Home() {
                 查看演示
               </Button>
             </div>
+
+            {/* 免费试用说明 */}
+            <p className="mt-6 text-sm text-gray-500 dark:text-gray-400 opacity-0 animate-fade-in-up animation-delay-300">
+              🎉 无需注册，每日 5 次免费体验
+            </p>
 
             {/* 信任指标 */}
             <div className="mt-12 flex flex-wrap justify-center gap-8 text-gray-500 dark:text-gray-400 opacity-0 animate-fade-in-up animation-delay-400">

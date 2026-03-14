@@ -136,8 +136,8 @@ export default function Favorites() {
 
       <AppNav activePage="favorites" />
 
-      <div className="container mx-auto px-4 py-8 max-w-5xl relative z-10">
-        <div className="mb-6">
+      <div className="container mx-auto px-4 py-4 sm:py-8 max-w-5xl relative z-10">
+        <div className="mb-3 sm:mb-4">
           <Link href="/app">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="size-4 mr-2" />
@@ -146,9 +146,9 @@ export default function Favorites() {
           </Link>
         </div>
 
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Heart className="size-8 text-red-500 fill-red-500" />
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
+            <Heart className="size-6 sm:size-8 text-red-500 fill-red-500" />
             我的收藏
           </h1>
           <p className="text-muted-foreground mt-2">共 {favorites.length} 条收藏</p>

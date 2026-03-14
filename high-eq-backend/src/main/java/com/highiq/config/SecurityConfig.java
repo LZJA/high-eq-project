@@ -44,6 +44,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // 注册和登录接口允许匿名访问
                 .requestMatchers("/auth/register", "/auth/login", "/status").permitAll()
+                // 游客接口允许匿名访问
+                .requestMatchers("/guest/**").permitAll()
                 // 其他所有请求需要认证
                 .anyRequest().authenticated()
             );

@@ -340,5 +340,32 @@ export const profileAPI = {
   },
 };
 
+/**
+ * 游客 API（无需认证）
+ */
+export const guestApi = {
+  /**
+   * 游客生成回复
+   */
+  generateReplies: async (data: {
+    chatContent: string;
+    roleBackground?: string;
+    userIntent?: string;
+    replyCount?: number;
+    tone?: string;
+  }) => {
+    const response = await axios.post(`${API_BASE_URL}/guest/reply/generate`, data);
+    return response.data;
+  },
+
+  /**
+   * 获取游客剩余次数
+   */
+  getRemainingQuota: async () => {
+    const response = await axios.get(`${API_BASE_URL}/guest/reply/quota`);
+    return response.data;
+  },
+};
+
 export default apiClient;
 

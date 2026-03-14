@@ -163,8 +163,8 @@ export default function History() {
       {/* 导航栏 */}
       <AppNav activePage="history" />
 
-      <div className="container mx-auto px-4 py-8 max-w-7xl relative z-10">
-        <div className="mb-6">
+      <div className="container mx-auto px-4 py-4 sm:py-8 max-w-7xl relative z-10">
+        <div className="mb-3 sm:mb-4">
           <Link href="/app">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="size-4 mr-2" />
@@ -173,7 +173,7 @@ export default function History() {
           </Link>
         </div>
 
-        <h1 className="text-3xl font-bold mb-6">历史记录</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">历史记录</h1>
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* 左侧列表 */}

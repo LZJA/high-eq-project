@@ -202,7 +202,6 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
     setChatContent("");
     setChatImage(null);
     setUserIntent("");
-    setTone("");
     setSuggestions([]);
     setGeneratedHistoryId(null);
     setIsGeneratedFavorite(false);
@@ -239,15 +238,15 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
 
       <AppNav activePage="profiles" showLogout />
 
-      <div className="container mx-auto px-4 py-8 max-w-6xl relative z-10">
-        <div className="mb-6">
+      <div className="container mx-auto px-4 py-4 sm:py-8 max-w-6xl relative z-10">
+        <div className="mb-4 sm:mb-6">
           <div className="flex items-center gap-4 mb-3">
             <Button variant="ghost" size="sm" onClick={handleGoBack}>
               <ArrowLeft className="size-4 mr-2" />
               返回
             </Button>
 
-            <div className="flex items-center gap-3">
+            <div className="hidden sm:fflex items-center gap-3">
               <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center">
                 {profile.avatarUrl ? (
                   <img
