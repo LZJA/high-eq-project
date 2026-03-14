@@ -142,7 +142,7 @@ export default function Home() {
             {/* 主标题 */}
             <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
               <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                说话也是一种艺术
+                说话是一种艺术
               </span>
             </h1>
 
@@ -419,7 +419,7 @@ export default function Home() {
           <div className="max-w-3xl mx-auto text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                先免费用，再决定要不要升级
+                先免费用，再决定升不升级
               </span>
             </h2>
               <p className="text-gray-600 dark:text-gray-400">
