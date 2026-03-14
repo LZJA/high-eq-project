@@ -5,7 +5,7 @@ version: "3.8"
 
 services:
   # MySQL 数据库
-  mysql:
+  high-eq-mysql-prod:
     image: mysql:8.0
     container_name: high-eq-mysql-prod
     restart: always
@@ -52,11 +52,11 @@ services:
       - 114.114.114.114
       - 223.5.5.5
     depends_on:
-      mysql:
+      high-eq-mysql-prod:
         condition: service_healthy
     environment:
       # 数据库配置
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_URL: jdbc:mysql://high-eq-mysql-prod:3306/${MYSQL_DATABASE}?useSSL=true&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
       # JWT 配置

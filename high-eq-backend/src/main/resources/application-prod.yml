@@ -4,7 +4,7 @@ spring:
 
   datasource:
     # Docker 部署时会通过环境变量覆盖
-    url: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:higheq}?useSSL=true&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8&useUnicode=true
+    url: jdbc:mysql://high-eq-mysql-prod:3306/${MYSQL_DATABASE:higheq}?useSSL=true&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8&useUnicode=true
     username: ${MYSQL_USER}
     password: ${MYSQL_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
