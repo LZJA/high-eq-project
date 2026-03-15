@@ -3,17 +3,12 @@ package com.highiq.controller;
 import com.highiq.dto.ApiResponse;
 import com.highiq.dto.UpgradeClickDTO;
 import com.highiq.dto.UpgradeClickStatsDTO;
-import com.highiq.entity.User;
-import com.highiq.service.AnalyticsService;
-import com.highiq.service.UserService;
+import com.highiq.service.StatisticsService;
+import com.highiq.util.JwtUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/analytics")
@@ -21,42 +16,57 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class AnalyticsController {
 
-    private final AnalyticsService analyticsService;
-    private final UserService userService;
+    private final StatisticsService statisticsService;
+    private final JwtUtil jwtUtil;
 
     @PostMapping("/upgrade-click")
     public ApiResponse<Void> trackUpgradeClick(
             @RequestBody UpgradeClickDTO dto,
-            @AuthenticationPrincipal String userId
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            HttpServletRequest request
     ) {
-        String finalUserId = "guest";
-        String username = "游客";
-
-        if (userId != null && !userId.isBlank() && !"anonymousUser".equals(userId)) {
-            User user = userService.getById(userId);
-            if (user != null) {
-                finalUserId = user.getId();
-                username = user.getUsername();
-            }
-        }
-
         try {
-            analyticsService.trackUpgradeClick(finalUserId, username, dto.getTargetTier());
+            if (authHeader != null && !authHeader.isEmpty()) {
+                String token = authHeader.replace("Bearer ", "");
+                String userId = jwtUtil.getUserIdFromToken(token);
+                statisticsService.recordUpgradeClick(userId, dto.getTargetTier());
+            } else {
+                statisticsService.recordGuestUpgradeClick(getClientIp(request), dto.getTargetTier());
+            }
+            return ApiResponse.success("记录成功", null);
         } catch (Exception e) {
-            log.warn("Failed to save upgrade click for userId={}", finalUserId, e);
-            return ApiResponse.error(500, "埋点记录失败");
+            log.warn("Failed to record upgrade click", e);
+            return ApiResponse.error(500, "记录失败");
         }
-
-        return ApiResponse.success("记录成功", null);
     }
 
     @GetMapping("/upgrade-clicks")
-    public ApiResponse<UpgradeClickStatsDTO> getUpgradeClicks(@AuthenticationPrincipal String userId) {
-        String finalUserId = "guest";
-        if (userId != null && !userId.isBlank() && !"anonymousUser".equals(userId)) {
-            finalUserId = userId;
+    public ApiResponse<UpgradeClickStatsDTO> getUpgradeClicks(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            HttpServletRequest request
+    ) {
+        try {
+            String userId = null;
+            if (authHeader != null && !authHeader.isBlank()) {
+                String token = authHeader.replace("Bearer ", "");
+                userId = jwtUtil.getUserIdFromToken(token);
+            }
+            UpgradeClickStatsDTO stats = statisticsService.getUpgradeClickStats(userId, getClientIp(request));
+            return ApiResponse.success("获取成功", stats);
+        } catch (Exception e) {
+            log.warn("Failed to get upgrade clicks", e);
+            return ApiResponse.error(500, "获取失败");
         }
-        UpgradeClickStatsDTO stats = analyticsService.getUserClickStats(finalUserId);
-        return ApiResponse.success("获取成功", stats);
+    }
+
+    private String getClientIp(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("X-Real-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        return ip != null ? ip.split(",")[0].trim() : "unknown";
     }
 }

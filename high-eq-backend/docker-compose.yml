@@ -1,7 +1,6 @@
 version: "3.8"
 
 services:
-  # MySQL 数据库
   mysql:
     image: mysql:8.0
     container_name: high-eq-mysql
@@ -11,11 +10,11 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-higheq}
-      MYSQL_USER: ${MYSQL_USER:-higheq}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-higheq123}
+      MYSQL_USER: ${MYSQL_USER:-root}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-root}
       TZ: Asia/Shanghai
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./src/main/resources/db/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -28,7 +27,6 @@ services:
     networks:
       - high-eq-network
 
-  # Spring Boot 后端应用
   backend:
     build:
       context: .
@@ -41,17 +39,15 @@ services:
       mysql:
         condition: service_healthy
     environment:
-      # 数据库配置
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-higheq}?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-higheq}
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-higheq123}
-      # JWT 配置
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-higheq}
+      MYSQL_USER: ${MYSQL_USER:-root}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-root}
       JWT_SECRET: ${JWT_SECRET}
-      # AI 配置
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
       QWEN_API_KEY: ${QWEN_API_KEY}
       DOUBAO_API_KEY: ${DOUBAO_API_KEY}
-      # OSS 配置
       ALIYUN_OSS_REGION: ${ALIYUN_OSS_REGION}
       ALIYUN_OSS_ENDPOINT: ${ALIYUN_OSS_ENDPOINT}
       ALIYUN_OSS_BUCKET_NAME: ${ALIYUN_OSS_BUCKET_NAME}
@@ -60,9 +56,7 @@ services:
       ALIYUN_OSS_ACCESS_KEY_ID: ${ALIYUN_OSS_ACCESS_KEY_ID}
       ALIYUN_OSS_ACCESS_KEY_SECRET: ${ALIYUN_OSS_ACCESS_KEY_SECRET}
       ALIYUN_OSS_PRESIGN_EXPIRE_SECONDS: ${ALIYUN_OSS_PRESIGN_EXPIRE_SECONDS}
-      # CORS 配置
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
-      # JVM 配置
       JAVA_OPTS: "-Xms512m -Xmx1024m"
     ports:
       - "8080:8080"

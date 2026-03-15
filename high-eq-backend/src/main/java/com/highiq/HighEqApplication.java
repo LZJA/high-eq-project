@@ -72,6 +72,9 @@ public class HighEqApplication {
      */
     private static String convertToSpringProperty(String envKey) {
         return switch (envKey) {
+            case "MYSQL_HOST" -> "spring.datasource.host";
+            case "MYSQL_PORT" -> "spring.datasource.port";
+            case "MYSQL_DATABASE" -> "spring.datasource.database";
             case "MYSQL_USER" -> "spring.datasource.username";
             case "MYSQL_PASSWORD" -> "spring.datasource.password";
             case "JWT_SECRET" -> "jwt.secret";

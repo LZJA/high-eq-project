@@ -3,12 +3,10 @@ spring:
     name: high-eq-reply
 
   datasource:
-    # Docker 部署时会通过环境变量覆盖
-    url: jdbc:mysql://high-eq-mysql-prod:3306/${MYSQL_DATABASE:higheq}?useSSL=true&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8&useUnicode=true
-    username: ${MYSQL_USER}
-    password: ${MYSQL_PASSWORD}
+    url: jdbc:mysql://${MYSQL_HOST:high-eq-mysql-prod}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:higheq}?useSSL=true&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8&useUnicode=true
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
-    # 连接池配置（生产环境）
     hikari:
       maximum-pool-size: 20
       minimum-idle: 5
@@ -24,7 +22,6 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
         format_sql: false
-        # 生产环境 SQL 慢查询阈值（秒）
         jdbc:
           batch_size: 50
         order_inserts: true
@@ -35,10 +32,8 @@ spring:
       write-dates-as-timestamps: false
     default-property-inclusion: non_null
     charset: UTF-8
-    # 时区设置
     time-zone: Asia/Shanghai
 
-  # 生产环境数据验证
   mvc:
     throw-exception-if-no-handler-found: true
   web:
@@ -51,7 +46,7 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
     cache-enabled: true
-    lazy-loading-enabled: false  # 生产环境禁用延迟加载
+    lazy-loading-enabled: false
     multiple-result-sets-enabled: true
     use-column-label: true
     default-statement-timeout: 30000
@@ -66,7 +61,6 @@ server:
       charset: UTF-8
       enabled: true
       force: true
-  # 生产环境 Tomcat 配置
   tomcat:
     threads:
       max: 200
@@ -79,7 +73,6 @@ server:
     min-response-size: 1024
     mime-types: application/json,application/xml,text/html,text/xml,text/plain
 
-# 生产环境日志配置
 logging:
   level:
     root: WARN
@@ -97,13 +90,11 @@ logging:
       max-history: 30
       total-size-cap: 1GB
 
-# JWT Configuration
 jwt:
   secret: ${JWT_SECRET}
-  expiration: 86400000 # 24 hours
-  refresh-expiration: 604800000 # 7 days
+  expiration: 86400000
+  refresh-expiration: 604800000
 
-# AI Configuration
 ai:
   deepseek:
     api-key: ${DEEPSEEK_API_KEY}
@@ -111,7 +102,6 @@ ai:
     model: deepseek-chat
     temperature: 0.7
     max-tokens: 500
-    # 生产环境超时设置
     timeout:
       connect: 10000
       read: 30000
@@ -134,7 +124,6 @@ aliyun:
     access-key-secret: ${ALIYUN_OSS_ACCESS_KEY_SECRET:}
     presign-expire-seconds: ${ALIYUN_OSS_PRESIGN_EXPIRE_SECONDS:300}
 
-# 生产环境管理端点配置
 management:
   endpoints:
     web:

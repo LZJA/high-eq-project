@@ -179,6 +179,7 @@ public class UserService extends ServiceImpl<UserMapper, User> {
                 .phone(user.getPhone())
                 .avatarUrl(user.getAvatarUrl())
                 .nickname(user.getNickname())
+                .role(user.getRole())
                 .createTime(user.getCreateTime())
                 .build();
     }

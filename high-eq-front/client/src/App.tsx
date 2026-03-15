@@ -19,6 +19,7 @@ import PersonProfileForm from "./pages/PersonProfileForm";
 import PersonProfileChat from "./pages/PersonProfileChat";
 import PersonProfileDetail from "./pages/PersonProfileDetail";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminStatistics from "./pages/AdminStatistics";
 import { useAuth } from "./contexts/AuthContext";
 
 
@@ -85,6 +86,13 @@ function Router() {
         {({ profileId }: { profileId: string }) => (
           <ProtectedRoute>
             <PersonProfileDetail profileId={profileId} />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path={"/admin"}>
+        {() => (
+          <ProtectedRoute>
+            <AdminStatistics />
           </ProtectedRoute>
         )}
       </Route>

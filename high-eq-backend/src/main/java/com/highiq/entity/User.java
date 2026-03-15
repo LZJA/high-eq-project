@@ -51,6 +51,8 @@ public class User {
 
     private String currentToken;          // 当前有效token，用于互踢
 
+    private String role;                  // 用户角色: USER/ADMIN
+
     private LocalDateTime createTime;
     
     private LocalDateTime updateTime;

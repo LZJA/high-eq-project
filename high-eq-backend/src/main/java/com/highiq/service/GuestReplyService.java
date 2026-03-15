@@ -16,16 +16,20 @@ public class GuestReplyService {
     private static final int DAILY_LIMIT = 5;
     private final Map<String, DailyQuota> quotaMap = new ConcurrentHashMap<>();
     private final ReplyService replyService;
+    private final StatisticsService statisticsService;
 
-    public GuestReplyService(ReplyService replyService) {
+    public GuestReplyService(ReplyService replyService, StatisticsService statisticsService) {
         this.replyService = replyService;
+        this.statisticsService = statisticsService;
     }
 
     public GenerateReplyResponse generateReplies(String clientIp, GenerateReplyRequest request) {
         if (!checkAndConsumeQuota(clientIp)) {
             throw new IllegalStateException("今日免费次数已用完，请注册后继续使用");
         }
-        return replyService.generateRepliesForGuest(request);
+        GenerateReplyResponse response = replyService.generateRepliesForGuest(request);
+        statisticsService.recordGuestReply(clientIp);
+        return response;
     }
 
     public int getRemainingQuota(String clientIp) {

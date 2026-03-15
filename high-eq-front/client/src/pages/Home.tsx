@@ -1,7 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { useAuth } from "@/contexts/AuthContext";
-import apiClient from "@/lib/api";
 import SEO from "@/components/SEO";
 import {
   ArrowRight,
@@ -42,7 +40,6 @@ const TONE_OPTIONS = [
 ];
 
 export default function Home() {
-  const { isAuthenticated } = useAuth();
   const [, navigate] = useLocation();
   const [activeDemo, setActiveDemo] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
@@ -59,17 +56,6 @@ export default function Home() {
     const targetTier = planId === 'lite' ? 'lite' : 'pro';
     await analytics.trackUpgradeClick(targetTier);
     toast.info('支付功能开发中，敬请期待');
-  };
-
-  const handleShowClicks = async () => {
-    try {
-      const response = await apiClient.get('/analytics/upgrade-clicks');
-      if (response.data.code === 200) {
-        console.log('Upgrade clicks:', response.data.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch clicks:', error);
-    }
   };
 
   const demoScenarios = [
@@ -509,7 +495,6 @@ export default function Home() {
           <div className="max-w-2xl mx-auto">
             <div
               className="inline-flex items-center gap-2 mb-6 px-4 py-2 bg-white/20 rounded-full backdrop-blur-sm"
-              onClick={handleShowClicks}
             >
               <SparklesIcon className="w-4 h-4 text-yellow-300" />
               <span className="text-white/90 text-sm">准备好提升沟通技巧了吗？</span>

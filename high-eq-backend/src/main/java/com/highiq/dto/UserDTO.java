@@ -14,18 +14,20 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserDTO {
-    
+
     private String id;
-    
+
     private String username;
-    
+
     private String email;
-    
+
     private String phone;
-    
+
     private String avatarUrl;
-    
+
     private String nickname;
-    
+
+    private String role;
+
     private LocalDateTime createTime;
 }

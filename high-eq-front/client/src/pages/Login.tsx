@@ -32,7 +32,7 @@ export default function Login() {
     try {
       await login(formData.username, formData.password);
       toast.success("登录成功！");
-      window.location.href = "/";
+      window.location.href = "/app";
     } catch (error: any) {
       toast.error(
         error.response?.data?.message || "登录失败，请检查用户名和密码"

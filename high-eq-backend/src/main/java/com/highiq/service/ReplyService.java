@@ -42,13 +42,15 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
     private final ProfileReplySuggestionMapper profileReplySuggestionMapper;
     private final QuotaService quotaService;
     private final PersonProfileService personProfileService;
+    private final StatisticsService statisticsService;
 
     public ReplyService(AiService aiService, QwenVisionService qwenVisionService, DoubaoVisionService doubaoVisionService,
                        ReplySuggestionMapper replySuggestionMapper,
                        ProfileChatHistoryMapper profileChatHistoryMapper,
                        ProfileReplySuggestionMapper profileReplySuggestionMapper,
                        QuotaService quotaService,
-                       PersonProfileService personProfileService) {
+                       PersonProfileService personProfileService,
+                       StatisticsService statisticsService) {
         this.aiService = aiService;
         this.qwenVisionService = qwenVisionService;
         this.doubaoVisionService = doubaoVisionService;
@@ -57,6 +59,7 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
         this.profileReplySuggestionMapper = profileReplySuggestionMapper;
         this.quotaService = quotaService;
         this.personProfileService = personProfileService;
+        this.statisticsService = statisticsService;
     }
     
     /**
@@ -193,6 +196,12 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
             long generatedTime = endTime - startTime;
 
             log.info("Generated {} replies in {} ms", aiSuggestions.size(), generatedTime);
+
+            if (request.getPersonProfileId() != null && !request.getPersonProfileId().isEmpty()) {
+                statisticsService.recordProfileReply(userId);
+            } else {
+                statisticsService.recordUserReply(userId);
+            }
 
             return GenerateReplyResponse.builder()
                     .historyId(historyId)

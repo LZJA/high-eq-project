@@ -46,6 +46,8 @@ public class SecurityConfig {
                 .requestMatchers("/auth/register", "/auth/login", "/status").permitAll()
                 // 游客接口允许匿名访问
                 .requestMatchers("/guest/**").permitAll()
+                // 统计接口允许匿名访问
+                .requestMatchers("/analytics/**").permitAll()
                 // 其他所有请求需要认证
                 .anyRequest().authenticated()
             );

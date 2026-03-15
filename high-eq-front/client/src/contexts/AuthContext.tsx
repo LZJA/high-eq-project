@@ -17,6 +17,7 @@ export interface User {
   phone?: string;
   avatarUrl?: string;
   nickname?: string;
+  role?: string;
   createTime?: string;
 }
 
