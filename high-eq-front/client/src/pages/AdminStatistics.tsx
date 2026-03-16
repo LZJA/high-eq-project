@@ -187,11 +187,11 @@ export default function AdminStatistics() {
                         {item.username || (item.clientIp === '0:0:0:0:0:0:0:1' ? 'localhost' : item.clientIp)}
                         {item.userType === "REGISTERED" && item.subscriptionTier && (
                           <span className={`ml-2 px-2 py-0.5 rounded text-xs ${
-                            item.subscriptionTier === "PRO" ? "bg-purple-100 text-purple-700" :
-                            item.subscriptionTier === "LITE" ? "bg-blue-100 text-blue-700" :
+                            item.subscriptionTier.toUpperCase() === "PRO" ? "bg-purple-100 text-purple-700" :
+                            item.subscriptionTier.toUpperCase() === "LITE" ? "bg-blue-100 text-blue-700" :
                             "bg-gray-100 text-gray-700"
                           }`}>
-                            {item.subscriptionTier === "PRO" ? "Pro" : item.subscriptionTier === "LITE" ? "Lite" : "普通"}
+                            {item.subscriptionTier.toUpperCase() === "PRO" ? "Pro" : item.subscriptionTier.toUpperCase() === "LITE" ? "Lite" : "普通"}
                           </span>
                         )}
                       </td>
