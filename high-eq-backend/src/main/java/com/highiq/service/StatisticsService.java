@@ -97,10 +97,14 @@ public class StatisticsService {
         if (userId != null && !userId.isBlank()) {
             QueryWrapper<UserStatistics> wrapper = new QueryWrapper<>();
             wrapper.eq("user_id", userId);
-            UserStatistics stats = userStatsMapper.selectOne(wrapper);
-            return toUpgradeClickStats(stats == null ? 0 : stats.getUpgradeClickCount(),
-                    stats == null ? 0 : stats.getLiteUpgradeClickCount(),
-                    stats == null ? 0 : stats.getProUpgradeClickCount());
+            List<UserStatistics> statsList = userStatsMapper.selectList(wrapper);
+            int totalUpgrade = 0, totalLite = 0, totalPro = 0;
+            for (UserStatistics stats : statsList) {
+                totalUpgrade += defaultInt(stats.getUpgradeClickCount());
+                totalLite += defaultInt(stats.getLiteUpgradeClickCount());
+                totalPro += defaultInt(stats.getProUpgradeClickCount());
+            }
+            return toUpgradeClickStats(totalUpgrade, totalLite, totalPro);
         }
 
         QueryWrapper<GuestStatistics> wrapper = new QueryWrapper<>();
@@ -138,22 +142,40 @@ public class StatisticsService {
             for (User user : allUsers) {
                 QueryWrapper<UserStatistics> wrapper = new QueryWrapper<>();
                 wrapper.eq("user_id", user.getId());
-                UserStatistics userStats = userStatsMapper.selectOne(wrapper);
+                List<UserStatistics> userStatsList = userStatsMapper.selectList(wrapper);
+
+                int totalReply = 0;
+                int totalProfile = 0;
+                int totalUpgrade = 0;
+                int totalLite = 0;
+                int totalPro = 0;
+                LocalDateTime latestUpdate = user.getCreateTime();
+
+                for (UserStatistics stats : userStatsList) {
+                    totalReply += defaultInt(stats.getReplyCount());
+                    totalProfile += defaultInt(stats.getProfileReplyCount());
+                    totalUpgrade += defaultInt(stats.getUpgradeClickCount());
+                    totalLite += defaultInt(stats.getLiteUpgradeClickCount());
+                    totalPro += defaultInt(stats.getProUpgradeClickCount());
+                    if (stats.getUpdateTime() != null && stats.getUpdateTime().isAfter(latestUpdate)) {
+                        latestUpdate = stats.getUpdateTime();
+                    }
+                }
 
                 allResult.add(UserStatisticsDTO.builder()
-                        .id(userStats != null ? userStats.getId() : user.getId())
+                        .id(user.getId())
                         .userId(user.getId())
                         .username(user.getUsername())
                         .userType("REGISTERED")
                         .subscriptionTier(user.getSubscriptionTier())
-                        .replyCount(userStats != null ? defaultInt(userStats.getReplyCount()) : 0)
-                        .profileReplyCount(userStats != null ? defaultInt(userStats.getProfileReplyCount()) : 0)
-                        .upgradeClickCount(userStats != null ? defaultInt(userStats.getUpgradeClickCount()) : 0)
-                        .liteUpgradeClickCount(userStats != null ? defaultInt(userStats.getLiteUpgradeClickCount()) : 0)
-                        .proUpgradeClickCount(userStats != null ? defaultInt(userStats.getProUpgradeClickCount()) : 0)
-                        .totalCount(userStats != null ? defaultInt(userStats.getReplyCount()) + defaultInt(userStats.getProfileReplyCount()) : 0)
-                        .createTime(userStats != null ? userStats.getCreateTime() : user.getCreateTime())
-                        .updateTime(userStats != null ? userStats.getUpdateTime() : user.getCreateTime())
+                        .replyCount(totalReply)
+                        .profileReplyCount(totalProfile)
+                        .upgradeClickCount(totalUpgrade)
+                        .liteUpgradeClickCount(totalLite)
+                        .proUpgradeClickCount(totalPro)
+                        .totalCount(totalReply + totalProfile)
+                        .createTime(user.getCreateTime())
+                        .updateTime(latestUpdate)
                         .build());
             }
         }
@@ -231,6 +253,7 @@ public class StatisticsService {
         try {
             userStatsMapper.insert(UserStatistics.builder()
                     .userId(userId)
+                    .date(LocalDate.now())
                     .replyCount(replyCount)
                     .profileReplyCount(profileReplyCount)
                     .upgradeClickCount(liteCount + proCount)
