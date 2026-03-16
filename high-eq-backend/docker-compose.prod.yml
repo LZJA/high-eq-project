@@ -13,8 +13,8 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       TZ: Asia/Shanghai
-    expose:
-      - "3306"
+    ports:
+      - "13306:3306"
     volumes:
       - mysql_data_prod:/var/lib/mysql
       - ./src/main/resources/db/init.sql:/docker-entrypoint-initdb.d/init.sql
