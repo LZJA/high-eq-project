@@ -145,6 +145,7 @@ public class StatisticsService {
                         .userId(user.getId())
                         .username(user.getUsername())
                         .userType("REGISTERED")
+                        .subscriptionTier(user.getSubscriptionTier())
                         .replyCount(userStats != null ? defaultInt(userStats.getReplyCount()) : 0)
                         .profileReplyCount(userStats != null ? defaultInt(userStats.getProfileReplyCount()) : 0)
                         .upgradeClickCount(userStats != null ? defaultInt(userStats.getUpgradeClickCount()) : 0)

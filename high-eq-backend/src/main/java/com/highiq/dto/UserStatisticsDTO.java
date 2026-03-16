@@ -17,6 +17,7 @@ public class UserStatisticsDTO {
     private String username;
     private String clientIp;
     private String userType;
+    private String subscriptionTier;
     private Integer replyCount;
     private Integer profileReplyCount;
     private Integer upgradeClickCount;

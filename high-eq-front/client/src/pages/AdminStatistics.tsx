@@ -22,6 +22,7 @@ interface StatisticsData {
   username?: string;
   clientIp?: string;
   userType: "GUEST" | "REGISTERED";
+  subscriptionTier?: string;
   replyCount: number;
   profileReplyCount: number;
   upgradeClickCount?: number;
@@ -182,7 +183,18 @@ export default function AdminStatistics() {
                           {item.userType === "GUEST" ? "游客" : "注册用户"}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-900">{item.username || (item.clientIp === '0:0:0:0:0:0:0:1' ? 'localhost' : item.clientIp)}</td>
+                      <td className="py-3 px-4 text-sm text-gray-900">
+                        {item.username || (item.clientIp === '0:0:0:0:0:0:0:1' ? 'localhost' : item.clientIp)}
+                        {item.userType === "REGISTERED" && item.subscriptionTier && (
+                          <span className={`ml-2 px-2 py-0.5 rounded text-xs ${
+                            item.subscriptionTier === "PRO" ? "bg-purple-100 text-purple-700" :
+                            item.subscriptionTier === "LITE" ? "bg-blue-100 text-blue-700" :
+                            "bg-gray-100 text-gray-700"
+                          }`}>
+                            {item.subscriptionTier === "PRO" ? "Pro" : item.subscriptionTier === "LITE" ? "Lite" : "普通"}
+                          </span>
+                        )}
+                      </td>
                       <td className="py-3 px-4 text-sm text-gray-900">{item.replyCount}</td>
                       <td className="py-3 px-4 text-sm text-gray-900">{item.profileReplyCount}</td>
                       <td className="py-3 px-4 text-sm text-gray-900">{item.liteUpgradeClickCount || 0}</td>
