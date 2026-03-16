@@ -24,12 +24,18 @@ public class GuestReplyService {
     }
 
     public GenerateReplyResponse generateReplies(String clientIp, GenerateReplyRequest request) {
-        if (!checkAndConsumeQuota(clientIp)) {
+        if (!checkQuota(clientIp)) {
             throw new IllegalStateException("今日免费次数已用完，请注册后继续使用");
         }
-        GenerateReplyResponse response = replyService.generateRepliesForGuest(request);
-        statisticsService.recordGuestReply(clientIp);
-        return response;
+        try {
+            GenerateReplyResponse response = replyService.generateRepliesForGuest(request);
+            statisticsService.recordGuestReply(clientIp);
+            consumeQuota(clientIp);
+            return response;
+        } catch (Exception e) {
+            log.error("Failed to generate replies for guest", e);
+            throw e;
+        }
     }
 
     public int getRemainingQuota(String clientIp) {
@@ -40,7 +46,18 @@ public class GuestReplyService {
         return Math.max(0, DAILY_LIMIT - quota.count);
     }
 
-    private boolean checkAndConsumeQuota(String clientIp) {
+    private boolean checkQuota(String clientIp) {
+        LocalDate today = LocalDate.now();
+        DailyQuota quota = quotaMap.get(clientIp);
+
+        if (quota == null || !quota.date.equals(today)) {
+            return true;
+        }
+
+        return quota.count < DAILY_LIMIT;
+    }
+
+    private void consumeQuota(String clientIp) {
         LocalDate today = LocalDate.now();
         DailyQuota quota = quotaMap.computeIfAbsent(clientIp, k -> new DailyQuota(today, 0));
 
@@ -49,12 +66,7 @@ public class GuestReplyService {
             quota.count = 0;
         }
 
-        if (quota.count >= DAILY_LIMIT) {
-            return false;
-        }
-
         quota.count++;
-        return true;
     }
 
     private static class DailyQuota {
