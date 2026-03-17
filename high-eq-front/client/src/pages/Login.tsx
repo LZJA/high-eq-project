@@ -50,7 +50,7 @@ export default function Login() {
 
       <Card className="w-full max-w-md shadow-2xl border-0 relative z-10 opacity-0 animate-fade-in-up">
         <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+          <CardTitle className="text-[28px] font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
             HighEQ
           </CardTitle>
           <CardDescription className="text-base">

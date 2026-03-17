@@ -531,9 +531,14 @@ export default function Home() {
           </div>
           <p className="text-sm">高情商回复生成助手 · 让沟通更有温度</p>
           <p className="text-xs mt-4 text-gray-500">© 2026 HighEQ. All rights reserved.</p>
-          <p className="text-xs mt-2">
+          <p className="text-xs mt-2 flex items-center gap-1 justify-center">
             <a href="http://beian.miit.gov.cn" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-400">
               浙ICP备2025210322号-2
+            </a>
+            <div className="w-[1px] h-[10px] bg-gray-500 block mx-[4px]"></div>
+            <a href="https://beian.mps.gov.cn/#/query/webSearch?code=33010202005538" rel="noreferrer" target="_blank" className="text-gray-500 hover:text-gray-400 inline-flex items-center gap-1">
+              <img src="/images/beian_icon.png" alt="公安备案" className="w-3 h-3" />
+              浙公网安备33010202005538号
             </a>
           </p>
         </div>
