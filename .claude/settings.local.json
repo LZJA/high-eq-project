@@ -25,7 +25,10 @@
       "Bash(grep:*)",
       "Bash(pnpm add:*)",
       "Bash(docker-compose logs:*)",
-      "Bash(docker-compose restart:*)"
+      "Bash(docker-compose restart:*)",
+      "Bash(ssh-keyscan:*)",
+      "Bash(python3:*)",
+      "Bash(git checkout:*)"
     ]
   }
 }

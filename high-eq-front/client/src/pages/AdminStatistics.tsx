@@ -45,7 +45,7 @@ export default function AdminStatistics() {
   const pageSize = 10;
 
   useEffect(() => {
-    if (!user || user.role !== "ADMIN") {
+    if (!user || user?.role?.toUpperCase() !== "ADMIN") {
       setLocation("/404");
       return;
     }
