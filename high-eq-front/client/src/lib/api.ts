@@ -2,13 +2,13 @@ import axios, { AxiosInstance } from 'axios';
 
 // API 基础 URL
 // 开发环境：使用 Vite 代理 /api
-// 生产环境：使用环境变�?VITE_API_URL 或相对路�?
+// 生产环境：使用环境变�?VITE_API_URL 或相对路径
 const API_BASE_URL = import.meta.env.MODE === 'development'
   ? '/api'
   : (import.meta.env.VITE_API_URL || '/api');
 
 /**
- * API 客户端配�?
+ * API 客户端配置
  */
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
@@ -19,7 +19,7 @@ const apiClient: AxiosInstance = axios.create({
 });
 
 /**
- * 请求拦截�?- 添加 JWT Token
+ * 请求拦截器- 添加 JWT Token
  */
 apiClient.interceptors.request.use(
   (config) => {
@@ -35,14 +35,14 @@ apiClient.interceptors.request.use(
 );
 
 /**
- * 响应拦截�?- 处理 Token 过期和权限错�?
+ * 响应拦截器- 处理 Token 过期和权限错误
  */
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // 处理 401 (未授�? �?403 (禁止访问) 错误
+    // 处理 401 (未授权 报403 (禁止访问) 错误
     if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
       originalRequest._retry = true;
 
@@ -64,7 +64,7 @@ apiClient.interceptors.response.use(
           return apiClient(originalRequest);
         }
       } catch (refreshError) {
-        // 刷新失败，清除所有认证信息并跳转登录�?
+        // 刷新失败，清除所有认证信息并跳转登录页面
         clearAuthData();
         window.location.href = '/login';
       }
@@ -82,10 +82,10 @@ function clearAuthData() {
   localStorage.removeItem('refresh_token');
   localStorage.removeItem('user');
 
-  // 触发自定义事件，通知 AuthContext 清除用户状�?
+  // 触发自定义事件，通知 AuthContext 清除用户状态
   window.dispatchEvent(new Event('auth_logout'));
 
-  // 延迟跳转，确�?AuthContext 先更新状�?
+  // 延迟跳转，确保 AuthContext 先更新状态
   setTimeout(() => {
     window.location.href = '/login';
   }, 100);
@@ -143,7 +143,7 @@ export const authAPI = {
  */
 export const replyAPI = {
   /**
-   * 生成高情商回�?
+   * 生成高情商回复
    */
   generateReplies: async (data: {
     chatContent: string;
@@ -155,7 +155,7 @@ export const replyAPI = {
     tone?: string;
     personProfileId?: string;
   }) => {
-    const response = await apiClient.post('/reply/generate', data);
+    const response = await apiClient.post('/reply/generate', data, { timeout: 60000 });
     return response.data;
   },
 
