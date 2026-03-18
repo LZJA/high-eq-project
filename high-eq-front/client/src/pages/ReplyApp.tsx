@@ -150,6 +150,7 @@ export default function ReplyApp() {
     }
 
     setIsGenerating(true);
+    setSuggestions([]);
     try {
       const response = await replyAPI.generateReplies({
         chatContent,

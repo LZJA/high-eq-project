@@ -90,6 +90,7 @@ export default function GuestReplyApp() {
     }
 
     setIsGenerating(true);
+    setSuggestions([]);
     try {
       const response = await guestApi.generateReplies({
         chatContent,

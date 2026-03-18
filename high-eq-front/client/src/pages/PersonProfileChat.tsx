@@ -153,6 +153,7 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
     }
 
     setIsGenerating(true);
+    setSuggestions([]);
     try {
       const response = await replyAPI.generateReplies({
         chatContent,
@@ -432,7 +433,17 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
               )}
             </div>
 
-            {suggestions.length === 0 ? (
+            {isGenerating ? (
+              <Card className="shadow-sm">
+                <CardContent className="py-12 text-center">
+                  <Spinner className="size-12 mx-auto mb-4" />
+                  <p className="text-muted-foreground">AI 正在生成回复建议...</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    根据 {profile.name} 的档案信息分析中
+                  </p>
+                </CardContent>
+              </Card>
+            ) : suggestions.length === 0 ? (
               <Card className="shadow-sm">
                 <CardContent className="py-12 text-center text-muted-foreground">
                   <Wand2 className="size-12 mx-auto mb-4 opacity-50" />
