@@ -155,7 +155,7 @@ export const replyAPI = {
     tone?: string;
     personProfileId?: string;
   }) => {
-    const response = await apiClient.post('/reply/generate', data, { timeout: 60000 });
+    const response = await apiClient.post('/reply/generate', data, { timeout: 0 });
     return response.data;
   },
 
