@@ -38,6 +38,7 @@ async function resolveBrowserPath() {
     "/usr/bin/chromium",
     "/usr/bin/chromium-browser",
     "/usr/bin/microsoft-edge",
+    "/usr/lib64/chromium-browser/headless_shell",
   ].filter(Boolean);
 
   for (const candidate of candidates) {
