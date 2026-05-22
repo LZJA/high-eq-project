@@ -42,7 +42,9 @@ const TONE_OPTIONS = [
 export default function Home() {
   const [, navigate] = useLocation();
   const [activeDemo, setActiveDemo] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(() => {
+    return typeof document !== "undefined" && !!document.getElementById("root")?.hasChildNodes();
+  });
 
   useEffect(() => {
     setIsVisible(true);
