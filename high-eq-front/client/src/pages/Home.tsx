@@ -15,7 +15,7 @@ import {
   UserCircle,
   BookmarkCheck
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useLocation } from "wouter";
 import { PRICING_PLANS } from "@/data/pricingPlans";
 import { analytics } from "@/lib/analytics";
@@ -42,13 +42,6 @@ const TONE_OPTIONS = [
 export default function Home() {
   const [, navigate] = useLocation();
   const [activeDemo, setActiveDemo] = useState(0);
-  const [isVisible, setIsVisible] = useState(() => {
-    return typeof document !== "undefined" && !!document.getElementById("root")?.hasChildNodes();
-  });
-
-  useEffect(() => {
-    setIsVisible(true);
-  }, []);
 
   const handleStart = () => {
     navigate("/app");
@@ -131,14 +124,14 @@ export default function Home() {
         </div>
 
         {/* 浮动装饰 */}
-        <div className="absolute top-20 left-10 w-96 h-96 bg-blue-300/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-300/20 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
+        <div className="absolute top-20 left-10 w-96 h-96 bg-blue-300/20 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-300/20 rounded-full blur-3xl"></div>
 
-        <div className={`container mx-auto px-4 relative z-10 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+        <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             {/* 标签 */}
-            <div className="inline-flex items-center gap-2 mb-8 px-4 py-2 bg-white/80 dark:bg-gray-800/80 rounded-full shadow-lg border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300 animate-float">
-              <Sparkles className="w-4 h-4 text-blue-500 animate-pulse" />
+            <div className="inline-flex items-center gap-2 mb-8 px-4 py-2 bg-white/80 dark:bg-gray-800/80 rounded-full shadow-lg border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300">
+              <Sparkles className="w-4 h-4 text-blue-500" />
               <span className="text-sm font-medium bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 AI 驱动的高情商沟通助手
               </span>
@@ -157,7 +150,7 @@ export default function Home() {
             </p>
 
             {/* CTA 按钮 */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center opacity-0 animate-fade-in-up animation-delay-200">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button
                 size="lg"
                 className="group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-lg px-8 py-6 shadow-xl shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105"
@@ -177,12 +170,12 @@ export default function Home() {
             </div>
 
             {/* 免费试用说明 */}
-            <p className="mt-6 text-sm text-gray-500 dark:text-gray-400 opacity-0 animate-fade-in-up animation-delay-300">
+            <p className="mt-6 text-sm text-gray-500 dark:text-gray-400">
               🎉 无需注册，每日 5 次免费体验
             </p>
 
             {/* 信任指标 */}
-            <div className="mt-12 flex flex-wrap justify-center gap-8 text-gray-500 dark:text-gray-400 opacity-0 animate-fade-in-up animation-delay-400">
+            <div className="mt-12 flex flex-wrap justify-center gap-8 text-gray-500 dark:text-gray-400">
               <div className="flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 hover:scale-110 cursor-pointer">
                 <Image className="w-5 h-5" />
                 <span>截图识别</span>
