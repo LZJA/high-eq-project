@@ -9,7 +9,7 @@ interface SEOProps {
 export default function SEO({
   title = "高情商回复生成助手 - AI智能聊天助手",
   description = "AI 智能生成高情商聊天回复,帮你在各种社交场景下说出得体的话。",
-  keywords = "高情商回复,AI聊天助手,智能回复生成,社交聊天,情商助手,聊天技巧"
+  keywords = "higheq,HighEQ,高情商回复,AI聊天助手,智能回复生成,社交聊天,情商助手,聊天技巧"
 }: SEOProps) {
   return (
     <Helmet>
