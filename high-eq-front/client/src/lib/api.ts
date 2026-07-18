@@ -222,12 +222,32 @@ export const quotaAPI = {
     return response.data;
   },
 
-  /**
-   * 升级订阅（支付成功后调用�?   */
-  upgradeSubscription: async (data: { targetTier: 'lite' | 'pro'; durationMonths?: number }) => {
-    const response = await apiClient.post('/quota/upgrade', data);
-    return response.data;
-  },
+};
+
+export interface PaymentOrder {
+  id: string;
+  orderNo: string;
+  email: string;
+  tier: 'lite' | 'pro';
+  amountCents: number;
+  status: string;
+  paymentUrl: string;
+  qrImageUrl: string;
+}
+
+export const paymentAPI = {
+  createOrder: async (data: { tier: 'lite' | 'pro'; email: string }) => (await apiClient.post('/payment/orders', data)).data,
+  submitOrder: async (orderId: string) => (await apiClient.post(`/payment/orders/${orderId}/submit`)).data,
+  getMyOrders: async () => (await apiClient.get('/payment/orders')).data,
+};
+
+export const redemptionAPI = {
+  redeem: async (code: string) => (await apiClient.post('/redemption/redeem', { code })).data,
+};
+
+export const adminPaymentAPI = {
+  list: async (status = 'SUBMITTED') => (await apiClient.get('/admin/payment-orders', { params: { status } })).data,
+  issue: async (orderId: string) => (await apiClient.post(`/admin/payment-orders/${orderId}/issue`)).data,
 };
 
 export const ossAPI = {
@@ -368,4 +388,3 @@ export const guestApi = {
 };
 
 export default apiClient;
-

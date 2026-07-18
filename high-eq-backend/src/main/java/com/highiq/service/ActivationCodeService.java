@@ -12,9 +12,12 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.security.SecureRandom;
 
 @Service
 public class ActivationCodeService {
+    private static final char[] CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789".toCharArray();
     private final ActivationCodeMapper codeMapper;
     private final ActivationCodeRedemptionMapper redemptionMapper;
     private final QuotaService quotaService;
@@ -68,4 +71,25 @@ public class ActivationCodeService {
             throw new IllegalStateException("SHA-256 不可用", exception);
         }
     }
+
+    public IssuedCode createCode(String recipientUserId, String tier, int durationMonths, String sourceOrderId) {
+        String rawCode = formatCode(tier);
+        ActivationCode code = ActivationCode.builder().codeHash(hash(normalize(rawCode))).recipientUserId(recipientUserId)
+                .tier(tier).durationMonths(durationMonths).status("ACTIVE").sourceOrderId(sourceOrderId)
+                .expiresAt(LocalDateTime.now().plus(30, ChronoUnit.DAYS)).build();
+        codeMapper.insert(code);
+        return new IssuedCode(code, rawCode);
+    }
+
+    private String formatCode(String tier) {
+        SecureRandom random = new SecureRandom();
+        StringBuilder value = new StringBuilder("HEQ-").append(tier.toUpperCase());
+        for (int group = 0; group < 3; group++) {
+            value.append('-');
+            for (int index = 0; index < 4; index++) value.append(CODE_ALPHABET[random.nextInt(CODE_ALPHABET.length)]);
+        }
+        return value.toString();
+    }
+
+    public record IssuedCode(ActivationCode code, String rawCode) { }
 }

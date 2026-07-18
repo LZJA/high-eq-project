@@ -5,6 +5,7 @@ import axios from "axios";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Users, UserCheck, TrendingUp } from "lucide-react";
+import { AdminPaymentOrders } from "@/components/AdminPaymentOrders";
 
 interface OverviewData {
   todayNewGuests: number;
@@ -218,6 +219,9 @@ export default function AdminStatistics() {
               <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>下一页</Button>
             </div>
           )}
+        </Card>
+        <Card className="p-6 bg-white/80 backdrop-blur">
+          <AdminPaymentOrders />
         </Card>
       </div>
     </div>
