@@ -10,6 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @Service
 public class ManualPaymentService {
@@ -63,7 +65,7 @@ public class ManualPaymentService {
         boolean isLite = "lite".equals(order.getTier());
         return PaymentOrderDTO.builder().id(order.getId()).orderNo(order.getOrderNo()).email(order.getEmail())
                 .tier(order.getTier()).amountCents(order.getAmountCents()).status(order.getStatus())
-                .paymentUrl(isLite ? liteUrl : proUrl).qrImageUrl(isLite ? liteQrUrl : proQrUrl)
+                .paymentUrl(toAlipayDeepLink(isLite ? liteUrl : proUrl)).qrImageUrl(isLite ? liteQrUrl : proQrUrl)
                 .submittedTime(order.getSubmittedTime()).issuedTime(order.getIssuedTime()).mailedTime(order.getMailedTime()).build();
     }
 
@@ -72,4 +74,16 @@ public class ManualPaymentService {
         for (int index = 0; index < 16; index++) value.append(ORDER_ALPHABET[random.nextInt(ORDER_ALPHABET.length)]);
         return value.toString();
     }
+
+    private String toAlipayDeepLink(String qrUrl) {
+        if (qrUrl == null || qrUrl.isBlank()) {
+            throw new IllegalStateException("支付宝付款链接尚未配置");
+        }
+        if (qrUrl.startsWith("alipays://")) {
+            return qrUrl;
+        }
+        return "alipays://platformapi/startapp?saId=10000007&qrcode="
+                + URLEncoder.encode(qrUrl, StandardCharsets.UTF_8);
+    }
+
 }

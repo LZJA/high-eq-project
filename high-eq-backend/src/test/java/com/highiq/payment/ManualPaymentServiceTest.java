@@ -37,7 +37,8 @@ class ManualPaymentServiceTest {
 
         assertThat(order.getTier()).isEqualTo("lite");
         assertThat(order.getAmountCents()).isEqualTo(499);
-        assertThat(order.getPaymentUrl()).isEqualTo("https://lite.example");
+        assertThat(order.getPaymentUrl()).startsWith("alipays://platformapi/startapp?saId=10000007&qrcode=");
+        assertThat(order.getPaymentUrl()).contains("https%3A%2F%2Flite.example");
         verify(orderMapper).insert(any(ManualPaymentOrder.class));
     }
 

@@ -109,8 +109,8 @@ aliyun:
 
 payment:
   alipay:
-    lite-url: ${PAYMENT_ALIPAY_LITE_URL:}
-    pro-url: ${PAYMENT_ALIPAY_PRO_URL:}
+    lite-url: ${PAYMENT_ALIPAY_LITE_URL:https://qr.alipay.com/fkx13678ugdq9rjgxvq8l11}
+    pro-url: ${PAYMENT_ALIPAY_PRO_URL:https://qr.alipay.com/fkx15144l2dpquafgpgyf39}
     lite-qr-url: ${PAYMENT_ALIPAY_LITE_QR_URL:/images/payment/alipay-lite.jpg}
     pro-qr-url: ${PAYMENT_ALIPAY_PRO_QR_URL:/images/payment/alipay-pro.jpg}
   mail-from: ${PAYMENT_MAIL_FROM:}
