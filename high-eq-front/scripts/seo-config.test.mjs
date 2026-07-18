@@ -39,4 +39,5 @@ test("app-only routes are marked noindex", () => {
     nginxConfig,
     /add_header\s+X-Robots-Tag\s+"noindex, nofollow"\s+always;/
   );
+  assert.match(nginxConfig, /try_files\s+\/index\.html\s+=404;/);
 });
