@@ -9,6 +9,7 @@
     "build:spa": "vite build",
     "preview": "vite preview --host",
     "check": "tsc --noEmit",
+    "test:seo": "node --test scripts/seo-config.test.mjs",
     "format": "prettier --write ."
   },
   "dependencies": {
