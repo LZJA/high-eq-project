@@ -14,10 +14,10 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 # 阶段2: 运行阶段
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre-jammy
 
 # 添加非 root 用户以提高安全性
-RUN addgroup -S spring && adduser -S spring -G spring
+RUN groupadd --system spring && useradd --system --gid spring --create-home spring
 
 # 设置工作目录
 WORKDIR /app

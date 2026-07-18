@@ -43,23 +43,6 @@ public class QuotaController {
     }
 
     /**
-     * 升级订阅（支付成功后调用）
-     */
-    @PostMapping("/upgrade")
-    public ApiResponse<QuotaStatusDTO> upgradeSubscription(
-            @Valid @RequestBody UpgradeSubscriptionRequest request,
-            @RequestHeader("Authorization") String authHeader) {
-        try {
-            String userId = extractUserId(authHeader);
-            QuotaStatusDTO status = quotaService.upgradeSubscription(userId, request.getTargetTier(), request.getDurationMonths());
-            return ApiResponse.success("升级成功", status);
-        } catch (Exception e) {
-            log.error("Failed to upgrade subscription", e);
-            return ApiResponse.error(400, e.getMessage());
-        }
-    }
-
-    /**
      * 从 Authorization header 中提取用户ID
      */
     private String extractUserId(String authHeader) {

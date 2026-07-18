@@ -21,6 +21,8 @@ import { PRICING_PLANS } from "@/data/pricingPlans";
 import { analytics } from "@/lib/analytics";
 import { toast } from "sonner";
 import ContactSidebar from "@/components/ContactSidebar";
+import { PaymentDialog } from "@/components/PaymentDialog";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ROLE_OPTIONS = [
   { value: "同事", emoji: "💼", color: "from-blue-500 to-blue-600" },
@@ -42,6 +44,8 @@ const TONE_OPTIONS = [
 export default function Home() {
   const [, navigate] = useLocation();
   const [activeDemo, setActiveDemo] = useState(0);
+  const [paymentTier, setPaymentTier] = useState<"lite" | "pro" | null>(null);
+  const { isAuthenticated } = useAuth();
 
   const handleStart = () => {
     navigate("/app");
@@ -50,7 +54,11 @@ export default function Home() {
   const handleUpgradeClick = async (planId: string) => {
     const targetTier = planId === 'lite' ? 'lite' : 'pro';
     await analytics.trackUpgradeClick(targetTier);
-    toast.info('支付功能开发中，敬请期待');
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+    setPaymentTier(targetTier);
   };
 
   const demoScenarios = [
@@ -93,6 +101,7 @@ export default function Home() {
         })}
       </script>
       <ContactSidebar />
+      {paymentTier && <PaymentDialog tier={paymentTier} open={true} onOpenChange={(open) => !open && setPaymentTier(null)} />}
       {/* Navigation */}
       <nav className="fixed top-0 w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md z-50 border-b border-gray-200 dark:border-gray-800">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">

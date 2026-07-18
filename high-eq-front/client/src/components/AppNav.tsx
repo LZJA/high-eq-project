@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type ActivePage = "app" | "history" | "favorites" | "profiles";
+type ActivePage = "app" | "history" | "favorites" | "profiles" | "orders" | "admin";
 
 interface AppNavProps {
   /** 当前所在页面，用于高亮或隐藏对应导航项 */
@@ -24,6 +24,7 @@ const NAV_LINKS: { href: string; label: string; page: ActivePage }[] = [
   { href: "/profiles", label: "人物档案", page: "profiles" },
   { href: "/history", label: "历史记录", page: "history" },
   { href: "/favorites", label: "收藏", page: "favorites" },
+  { href: "/orders", label: "兑换码", page: "orders" },
 ];
 
 export function AppNav({ activePage, showLogout = false }: AppNavProps) {
@@ -51,6 +52,11 @@ export function AppNav({ activePage, showLogout = false }: AppNavProps) {
               {link.label}
             </Link>
           ))}
+          {user?.role?.toUpperCase() === "ADMIN" && activePage !== "admin" && (
+            <Link href="/admin" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              管理后台
+            </Link>
+          )}
 
           <span className="text-sm text-muted-foreground">{user?.username}</span>
           {showLogout && (
@@ -75,6 +81,11 @@ export function AppNav({ activePage, showLogout = false }: AppNavProps) {
                   <Link href={link.href}>{link.label}</Link>
                 </DropdownMenuItem>
               ))}
+              {user?.role?.toUpperCase() === "ADMIN" && activePage !== "admin" && (
+                <DropdownMenuItem asChild>
+                  <Link href="/admin">管理后台</Link>
+                </DropdownMenuItem>
+              )}
               {showLogout && (
                 <>
                   <DropdownMenuSeparator />
