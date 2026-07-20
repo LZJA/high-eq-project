@@ -64,7 +64,7 @@ mybatis-plus:
     use-column-label: true
     default-statement-timeout: 30000
     default-fetch-size: 100
-    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
 
 server:
   port: 8080

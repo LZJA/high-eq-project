@@ -44,6 +44,7 @@ mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
     cache-enabled: true
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
     lazy-loading-enabled: true
     multiple-result-sets-enabled: true
     use-column-label: true
