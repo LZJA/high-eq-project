@@ -256,7 +256,7 @@ export const TALKTYPE_SCORER_SCENARIOS: TalkTypeScorerScenario[] = [
     category: "ice_breaking",
     title: "群聊冷场",
     role: "群友",
-    opponentMessage: "……",
+    opponentMessage: "大家突然都不说话了。",
     userGoal: "自然破冰，不让自己显得尴尬。",
     suggestedTone: "轻松幽默",
     evaluationFocus: ["降低误会", "保留关系", "推进问题"],

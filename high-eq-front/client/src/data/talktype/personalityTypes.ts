@@ -136,7 +136,7 @@ export const TALKTYPE_PERSONALITIES: TalkTypePersonality[] = [
     id: "sensitive-radar",
     name: "高敏雷达型",
     codeName: "Sensitive Radar",
-    center: { S: 95, W: 70, B: 35, C: 48 },
+    center: { S: 90, W: 78, B: 25, C: 45 },
     tagline: "空气里变了一点点，你都感觉到了。",
     summary: "高敏雷达型对语气、停顿、已读不回和细微信号极其敏感，很会觉察，也容易内耗。",
     strengths: ["感知细腻", "能提前发现关系变化", "对别人情绪很敏锐"],
