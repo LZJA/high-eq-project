@@ -53,6 +53,10 @@ public class AiService {
      * @return 回复建议列表
      */
     public List<String> generateReplies(String chatContent, String roleBackground, String userIntent, Integer replyCount, String tone) {
+        return generateReplies(chatContent, roleBackground, userIntent, replyCount, tone, model);
+    }
+
+    public List<String> generateReplies(String chatContent, String roleBackground, String userIntent, Integer replyCount, String tone, String requestedModel) {
         try {
             if (replyCount == null || replyCount <= 0) {
                 replyCount = 3;
@@ -62,7 +66,7 @@ public class AiService {
             String prompt = buildPrompt(chatContent, roleBackground, userIntent, replyCount, tone);
 
             // 调用 DeepSeek API
-            Map<String, Object> response = callDeepSeekApi(prompt);
+            Map<String, Object> response = callDeepSeekApi(prompt, requestedModel);
 
             // 解析响应
             return parseResponse(response);
@@ -132,8 +136,13 @@ public class AiService {
      */
     @SuppressWarnings("unchecked")
     private Map<String, Object> callDeepSeekApi(String prompt) {
+        return callDeepSeekApi(prompt, model);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> callDeepSeekApi(String prompt, String requestedModel) {
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", model);
+        requestBody.put("model", requestedModel);
         requestBody.put("temperature", temperature);
         requestBody.put("max_tokens", maxTokens);
 

@@ -66,7 +66,7 @@ export default function ReplyApp() {
   const [roleBackground, setRoleBackground] = useState("");
   const [userIntent, setUserIntent] = useState("");
   const [replyCount, setReplyCount] = useState(3);
-  const [modelPreference, setModelPreference] = useState("deepseek-chat");
+  const [modelPreference, setModelPreference] = useState("deepseek-v4-flash");
   const [tone, setTone] = useState("");
   const [suggestions, setSuggestions] = useState<ReplySuggestion[]>([]);
   const [currentHistoryId, setCurrentHistoryId] = useState<string | null>(null);
@@ -77,6 +77,7 @@ export default function ReplyApp() {
 
   const selectedModel = AI_MODELS.find(m => m.value === modelPreference);
   const supportsImage = selectedModel?.supportsImage || false;
+  const selectedModelCost = selectedModel?.costPoints ?? 1;
 
   useEffect(() => {
     setRemainingQuota(hookRemainingQuota);
@@ -141,10 +142,10 @@ export default function ReplyApp() {
     }
 
     // 检查配额
-    if (!isUnlimited && remainingQuota <= 0) {
+    if (!isUnlimited && remainingQuota < selectedModelCost) {
       const upgradeMessage = tier === 'free'
-        ? "今日配额已用尽，请升级到 Lite 版本获取更多次数"
-        : "今日配额已用尽，请升级到 PRO 版本获取无限次数";
+        ? "今日点数不足，请升级到 Lite 获取更多点数"
+        : `当前模型需要 ${selectedModelCost} 点，今日剩余 ${remainingQuota} 点，请切换模型或升级会员`;
       toast.error(upgradeMessage);
       return;
     }
@@ -164,7 +165,7 @@ export default function ReplyApp() {
 
       setSuggestions(response.data.suggestions || []);
       setCurrentHistoryId(response.data.historyId);
-      setRemainingQuota(prev => Math.max(0, prev - 1));
+      setRemainingQuota(prev => Math.max(0, prev - selectedModelCost));
       toast.success("回复建议生成成功！");
       setTimeout(() => refreshQuota(), 300);
     } catch (error: any) {
@@ -268,7 +269,7 @@ export default function ReplyApp() {
                             onClick={() => document.getElementById('chat-image-upload')?.click()}
                           >
                             <Upload className="w-4 h-4 mr-2" />
-                            {isUploadingImage ? "图片上传中..." : "或上传聊天截图"}
+                            {isUploadingImage ? "图片上传中..." : "上传聊天截图"}
                           </Button>
                         </label>
                       </div>
@@ -334,34 +335,8 @@ export default function ReplyApp() {
                 />
               </div>
 
-              {/* 语气/风格选择 */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">语气/风格（可选）</label>
-                <Select
-                  value={tone}
-                  onValueChange={setTone}
-                  disabled={isGenerating || isUploadingImage}
-                >
-                  <SelectTrigger className="w-full transition-transform focus:scale-[1.02]">
-                    <SelectValue placeholder="选择回复语气" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TONE_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        <div className="flex items-center gap-2">
-                          <span>{option.label}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {option.description}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
               {/* 高级选项 */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">回复数量</label>
                   <Select
@@ -380,21 +355,50 @@ export default function ReplyApp() {
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">AI 模型</label>
-                  <ModelSelector
-                    value={modelPreference}
-                    onChange={setModelPreference}
-                    disabled={isGenerating}
-                  />
+                  <label className="text-sm font-medium">语气/风格（可选）</label>
+                  <Select
+                    value={tone}
+                    onValueChange={setTone}
+                    disabled={isGenerating || isUploadingImage}
+                  >
+                    <SelectTrigger className="w-full transition-transform focus:scale-[1.02]">
+                      <SelectValue placeholder="选择回复语气" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TONE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          <div className="flex items-center gap-2">
+                            <span>{option.label}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {option.description}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">AI 模型</label>
+                <ModelSelector
+                  value={modelPreference}
+                  onChange={setModelPreference}
+                  disabled={isGenerating}
+                />
+                <p className="text-xs text-muted-foreground">
+                  本次将消耗 {selectedModelCost} 点，今日剩余 {remainingQuota} 点
+                </p>
               </div>
 
               {/* 操作按钮 */}
               <div className="flex gap-2">
                 <Button
                   onClick={handleGenerate}
-                  disabled={isGenerating || isUploadingImage}
+                  disabled={isGenerating || isUploadingImage || (!isUnlimited && remainingQuota < selectedModelCost)}
                   className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
                 >
                   {isGenerating ? (

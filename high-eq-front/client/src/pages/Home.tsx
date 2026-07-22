@@ -180,7 +180,7 @@ export default function Home() {
 
             {/* 免费试用说明 */}
             <p className="mt-6 text-sm text-gray-500 dark:text-gray-400">
-              🎉 无需注册，每日 5 次免费体验
+              🎉 无需注册，每日 3 点免费体验
             </p>
 
             {/* 信任指标 */}

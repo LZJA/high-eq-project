@@ -19,7 +19,7 @@ public class GenerateReplyRequest {
     @NotBlank(message = "个人意图不能为空")
     private String userIntent;
 
-    private String modelPreference;  // 可选，默认使用 deepseek-chat
+    private String modelPreference;  // 可选，默认使用 deepseek-v4-flash
 
     private Integer replyCount;  // 生成回复的数量，默认 3
 

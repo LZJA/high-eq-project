@@ -248,7 +248,7 @@ Authorization: Bearer {token}
         "tone": "温和友善"
       }
     ],
-    "modelUsed": "deepseek-chat",
+    "modelUsed": "deepseek-v4-flash",
     "generatedTime": 1234
   }
 }

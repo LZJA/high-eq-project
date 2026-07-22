@@ -51,8 +51,9 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
   const [isGenerating, setIsGenerating] = useState(false);
   const [chatContent, setChatContent] = useState("");
   const [userIntent, setUserIntent] = useState("");
+  const [replyCount, setReplyCount] = useState(3);
   const [tone, setTone] = useState("");
-  const [modelPreference, setModelPreference] = useState("deepseek-chat");
+  const [modelPreference, setModelPreference] = useState("deepseek-v4-flash");
   const [suggestions, setSuggestions] = useState<ReplySuggestion[]>([]);
   const [generatedHistoryId, setGeneratedHistoryId] = useState<string | null>(null);
   const [isGeneratedFavorite, setIsGeneratedFavorite] = useState(false);
@@ -62,6 +63,7 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
 
   const selectedModel = AI_MODELS.find((m) => m.value === modelPreference);
   const supportsImage = selectedModel?.supportsImage || false;
+  const selectedModelCost = selectedModel?.costPoints ?? 1;
 
   useEffect(() => {
     loadProfile();
@@ -144,10 +146,10 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
       toast.error("请输入您的真实意图");
       return;
     }
-    if (!isUnlimited && remainingQuota <= 0) {
+    if (!isUnlimited && remainingQuota < selectedModelCost) {
       const upgradeMessage = tier === 'free'
-        ? "今日配额已用完，请升级到 Lite 获取更多次数"
-        : "今日配额已用完，请升级到 PRO 获取无限次数";
+        ? "今日点数不足，请升级到 Lite 获取更多点数"
+        : `当前模型需要 ${selectedModelCost} 点，今日剩余 ${remainingQuota} 点，请切换模型或升级会员`;
       toast.error(upgradeMessage);
       return;
     }
@@ -159,7 +161,7 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
         chatContent,
         roleBackground: buildRoleBackground(),
         userIntent,
-        replyCount: 3,
+        replyCount,
         modelPreference,
         tone,
         personProfileId: profileId,
@@ -366,7 +368,26 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">回复数量</label>
+                  <Select
+                    value={replyCount.toString()}
+                    onValueChange={(value) => setReplyCount(parseInt(value))}
+                    disabled={isGenerating || isUploadingImage}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 条</SelectItem>
+                      <SelectItem value="2">2 条</SelectItem>
+                      <SelectItem value="3">3 条</SelectItem>
+                      <SelectItem value="5">5 条</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="space-y-2">
                   <label className="text-sm font-medium">语气风格</label>
                   <Select value={tone} onValueChange={setTone} disabled={isGenerating}>
@@ -382,19 +403,26 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">AI 模型</label>
-                  <ModelSelector
-                    value={modelPreference}
-                    onChange={setModelPreference}
-                    disabled={isGenerating || isUploadingImage}
-                  />
-                </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">AI 模型</label>
+                <ModelSelector
+                  value={modelPreference}
+                  onChange={setModelPreference}
+                  disabled={isGenerating || isUploadingImage}
+                />
+                <p className="text-xs text-muted-foreground">
+                  本次将消耗 {selectedModelCost} 点，今日剩余 {remainingQuota} 点
+                </p>
               </div>
 
               <div className="flex gap-2">
-                <Button onClick={handleGenerate} disabled={isGenerating || isUploadingImage} className="flex-1">
+                <Button
+                  onClick={handleGenerate}
+                  disabled={isGenerating || isUploadingImage || (!isUnlimited && remainingQuota < selectedModelCost)}
+                  className="flex-1"
+                >
                   {isGenerating ? (
                     <>
                       <Spinner className="mr-2" />
@@ -493,4 +521,3 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
     </div>
   );
 }
-

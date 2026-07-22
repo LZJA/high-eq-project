@@ -363,6 +363,26 @@ export const profileAPI = {
 /**
  * 游客 API（无需认证）
  */
+const getGuestId = () => {
+  if (typeof window === "undefined") {
+    return "server";
+  }
+
+  const storageKey = "high-eq-guest-id";
+  const existingId = window.localStorage.getItem(storageKey);
+  if (existingId) {
+    return existingId;
+  }
+
+  const newId = window.crypto.randomUUID();
+  window.localStorage.setItem(storageKey, newId);
+  return newId;
+};
+
+const guestHeaders = () => ({
+  "X-Guest-Id": getGuestId(),
+});
+
 export const guestApi = {
   /**
    * 游客生成回复
@@ -374,15 +394,19 @@ export const guestApi = {
     replyCount?: number;
     tone?: string;
   }) => {
-    const response = await axios.post(`${API_BASE_URL}/guest/reply/generate`, data);
+    const response = await axios.post(`${API_BASE_URL}/guest/reply/generate`, data, {
+      headers: guestHeaders(),
+    });
     return response.data;
   },
 
   /**
-   * 获取游客剩余次数
+   * 获取游客剩余点数
    */
   getRemainingQuota: async () => {
-    const response = await axios.get(`${API_BASE_URL}/guest/reply/quota`);
+    const response = await axios.get(`${API_BASE_URL}/guest/reply/quota`, {
+      headers: guestHeaders(),
+    });
     return response.data;
   },
 };

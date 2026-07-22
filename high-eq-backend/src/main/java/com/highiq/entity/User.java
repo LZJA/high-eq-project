@@ -43,11 +43,11 @@ public class User {
     private LocalDateTime subscriptionEndTime;  // 订阅结束时间
 
     // 配额相关字段
-    private Integer dailyQuota;           // 每日配额
+    private Integer dailyQuota;           // 每日点数
 
-    private Integer dailyQuotaUsed;       // 今日已使用配额
+    private Integer dailyQuotaUsed;       // 今日已使用点数
 
-    private LocalDate quotaResetDate;     // 配额重置日期
+    private LocalDate quotaResetDate;     // 点数重置日期
 
     private String currentToken;          // 当前有效token，用于互踢
 

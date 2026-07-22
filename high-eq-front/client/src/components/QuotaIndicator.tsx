@@ -41,7 +41,7 @@ export function QuotaIndicator({ overrideRemainingQuota }: { overrideRemainingQu
           className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0"
         >
           <Crown className="size-3 mr-1" />
-          PRO 无限次数
+          PRO 会员
         </Badge>
         {subscriptionRemainingText && (
           <span className="text-xs text-muted-foreground">到期剩余: {subscriptionRemainingText}</span>
@@ -54,7 +54,7 @@ export function QuotaIndicator({ overrideRemainingQuota }: { overrideRemainingQu
   const percentage = quota.dailyQuota > 0
     ? (dailyQuotaUsed / quota.dailyQuota) * 100
     : 100;
-  const isLow = remainingQuota <= 1;
+  const isLow = remainingQuota <= 8;
   const isExhausted = remainingQuota <= 0;
 
   return (
@@ -62,7 +62,7 @@ export function QuotaIndicator({ overrideRemainingQuota }: { overrideRemainingQu
       <div className="flex items-center gap-2">
         <Zap className={`size-4 ${isExhausted ? 'text-destructive' : isLow ? 'text-amber-500' : 'text-muted-foreground'}`} />
         <span className={`text-sm ${isExhausted ? 'text-destructive font-medium' : ''}`}>
-          今日剩余: <strong>{remainingQuota}</strong>/{quota.dailyQuota}
+          今日剩余: <strong>{remainingQuota}</strong>/{quota.dailyQuota} 点
         </span>
       </div>
       <Progress
@@ -109,7 +109,7 @@ export function QuotaIndicatorCompact() {
     );
   }
 
-  const isLow = remainingQuota <= 1;
+  const isLow = remainingQuota <= 8;
 
   return (
     <div className="flex items-center gap-2">
@@ -118,7 +118,7 @@ export function QuotaIndicatorCompact() {
         className="text-xs"
       >
         <Zap className="size-3 mr-1" />
-        {remainingQuota}/{quota.dailyQuota}
+        {remainingQuota}/{quota.dailyQuota} 点
       </Badge>
       {subscriptionRemainingText && (
         <span className="text-[11px] text-muted-foreground">{subscriptionRemainingText}</span>

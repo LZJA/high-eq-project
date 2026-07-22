@@ -11,6 +11,7 @@ import com.highiq.entity.History;
 import com.highiq.entity.ProfileChatHistory;
 import com.highiq.entity.ProfileReplySuggestion;
 import com.highiq.entity.ReplySuggestion;
+import com.highiq.enums.AiModel;
 import com.highiq.mapper.HistoryMapper;
 import com.highiq.mapper.ProfileChatHistoryMapper;
 import com.highiq.mapper.ProfileReplySuggestionMapper;
@@ -70,21 +71,21 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
         long startTime = System.currentTimeMillis();
 
         try {
-            // === 配额检查 ===
-            if (!quotaService.checkAndConsumeQuota(userId)) {
-                throw new RuntimeException("今日配额已用尽，请升级到 PRO 版本获取无限次数");
-            }
-
             // === 模型检查 ===
             String requestedModel = request.getModelPreference() != null ?
-                    request.getModelPreference() : "deepseek-chat";
+                    request.getModelPreference() : AiModel.DEFAULT_MODEL;
             if (!quotaService.isModelAvailable(userId, requestedModel)) {
                 throw new RuntimeException("当前订阅级别不支持使用 " + requestedModel + " 模型，请升级到 PRO 版本");
             }
 
+            // === 点数检查 ===
+            if (!quotaService.checkAndConsumeQuota(userId, requestedModel)) {
+                throw new RuntimeException("今日点数不足，请切换低消耗模型或升级会员");
+            }
+
             // 调用 AI 服务生成回复
             List<String> aiSuggestions;
-            if ("qwen-vl-plus".equals(requestedModel)) {
+            if (AiModel.QWEN3_VL_PLUS.getId().equals(requestedModel)) {
                 aiSuggestions = qwenVisionService.generateRepliesWithImage(
                         request.getChatImage(),
                         request.getChatContent(),
@@ -93,7 +94,7 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                         request.getReplyCount(),
                         request.getTone()
                 );
-            } else if ("doubao-seed-1-8-251228".equals(requestedModel)) {
+            } else if (AiModel.DOUBAO_SEED_2_PRO.getId().equals(requestedModel)) {
                 aiSuggestions = doubaoVisionService.generateRepliesWithImage(
                         request.getChatImage(),
                         request.getChatContent(),
@@ -108,14 +109,15 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                         request.getRoleBackground(),
                         request.getUserIntent(),
                         request.getReplyCount(),
-                        request.getTone()
+                        request.getTone(),
+                        requestedModel
                 );
             }
 
             // 保存到数据库
             String historyId = UUID.randomUUID().toString();
             String selectedTone = request.getTone() != null && !request.getTone().isEmpty() ? request.getTone() : "自然得体";
-            String modelUsed = request.getModelPreference() != null ? request.getModelPreference() : "deepseek-chat";
+            String modelUsed = request.getModelPreference() != null ? request.getModelPreference() : AiModel.DEFAULT_MODEL;
 
             // 判断是否为人物档案聊天
             if (request.getPersonProfileId() != null && !request.getPersonProfileId().isEmpty()) {
@@ -206,7 +208,7 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
             return GenerateReplyResponse.builder()
                     .historyId(historyId)
                     .suggestions(suggestionDTOs)
-                    .modelUsed(request.getModelPreference() != null ? request.getModelPreference() : "deepseek-chat")
+                    .modelUsed(request.getModelPreference() != null ? request.getModelPreference() : AiModel.DEFAULT_MODEL)
                     .generatedTime(generatedTime)
                     .build();
         } catch (Exception e) {
@@ -452,7 +454,7 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
             return GenerateReplyResponse.builder()
                     .historyId(null)
                     .suggestions(suggestionDTOs)
-                    .modelUsed("deepseek-chat")
+                    .modelUsed(AiModel.DEFAULT_MODEL)
                     .generatedTime(endTime - startTime)
                     .build();
         } catch (Exception e) {

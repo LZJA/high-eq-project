@@ -13,7 +13,7 @@ import java.time.LocalDate;
 @Service
 public class GuestReplyService {
 
-    private static final int DAILY_LIMIT = 5;
+    private static final int DAILY_LIMIT = 3;
     private final Map<String, DailyQuota> quotaMap = new ConcurrentHashMap<>();
     private final ReplyService replyService;
     private final StatisticsService statisticsService;
@@ -25,7 +25,7 @@ public class GuestReplyService {
 
     public GenerateReplyResponse generateReplies(String clientIp, GenerateReplyRequest request) {
         if (!checkQuota(clientIp)) {
-            throw new IllegalStateException("今日免费次数已用完，请注册后继续使用");
+            throw new IllegalStateException("今日免费点数已用完，请注册后继续使用");
         }
         try {
             GenerateReplyResponse response = replyService.generateRepliesForGuest(request);

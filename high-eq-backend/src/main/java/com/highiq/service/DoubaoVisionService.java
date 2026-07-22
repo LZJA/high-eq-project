@@ -18,7 +18,7 @@ public class DoubaoVisionService {
     @Value("${ai.doubao.api-url:https://ark.cn-beijing.volces.com/api/v3}")
     private String apiUrl;
 
-    @Value("${ai.doubao.model:doubao-seed-1-8-251228}")
+    @Value("${ai.doubao.model:doubao-seed-2.0-pro}")
     private String model;
 
     private final WebClient webClient;

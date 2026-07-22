@@ -42,12 +42,40 @@ export interface AiModel {
   tier: SubscriptionTier[];
   description?: string;
   supportsImage?: boolean;
+  costPoints: number;
 }
 
 export const AI_MODELS: AiModel[] = [
-  { value: "deepseek-chat", label: "普通模型", tier: ['free', 'lite', 'pro'] },
-  { value: "qwen-vl-plus", label: "高级模型（支持截图）", tier: ['lite', 'pro'], description: "Lite/PRO", supportsImage: true },
-  { value: "doubao-seed-1-8-251228", label: "专业模型（支持截图）", tier: ['pro'], description: "PRO 专属", supportsImage: true },
+  {
+    value: "deepseek-v4-flash",
+    label: "基础模型",
+    tier: ['free', 'lite', 'pro'],
+    description: "日常文字回复",
+    costPoints: 1,
+  },
+  {
+    value: "deepseek-v4-pro",
+    label: "高级文字模型",
+    tier: ['lite', 'pro'],
+    description: "Lite/PRO · 3 点/次",
+    costPoints: 3,
+  },
+  {
+    value: "qwen3-vl-plus",
+    label: "高级截图模型",
+    tier: ['lite', 'pro'],
+    description: "Lite/PRO · 3 点/次",
+    supportsImage: true,
+    costPoints: 3,
+  },
+  {
+    value: "doubao-seed-2.0-pro",
+    label: "专业模型（支持截图）",
+    tier: ['pro'],
+    description: "PRO 专属 · 8 点/次",
+    supportsImage: true,
+    costPoints: 8,
+  },
 ];
 
 // 星座

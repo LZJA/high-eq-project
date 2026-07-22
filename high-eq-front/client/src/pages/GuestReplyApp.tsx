@@ -58,7 +58,7 @@ export default function GuestReplyApp() {
   const [userIntent, setUserIntent] = useState("");
   const [tone, setTone] = useState("");
   const [suggestions, setSuggestions] = useState<ReplySuggestion[]>([]);
-  const [remainingQuota, setRemainingQuota] = useState(5);
+  const [remainingQuota, setRemainingQuota] = useState(3);
 
   useEffect(() => {
     loadQuota();
@@ -109,7 +109,7 @@ export default function GuestReplyApp() {
       }
     } catch (error: any) {
       if (error.response?.status === 429) {
-        toast.error("今日免费次数已用完，请注册后继续使用", {
+        toast.error("今日免费点数已用完，请注册后继续使用", {
           action: {
             label: "去注册",
             onClick: () => navigate("/register"),
@@ -146,12 +146,12 @@ export default function GuestReplyApp() {
               免费体验
             </h1>
             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-2">
-              每日 5 次免费使用机会
+              每日 3 点免费体验
             </p>
           </div>
           <div className="flex items-center gap-3">
             <div className="text-sm">
-              剩余次数: <span className="font-bold text-blue-600">{remainingQuota}/5</span>
+              剩余点数: <span className="font-bold text-blue-600">{remainingQuota}/3</span>
             </div>
             <Button onClick={() => navigate("/register")} variant="outline" size="sm">
               <LogIn className="w-4 h-4 mr-2" />
