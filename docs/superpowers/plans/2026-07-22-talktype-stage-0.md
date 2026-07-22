@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build the Stage 0 reusable content assets for TalkType: dimensions, 12 personality types, 24 test questions with scoring, 30 scorer scenarios, SEO metadata, FAQ copy, and validation tests.
+**Goal:** Build the Stage 0 reusable content assets for TalkType: dimensions, 12 personality types, personality-card visual specs, 24 test questions with scoring, 30 scorer scenarios, SEO metadata, FAQ copy, and validation tests.
 
 **Architecture:** Keep Stage 0 as front-end static data plus pure scoring helpers. No pages, routes, APIs, or subscription logic are implemented in this phase; later phases consume these typed assets. Validation tests guard content completeness, scoring consistency, and TalkType personality matching logic.
 
@@ -14,6 +14,7 @@
 
 - Create `high-eq-front/client/src/data/talktype/types.ts`: shared TypeScript types for dimensions, questions, personality centers, scorer scenarios, SEO pages, and FAQ entries.
 - Create `high-eq-front/client/src/data/talktype/personalityTypes.ts`: 12 TalkType personalities, S/W/B/C centers, result-page copy, and share lines.
+- Create `high-eq-front/client/src/data/talktype/visualAssets.ts`: 12 TalkType personality-card visual specs, colors, asset IDs, symbolic objects, and image-generation prompts.
 - Create `high-eq-front/client/src/data/talktype/testQuestions.ts`: 24 complete public test questions, each with 4 options and S/W/B/C scores.
 - Create `high-eq-front/client/src/data/talktype/scoring.ts`: pure helpers for dimension normalization, maturity score, nearest-center matching, and secondary tendency detection.
 - Create `high-eq-front/client/src/data/talktype/scorerScenarios.ts`: 30 high-EQ scorer scenarios across relationship, workplace, friend, family, customer, boundary, apology, and follow-up categories.
@@ -61,6 +62,7 @@ import {
   TALKTYPE_DIMENSIONS,
   TALKTYPE_PERSONALITIES,
   TALKTYPE_TEST_QUESTIONS,
+  TALKTYPE_VISUAL_ASSETS,
   TALKTYPE_SCORER_SCENARIOS,
   TALKTYPE_SEO_PAGES,
   calculateTalkTypeResult,
@@ -96,6 +98,23 @@ describe("TalkType content assets", () => {
       expect(personality.friendshipBehavior.length).toBeGreaterThan(20);
       expect(personality.trainingFocus).toHaveLength(3);
       expect(personality.recommendedModule).toMatch(/eq-test|eq-score|eq-emergency|app/);
+    }
+  });
+
+  it("defines one visual asset spec for every personality", () => {
+    expect(TALKTYPE_VISUAL_ASSETS).toHaveLength(12);
+    expect(TALKTYPE_VISUAL_ASSETS.map((asset) => asset.personalityId).sort()).toEqual(
+      TALKTYPE_PERSONALITIES.map((personality) => personality.id).sort(),
+    );
+
+    for (const asset of TALKTYPE_VISUAL_ASSETS) {
+      expect(asset.assetId).toMatch(/^[a-z0-9-]+$/);
+      expect(asset.primaryColor).toMatch(/^#[0-9A-Fa-f]{6}$/);
+      expect(asset.secondaryColor).toMatch(/^#[0-9A-Fa-f]{6}$/);
+      expect(asset.symbolicObjects).toHaveLength(3);
+      expect(asset.prompt).toContain("TalkType");
+      expect(asset.prompt.length).toBeGreaterThan(300);
+      expect(asset.avoid).toHaveLength(3);
     }
   });
 
@@ -223,6 +242,19 @@ export interface TalkTypePersonality {
   trainingFocus: string[];
   recommendedModule: "eq-test" | "eq-score" | "eq-emergency" | "app";
   shareText: string;
+}
+
+export interface TalkTypeVisualAsset {
+  personalityId: string;
+  assetId: string;
+  primaryColor: string;
+  secondaryColor: string;
+  characterAction: string;
+  symbolicObjects: string[];
+  backgroundElements: string;
+  avoid: string[];
+  shareText: string;
+  prompt: string;
 }
 
 export interface TalkTypeQuestionOption {
@@ -384,6 +416,7 @@ Create `high-eq-front/client/src/data/talktype/index.ts`:
 ```ts
 export * from "./types";
 export * from "./personalityTypes";
+export * from "./visualAssets";
 export * from "./testQuestions";
 export * from "./scoring";
 export * from "./scorerScenarios";
@@ -411,7 +444,50 @@ git add high-eq-front/client/src/data/talktype/types.ts \
 git commit -m "feat: add TalkType scoring model"
 ```
 
-## Task 3: Add 24 Complete TalkType Test Questions
+## Task 3: Add TalkType Personality-Card Visual Specs
+
+**Files:**
+- Create: `high-eq-front/client/src/data/talktype/visualAssets.ts`
+
+- [ ] **Step 1: Create visual asset specs**
+
+Create `high-eq-front/client/src/data/talktype/visualAssets.ts` exporting:
+
+```ts
+export const TALKTYPE_VISUAL_ASSETS: TalkTypeVisualAsset[] = [];
+```
+
+Replace the empty array with 12 visual asset objects based on `docs/superpowers/specs/2026-07-22-talktype-personality-card-visual-design.md`.
+
+Content requirements:
+
+- Exactly one asset per personality.
+- Each asset has `personalityId` matching a `TALKTYPE_PERSONALITIES` id.
+- Each asset has an English slug `assetId`.
+- Each asset has `primaryColor` and `secondaryColor` in hex format.
+- Each asset has exactly 3 symbolic objects.
+- Each prompt contains the shared TalkType card style and the personality-specific concept.
+- Each prompt avoids readable text, MBTI imitation, watermark, photorealism, and messy backgrounds.
+
+- [ ] **Step 2: Run TalkType validation**
+
+Run:
+
+```bash
+cd high-eq-front
+pnpm test:talktype
+```
+
+Expected: FAIL only because test questions, scorer scenarios, and SEO content are still missing.
+
+- [ ] **Step 3: Commit visual asset specs**
+
+```bash
+git add high-eq-front/client/src/data/talktype/visualAssets.ts
+git commit -m "feat: add TalkType visual asset specs"
+```
+
+## Task 4: Add 24 Complete TalkType Test Questions
 
 **Files:**
 - Create: `high-eq-front/client/src/data/talktype/testQuestions.ts`
@@ -482,7 +558,7 @@ git add high-eq-front/client/src/data/talktype/testQuestions.ts
 git commit -m "feat: add TalkType public test questions"
 ```
 
-## Task 4: Add 30 Scorer Scenarios
+## Task 5: Add 30 Scorer Scenarios
 
 **Files:**
 - Create: `high-eq-front/client/src/data/talktype/scorerScenarios.ts`
@@ -534,7 +610,7 @@ git add high-eq-front/client/src/data/talktype/scorerScenarios.ts
 git commit -m "feat: add high EQ scorer scenarios"
 ```
 
-## Task 5: Add SEO and FAQ Content
+## Task 6: Add SEO and FAQ Content
 
 **Files:**
 - Create: `high-eq-front/client/src/data/talktype/seoContent.ts`
@@ -583,7 +659,7 @@ git add high-eq-front/client/src/data/talktype/seoContent.ts
 git commit -m "feat: add TalkType SEO content"
 ```
 
-## Task 6: Final Verification
+## Task 7: Final Verification
 
 **Files:**
 - Verify: every file under `high-eq-front/client/src/data/talktype/`
@@ -623,6 +699,6 @@ Expected: only committed Stage 0 changes should be absent from the working tree.
 
 ## Self-Review
 
-- Spec coverage: This plan implements the Stage 0 content and structure requirements from `docs/superpowers/specs/2026-07-22-eq-seo-growth-modules-design.md`: TalkType naming, SWBC dimensions, 12 personality centers, 24 public questions, option scoring, scorer scenarios, SEO/FAQ content, and test coverage.
+- Spec coverage: This plan implements the Stage 0 content and structure requirements from `docs/superpowers/specs/2026-07-22-eq-seo-growth-modules-design.md`: TalkType naming, SWBC dimensions, 12 personality centers, personality-card visual specs, 24 public questions, option scoring, scorer scenarios, SEO/FAQ content, and test coverage.
 - Completion scan: No unfinished markers are intentionally left in implementation steps.
 - Type consistency: All exports used by the test are defined by the planned files and re-exported through `index.ts`.
