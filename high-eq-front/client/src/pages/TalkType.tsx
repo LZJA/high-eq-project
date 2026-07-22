@@ -220,6 +220,7 @@ export default function TalkType() {
                       { label: "情绪洞察", value: 90 },
                       { label: "表达温度", value: 75 },
                       { label: "边界稳定", value: 55 },
+                      { label: "局势掌控", value: 75 },
                     ].map((item) => (
                       <div key={item.label}>
                         <div className="mb-1 flex items-center justify-between text-xs text-stone-500">
