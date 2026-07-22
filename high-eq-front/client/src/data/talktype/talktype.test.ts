@@ -59,6 +59,12 @@ describe("TalkType content assets", () => {
     }
   });
 
+  it("links every personality to a static persona PNG", () => {
+    for (const asset of TALKTYPE_VISUAL_ASSETS) {
+      expect(asset.imagePath).toBe(`/images/talktype/personas/${asset.assetId}.png`);
+    }
+  });
+
   it("defines 24 complete public test questions with four scored options each", () => {
     expect(TALKTYPE_TEST_QUESTIONS).toHaveLength(24);
 

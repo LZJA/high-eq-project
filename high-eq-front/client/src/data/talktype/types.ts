@@ -31,6 +31,7 @@ export interface TalkTypePersonality {
 export interface TalkTypeVisualAsset {
   personalityId: string;
   assetId: string;
+  imagePath?: string;
   primaryColor: string;
   secondaryColor: string;
   characterAction: string;

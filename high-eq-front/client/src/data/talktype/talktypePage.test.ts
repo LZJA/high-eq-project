@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { TALKTYPE_PERSONALITIES, TALKTYPE_TEST_QUESTIONS } from ".";
 import {
+  buildTalkTypeShareImageFilename,
+  buildTalkTypeSharePayload,
   buildTalkTypeShareText,
   getTalkTypePageSeo,
   getTalkTypeProgress,
@@ -40,5 +42,39 @@ describe("TalkType page helpers", () => {
     expect(shareText).toContain("情绪翻译官");
     expect(shareText).toContain("S88 W76 B54 C71");
     expect(shareText).toContain("https://www.higheq.top/talktype");
+  });
+
+  it("builds native share payload without image generation data", () => {
+    const payload = buildTalkTypeSharePayload({
+      personalityName: "边界守门员",
+      communicationCode: "S65 W70 B90 C75",
+      url: "https://www.higheq.top/talktype",
+    });
+
+    expect(payload).toEqual({
+      title: "我的 TalkType 是「边界守门员」",
+      text: "我的 TalkType 是「边界守门员」，沟通代码 S65 W70 B90 C75。测测你的沟通人格：https://www.higheq.top/talktype",
+      url: "https://www.higheq.top/talktype",
+    });
+    expect(Object.keys(payload)).not.toContain("image");
+    expect(Object.keys(payload)).not.toContain("png");
+  });
+
+  it("builds a concise share text without repeating the personality intro", () => {
+    const shareText = buildTalkTypeShareText({
+      personalityName: "关系经营者",
+      communicationCode: "S84 W73 B78 C74",
+      url: "https://www.higheq.top/talktype",
+      personalityShareText: "我的 TalkType 是「关系经营者」：关系不是靠运气，是靠一次次好好回应。",
+    });
+
+    expect(shareText).toBe(
+      "我的 TalkType 是「关系经营者」：关系不是靠运气，是靠一次次好好回应。\n沟通代码 S84 W73 B78 C74。测测你的沟通人格：https://www.higheq.top/talktype",
+    );
+    expect(shareText.match(/我的 TalkType 是/g)).toHaveLength(1);
+  });
+
+  it("builds a stable share image filename", () => {
+    expect(buildTalkTypeShareImageFilename("relationship-curator")).toBe("talktype-relationship-curator.png");
   });
 });

@@ -7,6 +7,7 @@ export const TALKTYPE_VISUAL_ASSETS: TalkTypeVisualAsset[] = [
   {
     personalityId: "emotion-translator",
     assetId: "emotion-translator",
+    imagePath: "/images/talktype/personas/emotion-translator.png",
     primaryColor: "#7A8CFF",
     secondaryColor: "#D6C8FF",
     characterAction: "一手托着发光对话气泡，一手把混乱线条梳理成清晰光带",
@@ -19,6 +20,7 @@ export const TALKTYPE_VISUAL_ASSETS: TalkTypeVisualAsset[] = [
   {
     personalityId: "gentle-firefighter",
     assetId: "gentle-firefighter",
+    imagePath: "/images/talktype/personas/gentle-firefighter.png",
     primaryColor: "#FF9E80",
     secondaryColor: "#FFE0E7",
     characterAction: "轻轻挥出柔光水雾，把小火苗降成温暖光点",
@@ -31,6 +33,7 @@ export const TALKTYPE_VISUAL_ASSETS: TalkTypeVisualAsset[] = [
   {
     personalityId: "boundary-guardian",
     assetId: "boundary-guardian",
+    imagePath: "/images/talktype/personas/boundary-guardian.png",
     primaryColor: "#1FBF9B",
     secondaryColor: "#F8F4E8",
     characterAction: "站在半透明弧形边界门前，一手温柔示意停止，一手保持开放姿态",
@@ -43,6 +46,7 @@ export const TALKTYPE_VISUAL_ASSETS: TalkTypeVisualAsset[] = [
   {
     personalityId: "vibe-repairer",
     assetId: "vibe-repairer",
+    imagePath: "/images/talktype/personas/vibe-repairer.png",
     primaryColor: "#79D8B4",
     secondaryColor: "#FF8FA3",
     characterAction: "把断开的彩色对话拼图重新拼起来",
@@ -55,6 +59,7 @@ export const TALKTYPE_VISUAL_ASSETS: TalkTypeVisualAsset[] = [
   {
     personalityId: "calm-negotiator",
     assetId: "calm-negotiator",
+    imagePath: "/images/talktype/personas/calm-negotiator.png",
     primaryColor: "#2E4A7D",
     secondaryColor: "#CBD5E1",
     characterAction: "坐在圆桌前，平静地把两边观点放到平衡天平上",
@@ -67,6 +72,7 @@ export const TALKTYPE_VISUAL_ASSETS: TalkTypeVisualAsset[] = [
   {
     personalityId: "honest-straight-shooter",
     assetId: "honest-straight-shooter",
+    imagePath: "/images/talktype/personas/honest-straight-shooter.png",
     primaryColor: "#F06445",
     secondaryColor: "#FFF3E0",
     characterAction: "手持一支发光直线箭头，神态坦荡",
@@ -79,6 +85,7 @@ export const TALKTYPE_VISUAL_ASSETS: TalkTypeVisualAsset[] = [
   {
     personalityId: "sensitive-radar",
     assetId: "sensitive-radar",
+    imagePath: "/images/talktype/personas/sensitive-radar.png",
     primaryColor: "#8B5CF6",
     secondaryColor: "#1E2A78",
     characterAction: "安静站立，周围有细腻情绪波纹和雷达光圈",
@@ -91,6 +98,7 @@ export const TALKTYPE_VISUAL_ASSETS: TalkTypeVisualAsset[] = [
   {
     personalityId: "relationship-curator",
     assetId: "relationship-curator",
+    imagePath: "/images/talktype/personas/relationship-curator.png",
     primaryColor: "#F2B84B",
     secondaryColor: "#7BC96F",
     characterAction: "双手轻轻连接几条发光关系线",
@@ -103,6 +111,7 @@ export const TALKTYPE_VISUAL_ASSETS: TalkTypeVisualAsset[] = [
   {
     personalityId: "empathy-sponge",
     assetId: "empathy-sponge",
+    imagePath: "/images/talktype/personas/empathy-sponge.png",
     primaryColor: "#70C7E8",
     secondaryColor: "#F8FBFF",
     characterAction: "抱着柔软云朵，云朵吸收几颗情绪水滴",
@@ -115,6 +124,7 @@ export const TALKTYPE_VISUAL_ASSETS: TalkTypeVisualAsset[] = [
   {
     personalityId: "graceful-decliner",
     assetId: "graceful-decliner",
+    imagePath: "/images/talktype/personas/graceful-decliner.png",
     primaryColor: "#A78BFA",
     secondaryColor: "#FFF9F2",
     characterAction: "一手温柔示意暂停，另一手递出替代方案卡片",
@@ -127,6 +137,7 @@ export const TALKTYPE_VISUAL_ASSETS: TalkTypeVisualAsset[] = [
   {
     personalityId: "quiet-observer",
     assetId: "quiet-observer",
+    imagePath: "/images/talktype/personas/quiet-observer.png",
     primaryColor: "#2BB3B1",
     secondaryColor: "#D8D6CF",
     characterAction: "站在窗边或观测台，手拿小笔记本，观察对话光点",
@@ -139,6 +150,7 @@ export const TALKTYPE_VISUAL_ASSETS: TalkTypeVisualAsset[] = [
   {
     personalityId: "reframe-artist",
     assetId: "reframe-artist",
+    imagePath: "/images/talktype/personas/reframe-artist.png",
     primaryColor: "#E84A8A",
     secondaryColor: "#3949AB",
     characterAction: "把一团乱线拉成漂亮丝带，表情灵动",

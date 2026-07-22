@@ -4,6 +4,8 @@ import { Progress } from "@/components/ui/progress";
 import {
   TALKTYPE_DIMENSIONS,
   TALKTYPE_TEST_QUESTIONS,
+  buildTalkTypeShareImageFilename,
+  buildTalkTypeSharePayload,
   buildTalkTypeShareText,
   calculateTalkTypeResult,
   getTalkTypePageSeo,
@@ -11,7 +13,8 @@ import {
   getTalkTypeVisualAsset,
   type TalkTypeAnswer,
 } from "@/data/talktype";
-import { ArrowLeft, ArrowRight, Brain, Check, Copy, RotateCcw, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Brain, Check, Copy, Download, RotateCcw, Share2, Sparkles } from "lucide-react";
+import QRCode from "qrcode";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
@@ -65,6 +68,7 @@ export default function TalkType() {
 
   const result = useMemo(() => (canShowResult ? calculateTalkTypeResult(answers) : null), [answers, canShowResult]);
   const visualAsset = result ? getTalkTypeVisualAsset(result.personality.id) : null;
+  const introVisualAsset = getTalkTypeVisualAsset("emotion-translator");
   const canonicalUrl = "https://www.higheq.top/talktype";
   const structuredData = [
     {
@@ -128,13 +132,103 @@ export default function TalkType() {
       personalityName: result.personality.name,
       communicationCode: result.communicationCode,
       url: window.location.origin + "/talktype",
+      personalityShareText: result.personality.shareText,
     });
 
     try {
-      await navigator.clipboard.writeText(`${result.personality.shareText}\n${shareText}`);
+      await navigator.clipboard.writeText(shareText);
       toast.success("分享文案已复制");
     } catch {
       toast.error("复制失败，可以手动截屏分享结果卡");
+    }
+  };
+
+  const shareResult = async () => {
+    if (!result) return;
+
+    const payload = buildTalkTypeSharePayload({
+      personalityName: result.personality.name,
+      communicationCode: result.communicationCode,
+      url: window.location.origin + "/talktype",
+      personalityShareText: result.personality.shareText,
+    });
+
+    if (navigator.share) {
+      try {
+        await navigator.share(payload);
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(payload.text);
+      toast.success("分享文案已复制");
+    } catch {
+      toast.error("当前浏览器不支持直接分享，可以手动截屏结果卡");
+    }
+  };
+
+  const saveShareCardImage = async () => {
+    if (!result || !visualAsset) return;
+
+    try {
+      const testUrl = window.location.origin + "/talktype";
+      const [personaImage, qrImage] = await Promise.all([
+        loadCanvasImage(visualAsset.imagePath),
+        QRCode.toDataURL(testUrl, {
+          width: 220,
+          margin: 1,
+          color: {
+            dark: "#111827",
+            light: "#FFFFFF",
+          },
+        }).then(loadCanvasImage),
+      ]);
+      const canvas = document.createElement("canvas");
+      const width = 1080;
+      const height = 1500;
+      const scale = window.devicePixelRatio > 1 ? 2 : 1;
+      canvas.width = width * scale;
+      canvas.height = height * scale;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+
+      const context = canvas.getContext("2d");
+      if (!context) {
+        throw new Error("Canvas is not supported");
+      }
+
+      context.scale(scale, scale);
+      drawTalkTypeShareCard(context, {
+        width,
+        height,
+        personaImage,
+        qrImage,
+        personalityName: result.personality.name,
+        tagline: result.personality.tagline,
+        shareText: visualAsset.shareText,
+        communicationCode: result.communicationCode,
+        testUrl,
+        primaryColor: visualAsset.primaryColor,
+        secondaryColor: visualAsset.secondaryColor,
+      });
+
+      const blob = await canvasToPngBlob(canvas);
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = buildTalkTypeShareImageFilename(visualAsset.assetId);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+      toast.success("结果卡图片已保存");
+    } catch {
+      toast.error("保存图片失败，可以先复制文案或手动截图");
     }
   };
 
@@ -193,58 +287,38 @@ export default function TalkType() {
               </div>
             </div>
 
-            <div className="relative overflow-hidden rounded-2xl border border-blue-100 bg-white p-5 shadow-xl shadow-blue-500/10">
-              <div className="relative rounded-xl bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 p-5">
-                <div>
-                  <div className="pr-20 sm:pr-24">
-                    <p className="text-sm text-stone-500">示例人格</p>
-                    <h2 className="mt-2 text-3xl font-semibold">情绪翻译官</h2>
-                  </div>
-                  <p className="mt-2 text-sm leading-6 text-stone-600 sm:whitespace-nowrap">别人没说出口的话，你常常已经听懂。</p>
-                  <span className="absolute right-5 top-5 whitespace-nowrap rounded-full bg-white/80 px-3 py-1 text-xs text-purple-700 shadow-sm">S90 W75</span>
+            <div className="relative overflow-hidden rounded-2xl border border-blue-100 bg-white p-4 shadow-xl shadow-blue-500/10">
+              <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100">
+                <div className="absolute left-5 top-5 z-10 rounded-full bg-white/85 px-3 py-1 text-xs font-medium text-purple-700 shadow-sm backdrop-blur">示例人格</div>
+                <div className="absolute right-5 top-5 z-10 whitespace-nowrap rounded-full bg-white/85 px-3 py-1 text-xs text-purple-700 shadow-sm backdrop-blur">S90 W75</div>
+                <div className="aspect-[4/5] overflow-hidden">
+                  {introVisualAsset?.imagePath ? (
+                    <img
+                      src={introVisualAsset.imagePath}
+                      alt="情绪翻译官人格插画"
+                      className="h-full w-full object-cover object-top"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <Sparkles className="h-16 w-16 text-purple-600" />
+                    </div>
+                  )}
                 </div>
 
-                <div className="mt-8 rounded-2xl bg-white/70 p-5 shadow-lg shadow-stone-300/30 backdrop-blur">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-purple-600 text-white shadow-md shadow-blue-500/20">
-                      <Sparkles className="h-9 w-9" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-stone-500">沟通代码</p>
-                      <p className="mt-1 text-2xl font-semibold text-gray-900">S90 W75 B55 C75</p>
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-white via-white/95 to-white/0 px-5 pb-5 pt-20">
+                  <h2 className="text-3xl font-semibold text-gray-900">情绪翻译官</h2>
+                  <p className="mt-2 text-sm leading-6 text-stone-600">别人没说出口的话，你常常已经听懂。</p>
+                  <div className="mt-4 rounded-2xl bg-white/80 p-4 shadow-lg shadow-stone-300/25 backdrop-blur">
+                    <p className="text-xs font-medium text-stone-500">沟通代码</p>
+                    <p className="mt-1 text-xl font-semibold text-gray-900">S90 W75 B55 C75</p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {["潜台词雷达", "关系修复", "表达翻译"].map((item) => (
+                        <span key={item} className="rounded-full bg-blue-50 px-3 py-1 text-xs text-blue-700">
+                          {item}
+                        </span>
+                      ))}
                     </div>
                   </div>
-
-                  <div className="mt-6 grid gap-3">
-                    {[
-                      { label: "情绪洞察", value: 90 },
-                      { label: "表达温度", value: 75 },
-                      { label: "边界稳定", value: 55 },
-                      { label: "局势掌控", value: 75 },
-                    ].map((item) => (
-                      <div key={item.label}>
-                        <div className="mb-1 flex items-center justify-between text-xs text-stone-500">
-                          <span>{item.label}</span>
-                          <span>{item.value}</span>
-                        </div>
-                        <div className="h-2 overflow-hidden rounded-full bg-stone-200">
-                          <div className="h-full rounded-full bg-gradient-to-r from-blue-600 to-purple-600" style={{ width: `${item.value}%` }} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <p className="mt-6 rounded-xl bg-white/70 px-4 py-3 text-sm leading-6 text-stone-600">
-                    你的优势是把暧昧、别扭、尴尬的情绪信号，翻译成更容易被接住的话。
-                  </p>
-                </div>
-
-                <div className="mt-5 flex flex-wrap gap-2">
-                  {["潜台词雷达", "关系修复", "沟通代码"].map((item) => (
-                    <span key={item} className="rounded-full bg-white/80 px-3 py-1 text-xs text-purple-700 shadow-sm">
-                      {item}
-                    </span>
-                  ))}
                 </div>
               </div>
             </div>
@@ -330,12 +404,23 @@ export default function TalkType() {
                   <p className="text-sm text-stone-600">我的 TalkType 是</p>
                   <h2 className="mt-2 text-4xl font-semibold">{result.personality.name}</h2>
                   <p className="mt-3 text-stone-700">{result.personality.tagline}</p>
-                  <div className="mt-8 flex aspect-square items-center justify-center rounded-2xl bg-white/55">
-                    <div className="text-center">
-                      <Sparkles className="mx-auto h-16 w-16 text-purple-600" />
-                      <p className="mt-5 max-w-56 text-sm leading-6 text-stone-700">{visualAsset.shareText}</p>
-                    </div>
+                  <div className="mt-8 overflow-hidden rounded-2xl bg-white/55">
+                    {visualAsset.imagePath ? (
+                      <img
+                        src={visualAsset.imagePath}
+                        alt={`${result.personality.name}人格插画`}
+                        className="aspect-square w-full object-cover object-top"
+                      />
+                    ) : (
+                      <div className="flex aspect-square items-center justify-center">
+                        <div className="text-center">
+                          <Sparkles className="mx-auto h-16 w-16 text-purple-600" />
+                          <p className="mt-5 max-w-56 text-sm leading-6 text-stone-700">{visualAsset.shareText}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
+                  <p className="mt-4 rounded-xl bg-white/70 px-4 py-3 text-sm leading-6 text-stone-700">{visualAsset.shareText}</p>
                   <div className="mt-5 flex flex-wrap gap-2">
                     {visualAsset.symbolicObjects.map((item) => (
                       <span key={item} className="rounded-full bg-white px-3 py-1 text-xs text-stone-600">
@@ -354,8 +439,8 @@ export default function TalkType() {
                   <h3 className="mt-2 text-3xl font-semibold">{result.communicationCode}</h3>
                   <p className="mt-3 max-w-2xl leading-7 text-stone-600">{result.personality.summary}</p>
                 </div>
-                <div className="rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 px-5 py-4 text-white">
-                  <p className="text-xs text-white/70">成熟度</p>
+                <div className="min-w-20 rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 px-5 py-4 text-center text-white">
+                  <p className="whitespace-nowrap text-xs text-white/70">成熟度</p>
                   <p className="mt-1 text-3xl font-semibold">{result.maturityScore}</p>
                 </div>
               </div>
@@ -384,11 +469,34 @@ export default function TalkType() {
                 <ResultList title="训练方向" items={result.personality.trainingFocus} />
               </div>
 
+              <div className="mt-8 rounded-2xl border border-purple-100 bg-gradient-to-br from-purple-50 via-white to-blue-50 p-5">
+                <div className="grid gap-5 xl:grid-cols-[1fr_260px] xl:items-center">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-gray-900">分享你的 TalkType 身份卡</p>
+                    <p className="mt-2 max-w-xl text-sm leading-6 text-stone-600">
+                      保存带二维码的结果卡，朋友扫码就能直接进入测试页。
+                    </p>
+                  </div>
+                  <div className="grid gap-3">
+                    <Button className="h-11 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700" onClick={saveShareCardImage}>
+                      <Download className="h-4 w-4" />
+                      保存卡片图片
+                    </Button>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button variant="outline" className="border-blue-200 bg-white text-blue-700 hover:bg-blue-50" onClick={shareResult}>
+                        <Share2 className="h-4 w-4" />
+                        立即分享
+                      </Button>
+                      <Button variant="outline" className="border-blue-200 bg-white text-blue-700 hover:bg-blue-50" onClick={copyShareText}>
+                        <Copy className="h-4 w-4" />
+                        复制文案
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700" onClick={copyShareText}>
-                  <Copy className="h-4 w-4" />
-                  复制分享文案
-                </Button>
                 <Button variant="outline" className="border-blue-200 bg-white text-blue-700 hover:bg-blue-50" onClick={restart}>
                   <RotateCcw className="h-4 w-4" />
                   重新测试
@@ -417,6 +525,186 @@ export default function TalkType() {
       )}
     </div>
   );
+}
+
+function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+        return;
+      }
+
+      reject(new Error("Failed to render canvas as PNG"));
+    }, "image/png");
+  });
+}
+
+function loadCanvasImage(src?: string): Promise<HTMLImageElement> {
+  if (!src) {
+    return Promise.reject(new Error("Image source is missing"));
+  }
+
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`Failed to load image: ${src}`));
+    image.src = src;
+  });
+}
+
+function drawTalkTypeShareCard(
+  context: CanvasRenderingContext2D,
+  input: {
+    width: number;
+    height: number;
+    personaImage: HTMLImageElement;
+    qrImage: HTMLImageElement;
+    personalityName: string;
+    tagline: string;
+    shareText: string;
+    communicationCode: string;
+    testUrl: string;
+    primaryColor: string;
+    secondaryColor: string;
+  },
+) {
+  const background = context.createLinearGradient(0, 0, input.width, input.height);
+  background.addColorStop(0, input.primaryColor);
+  background.addColorStop(1, input.secondaryColor);
+  context.fillStyle = background;
+  context.fillRect(0, 0, input.width, input.height);
+
+  context.fillStyle = "rgba(255,255,255,0.9)";
+  drawRoundRect(context, 64, 64, input.width - 128, input.height - 128, 48);
+  context.fill();
+
+  context.fillStyle = "#4F46E5";
+  context.font = '600 34px "PingFang SC", "Microsoft YaHei", sans-serif';
+  context.fillText("TalkType 沟通人格测试", 112, 138);
+
+  context.fillStyle = "#6B7280";
+  context.font = '400 26px "PingFang SC", "Microsoft YaHei", sans-serif';
+  context.fillText("我的 TalkType 是", 112, 208);
+
+  context.fillStyle = "#111827";
+  context.font = '700 76px "PingFang SC", "Microsoft YaHei", sans-serif';
+  context.fillText(input.personalityName, 112, 300);
+
+  context.fillStyle = "#374151";
+  context.font = '400 30px "PingFang SC", "Microsoft YaHei", sans-serif';
+  wrapCanvasText(context, input.tagline, 112, 360, 856, 42, 2);
+
+  drawCoverImage(context, input.personaImage, 112, 430, 856, 620, 40);
+
+  context.fillStyle = "rgba(255,255,255,0.92)";
+  drawRoundRect(context, 112, 1088, 856, 152, 28);
+  context.fill();
+
+  context.fillStyle = "#374151";
+  context.font = '400 30px "PingFang SC", "Microsoft YaHei", sans-serif';
+  wrapCanvasText(context, input.shareText, 152, 1144, 620, 42, 2);
+
+  context.fillStyle = "#111827";
+  context.font = '700 34px "PingFang SC", "Microsoft YaHei", sans-serif';
+  context.fillText(input.communicationCode, 152, 1210);
+
+  context.fillStyle = "#FFFFFF";
+  drawRoundRect(context, 740, 1106, 180, 180, 24);
+  context.fill();
+  context.drawImage(input.qrImage, 760, 1126, 140, 140);
+
+  context.fillStyle = "#6B7280";
+  context.font = '400 24px "PingFang SC", "Microsoft YaHei", sans-serif';
+  context.fillText("扫码测试", 768, 1308);
+
+  context.fillStyle = "#6B7280";
+  context.font = '400 22px "PingFang SC", "Microsoft YaHei", sans-serif';
+  context.fillText(input.testUrl, 112, 1394);
+}
+
+function drawCoverImage(
+  context: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+) {
+  context.save();
+  drawRoundRect(context, x, y, width, height, radius);
+  context.clip();
+
+  const sourceRatio = image.width / image.height;
+  const targetRatio = width / height;
+  let sourceWidth = image.width;
+  let sourceHeight = image.height;
+  let sourceX = 0;
+  let sourceY = 0;
+
+  if (sourceRatio > targetRatio) {
+    sourceWidth = image.height * targetRatio;
+    sourceX = (image.width - sourceWidth) / 2;
+  } else {
+    sourceHeight = image.width / targetRatio;
+    sourceY = Math.max(0, (image.height - sourceHeight) * 0.08);
+  }
+
+  context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
+  context.restore();
+}
+
+function wrapCanvasText(
+  context: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  lineHeight: number,
+  maxLines: number,
+) {
+  const characters = Array.from(text);
+  let line = "";
+  let lines = 0;
+
+  for (const character of characters) {
+    const testLine = line + character;
+    if (context.measureText(testLine).width > maxWidth && line) {
+      context.fillText(lines === maxLines - 1 ? `${line}…` : line, x, y);
+      lines += 1;
+      if (lines >= maxLines) return;
+      y += lineHeight;
+      line = character;
+    } else {
+      line = testLine;
+    }
+  }
+
+  if (line && lines < maxLines) {
+    context.fillText(line, x, y);
+  }
+}
+
+function drawRoundRect(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+) {
+  context.beginPath();
+  context.moveTo(x + radius, y);
+  context.lineTo(x + width - radius, y);
+  context.quadraticCurveTo(x + width, y, x + width, y + radius);
+  context.lineTo(x + width, y + height - radius);
+  context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  context.lineTo(x + radius, y + height);
+  context.quadraticCurveTo(x, y + height, x, y + height - radius);
+  context.lineTo(x, y + radius);
+  context.quadraticCurveTo(x, y, x + radius, y);
+  context.closePath();
 }
 
 function TalkTypeSeoContent({ seo }: { seo: ReturnType<typeof getTalkTypePageSeo> }) {
