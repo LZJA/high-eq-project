@@ -1,7 +1,8 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
+import { useEffect } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -22,7 +23,17 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AdminStatistics from "./pages/AdminStatistics";
 import Orders from "./pages/Orders";
 import { useAuth } from "./contexts/AuthContext";
+import TalkType from "./pages/TalkType";
 
+function Redirect({ to }: { to: string }) {
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    navigate(to, { replace: true });
+  }, [navigate, to]);
+
+  return null;
+}
 
 function Router() {
   const { user } = useAuth();
@@ -30,6 +41,7 @@ function Router() {
   return (
     <Switch>
       <Route path={"/"} component={Home} />
+      <Route path={"/talktype"} component={TalkType} />
       <Route path={"/login"} component={Login} />
       <Route path={"/register"} component={Register} />
       <Route path={"/app"}>

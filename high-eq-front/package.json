@@ -10,7 +10,7 @@
     "preview": "vite preview --host",
     "check": "tsc --noEmit",
     "test:seo": "node --test scripts/seo-config.test.mjs",
-    "test:talktype": "vitest run client/src/data/talktype/talktype.test.ts",
+    "test:talktype": "vitest run client/src/data/talktype/*.test.ts",
     "format": "prettier --write ."
   },
   "dependencies": {

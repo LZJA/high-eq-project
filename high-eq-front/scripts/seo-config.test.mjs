@@ -19,7 +19,10 @@ const nginxConfig = fs.readFileSync(
 
 test("sitemap contains only canonical public pages", () => {
   assert.match(sitemap, /<loc>https:\/\/www\.higheq\.top\/<\/loc>/);
+  assert.match(sitemap, /<loc>https:\/\/www\.higheq\.top\/talktype<\/loc>/);
   assert.doesNotMatch(sitemap, /<loc>https:\/\/www\.higheq\.top\/app<\/loc>/);
+  assert.doesNotMatch(sitemap, /<loc>https:\/\/www\.higheq\.top\/eq-score<\/loc>/);
+  assert.doesNotMatch(sitemap, /<loc>https:\/\/www\.higheq\.top\/eq-emergency<\/loc>/);
 });
 
 test("nginx redirects apex domain to canonical www host", () => {
@@ -40,4 +43,8 @@ test("app-only routes are marked noindex", () => {
     /add_header\s+X-Robots-Tag\s+"noindex, nofollow"\s+always;/
   );
   assert.match(nginxConfig, /try_files\s+\/index\.html\s+=404;/);
+});
+
+test("public SPA routes can serve prerendered html files", () => {
+  assert.match(nginxConfig, /try_files\s+\$uri\s+\$uri\.html\s+\$uri\/\s+\/index\.html;/);
 });

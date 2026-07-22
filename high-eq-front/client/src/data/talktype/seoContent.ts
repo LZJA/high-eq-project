@@ -2,7 +2,7 @@ import type { TalkTypeSeoPage } from "./types";
 
 export const TALKTYPE_SEO_PAGES: TalkTypeSeoPage[] = [
   {
-    path: "/eq-test",
+    path: "/talktype",
     title: "TalkType 情商测试 - 免费测你的高情商沟通人格",
     description: "完成 24 道真实沟通场景题，测出你的 TalkType 沟通人格、SWBC 四维代码、表达优势和沟通盲区。",
     h1: "TalkType 沟通人格测试",
@@ -13,8 +13,8 @@ export const TALKTYPE_SEO_PAGES: TalkTypeSeoPage[] = [
         answer: "TalkType 更像一个高情商沟通人格测试，会用真实聊天场景观察你的表达倾向。它适合自我了解和沟通训练，不等同于心理诊断或正式测评。",
       },
       {
-        question: "测试需要登录吗？",
-        answer: "不需要。第一版完整 24 道题对游客开放，测完即可看到基础结果、人格类型和沟通代码。",
+        question: "测试会保存我的聊天隐私吗？",
+        answer: "TalkType 使用的是预设沟通场景题，不需要上传真实聊天记录。结果只用于展示你的沟通人格、四维分数和表达建议。",
       },
       {
         question: "结果是怎么算出来的？",
@@ -25,9 +25,29 @@ export const TALKTYPE_SEO_PAGES: TalkTypeSeoPage[] = [
         answer: "单一分数很难解释你到底哪里强、哪里容易踩坑。TalkType 更关注你的沟通风格，所以会给人格类型和四维画像。",
       },
     ],
+    contentSections: [
+      {
+        title: "TalkType 的测试原理是什么？",
+        body: "TalkType 不是把人简单分成情商高或情商低，而是把真实聊天里的常见选择拆成四个沟通维度：S 情绪洞察、W 表达温度、B 边界稳定、C 局势掌控。每道题的选项都会让这四个维度产生不同变化，最后再匹配最接近的人格中心点，所以结果更像一张沟通风格地图。",
+        keywords: ["TalkType", "情商测试", "沟通人格测试", "SWBC"],
+      },
+      {
+        title: "这个测试适合谁？",
+        body: "如果你经常纠结怎么回复别人、担心自己说话太直、太软、太冷，或者想知道自己在恋爱、职场、朋友和家庭沟通里的稳定优势，TalkType 会比单一分数更有参考价值。它适合用来自我了解、聊天复盘和训练高情商表达。",
+        keywords: ["高情商测试", "聊天回复", "职场沟通", "恋爱沟通"],
+      },
+      {
+        title: "TalkType 和 MBTI 有什么区别？",
+        body: "MBTI 更关注性格偏好，TalkType 更关注你在具体对话里的反应方式。比如面对“随便你吧”“你看着办”“我没事”这类高频场景，测试会观察你是先安抚、先追问、先给方案，还是先保持边界，因此结果会更贴近真实沟通行为。",
+        keywords: ["MBTI式测试", "人格测试", "沟通风格", "高情商回复"],
+      },
+      {
+        title: "搜索情商测试时，为什么可以先测 TalkType？",
+        body: "很多人搜索情商测试，其实想知道的是自己为什么容易把话说僵、为什么明明好意却被误解、以及如何把回复说得更舒服。TalkType 用 24 道场景题给出人格名称、沟通代码、优势、盲区和训练方向，能把抽象的情商变成可理解、可分享、可练习的表达方式。",
+        keywords: ["情商测试", "EQ测试", "高情商回复", "沟通训练"],
+      },
+    ],
     internalLinks: [
-      { label: "去高情商评分器实战一题", path: "/eq-score" },
-      { label: "用情商急诊室诊断真实聊天", path: "/eq-emergency" },
       { label: "进入高情商回复生成器", path: "/app" },
     ],
   },
@@ -56,7 +76,7 @@ export const TALKTYPE_SEO_PAGES: TalkTypeSeoPage[] = [
       },
     ],
     internalLinks: [
-      { label: "先测 TalkType 沟通人格", path: "/eq-test" },
+      { label: "先测 TalkType 沟通人格", path: "/talktype" },
       { label: "诊断真实聊天截图", path: "/eq-emergency" },
       { label: "查看职场高情商回复", path: "/workplace-reply" },
     ],
@@ -86,7 +106,7 @@ export const TALKTYPE_SEO_PAGES: TalkTypeSeoPage[] = [
       },
     ],
     internalLinks: [
-      { label: "测 TalkType 沟通人格", path: "/eq-test" },
+      { label: "测 TalkType 沟通人格", path: "/talktype" },
       { label: "练习高情商评分", path: "/eq-score" },
       { label: "生成高情商回复", path: "/app" },
     ],
@@ -118,7 +138,7 @@ export const TALKTYPE_SEO_PAGES: TalkTypeSeoPage[] = [
     internalLinks: [
       { label: "用评分器练职场回复", path: "/eq-score" },
       { label: "职场聊天急诊诊断", path: "/eq-emergency" },
-      { label: "测你的职场沟通人格", path: "/eq-test" },
+      { label: "测你的职场沟通人格", path: "/talktype" },
     ],
   },
   {
@@ -147,7 +167,7 @@ export const TALKTYPE_SEO_PAGES: TalkTypeSeoPage[] = [
     ],
     internalLinks: [
       { label: "用情商急诊室分析聊天", path: "/eq-emergency" },
-      { label: "测你的恋爱沟通人格", path: "/eq-test" },
+      { label: "测你的恋爱沟通人格", path: "/talktype" },
       { label: "练习恋爱回复评分", path: "/eq-score" },
     ],
   },

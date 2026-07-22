@@ -24,7 +24,7 @@ export interface TalkTypePersonality {
   workplaceBehavior: string;
   friendshipBehavior: string;
   trainingFocus: string[];
-  recommendedModule: "eq-test" | "eq-score" | "eq-emergency" | "app";
+  recommendedModule: "talktype" | "eq-score" | "eq-emergency" | "app";
   shareText: string;
 }
 
@@ -105,6 +105,12 @@ export interface TalkTypeFaqItem {
   answer: string;
 }
 
+export interface TalkTypeSeoContentSection {
+  title: string;
+  body: string;
+  keywords: string[];
+}
+
 export interface TalkTypeSeoPage {
   path: string;
   title: string;
@@ -112,5 +118,6 @@ export interface TalkTypeSeoPage {
   h1: string;
   intro: string;
   faq: TalkTypeFaqItem[];
+  contentSections?: TalkTypeSeoContentSection[];
   internalLinks: Array<{ label: string; path: string }>;
 }

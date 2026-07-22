@@ -5,3 +5,4 @@ export * from "./testQuestions";
 export * from "./scoring";
 export * from "./scorerScenarios";
 export * from "./seoContent";
+export * from "./talktypePage";

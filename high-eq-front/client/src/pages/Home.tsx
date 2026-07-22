@@ -46,6 +46,21 @@ export default function Home() {
   const [activeDemo, setActiveDemo] = useState(0);
   const [paymentTier, setPaymentTier] = useState<"lite" | "pro" | null>(null);
   const { isAuthenticated } = useAuth();
+  const homeStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "高情商回复生成助手",
+    alternateName: "HighEQ",
+    url: "https://www.higheq.top/",
+    description: "AI 智能生成高情商聊天回复，支持聊天截图识别、角色背景适配和多种语气风格，帮你在职场、恋爱、朋友和家庭沟通中说出得体的话。",
+    applicationCategory: "UtilitiesApplication",
+    operatingSystem: "Web",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "CNY",
+    },
+  };
 
   const handleStart = () => {
     navigate("/app");
@@ -84,22 +99,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950">
-      <SEO />
-      <script type="application/ld+json">
-        {JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "WebApplication",
-          "name": "高情商回复生成助手",
-          "description": "AI 智能生成高情商聊天回复,帮你在各种社交场景下说出得体的话。",
-          "url": "https://www.higheq.top",
-          "applicationCategory": "UtilitiesApplication",
-          "offers": {
-            "@type": "Offer",
-            "price": "0",
-            "priceCurrency": "CNY"
-          }
-        })}
-      </script>
+      <SEO structuredData={homeStructuredData} />
       <ContactSidebar />
       {paymentTier && <PaymentDialog tier={paymentTier} open={true} onOpenChange={(open) => !open && setPaymentTier(null)} />}
       {/* Navigation */}
@@ -116,12 +116,21 @@ export default function Home() {
               HighEQ
             </span>
           </div>
-          <Button
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg shadow-blue-500/30 transition-all duration-300 hover:scale-105"
-            onClick={handleStart}
-          >
-            开始使用 <ChevronRight className="ml-1 w-4 h-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              className="hidden border-purple-200 bg-white/70 text-purple-700 hover:bg-purple-50 sm:inline-flex dark:border-purple-800 dark:bg-gray-900/70 dark:text-purple-300 dark:hover:bg-purple-900/20"
+              onClick={() => navigate("/talktype")}
+            >
+              沟通人格测试
+            </Button>
+            <Button
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg shadow-blue-500/30 transition-all duration-300 hover:scale-105"
+              onClick={handleStart}
+            >
+              开始使用 <ChevronRight className="ml-1 w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </nav>
 
@@ -162,7 +171,7 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button
                 size="lg"
-                className="group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-lg px-8 py-6 shadow-xl shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105"
+                className="group h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-lg px-8 shadow-xl shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105"
                 onClick={handleStart}
               >
                 <Wand2 className="mr-2 w-5 h-5 group-hover:rotate-12 transition-transform duration-300" />
@@ -171,7 +180,15 @@ export default function Home() {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-2 border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400 text-lg px-8 py-6 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-300 hover:scale-105"
+                className="h-12 border-2 border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400 text-lg px-8 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-300 hover:scale-105"
+                onClick={() => navigate("/talktype")}
+              >
+                测测我的 TalkType
+              </Button>
+              <Button
+                size="lg"
+                variant="ghost"
+                className="text-gray-600 dark:text-gray-300 text-lg px-8 py-6 hover:bg-white/70 dark:hover:bg-gray-900/40 transition-all duration-300 hover:scale-105"
                 onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
               >
                 查看演示
@@ -386,7 +403,24 @@ export default function Home() {
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+            <Card className="p-6 text-center hover:shadow-xl transition-all border-2 hover:border-blue-300 dark:hover:border-blue-700">
+              <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                <Brain className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="font-bold text-lg mb-2">TalkType 测试</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                24 道场景题测出沟通人格和 SWBC 四维画像
+              </p>
+              <Button
+                variant="link"
+                className="mt-3 h-auto p-0 text-blue-600 dark:text-blue-400"
+                onClick={() => navigate("/talktype")}
+              >
+                免费测试 <ArrowRight className="w-3 h-3" />
+              </Button>
+            </Card>
+
             <Card className="p-6 text-center hover:shadow-xl transition-all border-2 hover:border-blue-300 dark:hover:border-blue-700">
               <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
                 <Image className="w-6 h-6 text-white" />

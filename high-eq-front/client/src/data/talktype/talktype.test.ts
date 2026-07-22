@@ -38,7 +38,7 @@ describe("TalkType content assets", () => {
       expect(personality.workplaceBehavior.length).toBeGreaterThan(20);
       expect(personality.friendshipBehavior.length).toBeGreaterThan(20);
       expect(personality.trainingFocus).toHaveLength(3);
-      expect(personality.recommendedModule).toMatch(/eq-test|eq-score|eq-emergency|app/);
+      expect(personality.recommendedModule).toMatch(/talktype|eq-score|eq-emergency|app/);
     }
   });
 
@@ -107,7 +107,7 @@ describe("TalkType content assets", () => {
 
   it("defines SEO content for five public pages with FAQ entries", () => {
     expect(TALKTYPE_SEO_PAGES.map((page) => page.path)).toEqual([
-      "/eq-test",
+      "/talktype",
       "/eq-score",
       "/eq-emergency",
       "/workplace-reply",
@@ -119,6 +119,22 @@ describe("TalkType content assets", () => {
       expect(page.description.length).toBeGreaterThan(30);
       expect(page.h1.length).toBeGreaterThan(4);
       expect(page.faq).toHaveLength(4);
+    }
+  });
+
+  it("defines long-form SEO sections for the TalkType landing page", () => {
+    const talkTypePage = TALKTYPE_SEO_PAGES.find((page) => page.path === "/talktype");
+
+    expect(talkTypePage?.contentSections).toEqual([
+      expect.objectContaining({ title: expect.stringContaining("原理") }),
+      expect.objectContaining({ title: expect.stringContaining("适合") }),
+      expect.objectContaining({ title: expect.stringContaining("MBTI") }),
+      expect.objectContaining({ title: expect.stringContaining("搜索") }),
+    ]);
+
+    for (const section of talkTypePage?.contentSections ?? []) {
+      expect(section.body.length).toBeGreaterThan(80);
+      expect(section.keywords.length).toBeGreaterThanOrEqual(3);
     }
   });
 });
