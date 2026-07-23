@@ -57,8 +57,12 @@ public class AiService {
     }
 
     public String generateText(String prompt, String requestedModel) {
+        return generateText(prompt, requestedModel, null);
+    }
+
+    public String generateText(String prompt, String requestedModel, Integer maxTokensOverride) {
         try {
-            Map<String, Object> response = callDeepSeekApi(prompt, requestedModel);
+            Map<String, Object> response = callDeepSeekApi(prompt, requestedModel, maxTokensOverride);
             return extractContent(response);
         } catch (Exception e) {
             log.error("Failed to generate text from AI", e);
@@ -151,10 +155,15 @@ public class AiService {
 
     @SuppressWarnings("unchecked")
     private Map<String, Object> callDeepSeekApi(String prompt, String requestedModel) {
+        return callDeepSeekApi(prompt, requestedModel, null);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> callDeepSeekApi(String prompt, String requestedModel, Integer maxTokensOverride) {
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", requestedModel);
         requestBody.put("temperature", temperature);
-        requestBody.put("max_tokens", maxTokens);
+        requestBody.put("max_tokens", maxTokensOverride == null ? maxTokens : maxTokensOverride);
 
         List<Map<String, String>> messages = new ArrayList<>();
         Map<String, String> message = new HashMap<>();

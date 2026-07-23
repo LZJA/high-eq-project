@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { TALKTYPE_PERSONALITIES } from "./personalityTypes";
-import { buildFallbackTalkTypeDeepReport, buildTalkTypeDeepReportRequest, buildTalkTypeSnapshotReport } from "./talktypeReport";
+import { TALKTYPE_VISUAL_ASSETS } from "./visualAssets";
+import { buildFallbackTalkTypeDeepReport, buildTalkTypeDeepReportRequest, buildTalkTypeShareReportPayload, buildTalkTypeSnapshotReport } from "./talktypeReport";
 import type { TalkTypeResult } from "./types";
 
 describe("TalkType deep report helpers", () => {
@@ -26,6 +27,17 @@ describe("TalkType deep report helpers", () => {
       dimensionScores: { S: 84, W: 73, B: 78, C: 74 },
       relationshipBehavior: result.personality.relationshipBehavior,
     });
+  });
+
+  it("builds a public share report payload without full AI deep report content", () => {
+    const payload = buildTalkTypeShareReportPayload(sampleResult(), TALKTYPE_VISUAL_ASSETS[7]);
+
+    expect(payload.personalityName).toBe("关系经营者");
+    expect(payload.communicationCode).toBe("S84 W73 B78 C74");
+    expect(payload.tags).toEqual(["长期主义", "回应稳定", "懂得维护关系质量"]);
+    expect(payload.identityInsight).toContain("关系经营者");
+    expect(Object.keys(payload)).not.toContain("hiddenPattern");
+    expect(Object.keys(payload)).not.toContain("innerNeed");
   });
 
   it("builds a complete local fallback report for guests when AI is unavailable", () => {

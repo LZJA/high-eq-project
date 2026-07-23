@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS talktype_share_report (
+    id VARCHAR(36) PRIMARY KEY,
+    share_id VARCHAR(32) NOT NULL,
+    personality_id VARCHAR(80) NOT NULL,
+    personality_name VARCHAR(80) NOT NULL,
+    code_name VARCHAR(120) NULL,
+    communication_code VARCHAR(80) NOT NULL,
+    tagline VARCHAR(255) NULL,
+    summary TEXT NULL,
+    share_text VARCHAR(255) NULL,
+    image_path VARCHAR(255) NULL,
+    primary_color VARCHAR(32) NULL,
+    secondary_color VARCHAR(32) NULL,
+    tags_json TEXT NULL,
+    identity_insight TEXT NULL,
+    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_talktype_share_id (share_id),
+    KEY idx_talktype_share_personality (personality_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='TalkType public shared result reports';

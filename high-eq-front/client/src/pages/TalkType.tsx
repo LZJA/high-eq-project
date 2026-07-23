@@ -5,28 +5,29 @@ import { Progress } from "@/components/ui/progress";
 import {
   TALKTYPE_DIMENSIONS,
   TALKTYPE_TEST_QUESTIONS,
-  buildFallbackTalkTypeDeepReport,
+  buildTalkTypeShareReportPayload,
   buildTalkTypeSnapshotReport,
   buildTalkTypeDeepReportRequest,
   buildTalkTypeShareImageFilename,
   buildTalkTypeSharePayload,
-  buildTalkTypeShareText,
   calculateTalkTypeResult,
   getTalkTypePageSeo,
   getTalkTypeProgress,
   getTalkTypeDimensionScoreInsight,
   getTalkTypeVisualAsset,
+  loadLatestTalkTypeAnswers,
+  saveLatestTalkTypeResult,
   type TalkTypeDeepReport,
   type TalkTypeAnswer,
 } from "@/data/talktype";
 import { guestApi } from "@/lib/api";
-import { ArrowLeft, ArrowRight, Brain, Check, Copy, Download, RotateCcw, Share2, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Brain, Check, Download, RotateCcw, Share2, Sparkles } from "lucide-react";
 import QRCode from "qrcode";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 
-type TalkTypeStage = "intro" | "test" | "result";
+type TalkTypeStage = "intro" | "test" | "complete" | "result";
 
 const categoryLabels: Record<string, string> = {
   relationship: "亲密关系",
@@ -52,20 +53,27 @@ function TalkTypeLogo() {
 }
 
 export default function TalkType() {
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const seo = getTalkTypePageSeo();
-  const [stage, setStage] = useState<TalkTypeStage>("intro");
+  const [stage, setStage] = useState<TalkTypeStage>(location === "/talktype/result" ? "result" : "intro");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answersByQuestionId, setAnswersByQuestionId] = useState<Record<string, string>>({});
   const [sharePreviewImage, setSharePreviewImage] = useState<{ url: string; filename: string } | null>(null);
   const [deepReport, setDeepReport] = useState<TalkTypeDeepReport | null>(null);
   const [isDeepReportLoading, setIsDeepReportLoading] = useState(false);
+  const [isDeepReportFailed, setIsDeepReportFailed] = useState(false);
+  const [isResultRouteReady, setIsResultRouteReady] = useState(false);
+  const [deepReportRetryCount, setDeepReportRetryCount] = useState(0);
+  const autoAdvanceTimerRef = useRef<number | null>(null);
+  const deepReportRequestKeyRef = useRef<string | null>(null);
 
   const currentQuestion = TALKTYPE_TEST_QUESTIONS[currentIndex];
   const answeredCount = Object.keys(answersByQuestionId).length;
   const progress = getTalkTypeProgress(answeredCount, TALKTYPE_TEST_QUESTIONS.length);
   const selectedOptionId = answersByQuestionId[currentQuestion.id];
   const canShowResult = answeredCount === TALKTYPE_TEST_QUESTIONS.length;
+  const isLastQuestion = currentIndex === TALKTYPE_TEST_QUESTIONS.length - 1;
+  const canViewResult = canShowResult && (stage === "complete" || isLastQuestion);
 
   const answers = useMemo<TalkTypeAnswer[]>(
     () =>
@@ -75,12 +83,14 @@ export default function TalkType() {
       }),
     [answersByQuestionId],
   );
+  const answersKey = useMemo(() => answers.map((answer) => `${answer.questionId}:${answer.optionId}`).join("|"), [answers]);
 
   const result = useMemo(() => (canShowResult ? calculateTalkTypeResult(answers) : null), [answers, canShowResult]);
   const visualAsset = result ? getTalkTypeVisualAsset(result.personality.id) : null;
   const snapshotReport = result ? buildTalkTypeSnapshotReport(result) : null;
   const introVisualAsset = getTalkTypeVisualAsset("emotion-translator");
   const canonicalUrl = "https://www.higheq.top/talktype";
+  const isOwnResultRoute = location === "/talktype/result";
   const structuredData = [
     {
       "@context": "https://schema.org",
@@ -106,20 +116,60 @@ export default function TalkType() {
     },
   ];
 
-  const selectOption = (optionId: string) => {
-    setAnswersByQuestionId((prev) => ({ ...prev, [currentQuestion.id]: optionId }));
+  const clearAutoAdvanceTimer = () => {
+    if (autoAdvanceTimerRef.current === null) return;
 
-    window.setTimeout(() => {
-      if (currentIndex < TALKTYPE_TEST_QUESTIONS.length - 1) {
-        setCurrentIndex((value) => value + 1);
+    window.clearTimeout(autoAdvanceTimerRef.current);
+    autoAdvanceTimerRef.current = null;
+  };
+
+  const selectOption = (optionId: string) => {
+    clearAutoAdvanceTimer();
+    const questionIndex = currentIndex;
+    const questionId = currentQuestion.id;
+    const nextAnswersByQuestionId = { ...answersByQuestionId, [questionId]: optionId };
+
+    setAnswersByQuestionId(nextAnswersByQuestionId);
+
+    autoAdvanceTimerRef.current = window.setTimeout(() => {
+      autoAdvanceTimerRef.current = null;
+
+      if (questionIndex < TALKTYPE_TEST_QUESTIONS.length - 1) {
+        setCurrentIndex((value) => (value === questionIndex ? questionIndex + 1 : value));
         return;
       }
 
-      setStage("result");
+      const answeredQuestionIds = new Set(Object.keys(nextAnswersByQuestionId));
+
+      if (answeredQuestionIds.size === TALKTYPE_TEST_QUESTIONS.length) {
+        setStage("complete");
+        return;
+      }
+
+      const firstMissingQuestionIndex = TALKTYPE_TEST_QUESTIONS.findIndex((question) => !answeredQuestionIds.has(question.id));
+      if (firstMissingQuestionIndex >= 0) {
+        setStage("test");
+        setCurrentIndex(firstMissingQuestionIndex);
+        toast.message(`还有 ${TALKTYPE_TEST_QUESTIONS.length - answeredQuestionIds.size} 道题未完成，先补一下`);
+      }
     }, 180);
   };
 
+  const viewResult = () => {
+    if (!canShowResult) return;
+
+    saveLatestTalkTypeResult(answers);
+    setStage("result");
+    navigate("/talktype/result");
+  };
+
   const goBack = () => {
+    clearAutoAdvanceTimer();
+
+    if (stage === "complete") {
+      setStage("test");
+    }
+
     if (currentIndex > 0) {
       setCurrentIndex((value) => value - 1);
       return;
@@ -129,13 +179,40 @@ export default function TalkType() {
   };
 
   const restart = () => {
+    deepReportRequestKeyRef.current = null;
     setAnswersByQuestionId({});
     setCurrentIndex(0);
     setStage("test");
+    navigate("/talktype");
   };
 
   useEffect(() => {
+    if (!isOwnResultRoute) {
+      setIsResultRouteReady(false);
+      return;
+    }
+
+    setIsResultRouteReady(false);
+
+    const latestAnswers = loadLatestTalkTypeAnswers();
+    if (!latestAnswers.length) {
+      setStage("result");
+      setIsResultRouteReady(true);
+      return;
+    }
+
+    setAnswersByQuestionId(
+      Object.fromEntries(latestAnswers.map((answer) => [answer.questionId, answer.optionId])),
+    );
+    setCurrentIndex(TALKTYPE_TEST_QUESTIONS.length - 1);
+    setStage("result");
+    setIsResultRouteReady(true);
+  }, [isOwnResultRoute]);
+
+  useEffect(() => {
     return () => {
+      clearAutoAdvanceTimer();
+
       if (sharePreviewImage) {
         URL.revokeObjectURL(sharePreviewImage.url);
       }
@@ -143,26 +220,47 @@ export default function TalkType() {
   }, [sharePreviewImage]);
 
   useEffect(() => {
-    if (stage !== "result" || !result) {
+    if (stage !== "result" || !result || !isOwnResultRoute || !isResultRouteReady) {
       setDeepReport(null);
       setIsDeepReportLoading(false);
+      setIsDeepReportFailed(false);
+      if (stage !== "result") {
+        deepReportRequestKeyRef.current = null;
+      }
+      return;
+    }
+
+    if (!result) return;
+
+    const requestKey = `${answersKey}#${deepReportRetryCount}`;
+    if (deepReportRequestKeyRef.current === requestKey) {
       return;
     }
 
     let ignore = false;
-    setDeepReport(buildFallbackTalkTypeDeepReport(result));
+    deepReportRequestKeyRef.current = requestKey;
+    setDeepReport(null);
     setIsDeepReportLoading(true);
+    setIsDeepReportFailed(false);
 
     guestApi
       .generateTalkTypeDeepReport(buildTalkTypeDeepReportRequest(result))
       .then((response) => {
         if (!ignore && response.data) {
+          if (!response.data.hiddenPattern) {
+            deepReportRequestKeyRef.current = null;
+            setDeepReport(null);
+            setIsDeepReportFailed(true);
+            return;
+          }
           setDeepReport(response.data);
         }
       })
       .catch(() => {
         if (!ignore) {
-          setDeepReport(buildFallbackTalkTypeDeepReport(result));
+          deepReportRequestKeyRef.current = null;
+          setDeepReport(null);
+          setIsDeepReportFailed(true);
         }
       })
       .finally(() => {
@@ -174,52 +272,68 @@ export default function TalkType() {
     return () => {
       ignore = true;
     };
-  }, [result, stage]);
+  }, [answersKey, deepReportRetryCount, isOwnResultRoute, isResultRouteReady, stage]);
 
-  const copyShareText = async () => {
-    if (!result) return;
+  const retryDeepReport = () => {
+    deepReportRequestKeyRef.current = null;
+    setDeepReport(null);
+    setIsDeepReportFailed(false);
+    setDeepReportRetryCount((value) => value + 1);
+  };
 
-    const shareText = buildTalkTypeShareText({
-      personalityName: result.personality.name,
-      communicationCode: result.communicationCode,
-      url: window.location.origin + "/talktype",
-      personalityShareText: result.personality.shareText,
-    });
+  const ensureDeepReportForShare = async () => {
+    if (!result) return null;
+    if (deepReport) return deepReport;
 
-    try {
-      await navigator.clipboard.writeText(shareText);
-      toast.success("分享文案已复制");
-    } catch {
-      toast.error("复制失败，可以手动截屏分享结果卡");
+    toast.message("正在补全 AI 深度报告，马上就能分享完整结果");
+    setIsDeepReportLoading(true);
+    setIsDeepReportFailed(false);
+
+    const response = await guestApi.generateTalkTypeDeepReport(buildTalkTypeDeepReportRequest(result));
+    if (!response.data?.hiddenPattern) {
+      throw new Error("AI deep report is empty");
     }
+    setDeepReport(response.data);
+    setIsDeepReportLoading(false);
+    return response.data;
+  };
+
+  const createPublicShareUrl = async () => {
+    if (!result || !visualAsset) return window.location.origin + "/talktype";
+
+    const reportForShare = await ensureDeepReportForShare();
+    const response = await guestApi.createTalkTypeShareReport(buildTalkTypeShareReportPayload(result, visualAsset, reportForShare));
+    return window.location.origin + response.data.shareUrl;
   };
 
   const shareResult = async () => {
     if (!result) return;
 
-    const payload = buildTalkTypeSharePayload({
-      personalityName: result.personality.name,
-      communicationCode: result.communicationCode,
-      url: window.location.origin + "/talktype",
-      personalityShareText: result.personality.shareText,
-    });
+    try {
+      const shareUrl = await createPublicShareUrl();
+      const payload = buildTalkTypeSharePayload({
+        personalityName: result.personality.name,
+        communicationCode: result.communicationCode,
+        url: shareUrl,
+        personalityShareText: result.personality.shareText,
+      });
 
-    if (navigator.share) {
-      try {
+      if (navigator.share) {
         await navigator.share(payload);
         return;
-      } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") {
-          return;
-        }
       }
-    }
 
-    try {
       await navigator.clipboard.writeText(payload.text);
       toast.success("分享文案已复制");
-    } catch {
-      toast.error("当前浏览器不支持直接分享，可以手动截屏结果卡");
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return;
+      }
+      setIsDeepReportLoading(false);
+      if (error instanceof Error && error.message === "AI deep report is empty") {
+        setIsDeepReportFailed(true);
+      }
+      toast.error("分享失败，可以稍后再试");
     }
   };
 
@@ -290,7 +404,10 @@ export default function TalkType() {
             <Button variant="ghost" className="hidden text-stone-600 sm:inline-flex" onClick={() => navigate("/app")}>
               高情商回复
             </Button>
-            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700" onClick={() => setStage("test")}>
+            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700" onClick={() => {
+              setStage("test");
+              navigate("/talktype");
+            }}>
               开始测试
             </Button>
           </div>
@@ -366,7 +483,7 @@ export default function TalkType() {
         </main>
       )}
 
-      {stage === "test" && (
+      {(stage === "test" || stage === "complete") && (
         <main className="mx-auto max-w-4xl px-3 py-4 sm:px-4 md:py-10">
           <div className="mb-4 md:mb-8">
             <div className="mb-2 flex items-center justify-between text-xs text-stone-500 sm:text-sm">
@@ -420,8 +537,32 @@ export default function TalkType() {
                 <ArrowLeft className="h-4 w-4" />
                 上一题
               </Button>
-              <span className="text-xs text-stone-400">选择后自动进入下一题</span>
+              {canViewResult ? (
+                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700" onClick={viewResult}>
+                  查看我的结果 <ArrowRight className="h-4 w-4" />
+                </Button>
+              ) : (
+                <span className="text-xs text-stone-400">选择后自动进入下一题</span>
+              )}
             </div>
+          </section>
+        </main>
+      )}
+
+      {stage === "result" && !result && (
+        <main className="mx-auto max-w-3xl px-4 py-16">
+          <section className="rounded-2xl border border-blue-100 bg-white/90 p-8 text-center shadow-lg shadow-blue-100/70">
+            <Sparkles className="mx-auto h-10 w-10 text-purple-600" />
+            <h1 className="mt-4 text-2xl font-semibold text-gray-900">还没有可查看的 TalkType 结果</h1>
+            <p className="mt-3 text-sm leading-6 text-stone-600">
+              完成 24 道沟通场景题后，会在这里生成你的完整人格报告。
+            </p>
+            <Button className="mt-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700" onClick={() => {
+              setStage("test");
+              navigate("/talktype");
+            }}>
+              开始测试
+            </Button>
           </section>
         </main>
       )}
@@ -509,9 +650,9 @@ export default function TalkType() {
                 })}
               </div>
 
-              {deepReport && (
-                <DeepReportSection report={deepReport} isLoading={isDeepReportLoading} />
-              )}
+              {isDeepReportLoading && <DeepReportLoadingSection />}
+              {!isDeepReportLoading && isDeepReportFailed && <DeepReportErrorSection onRetry={retryDeepReport} />}
+              {!isDeepReportLoading && deepReport && <DeepReportSection report={deepReport} />}
 
               <div className="mt-8 grid gap-4 md:grid-cols-3">
                 <ResultList title="优势" items={result.personality.strengths} />
@@ -527,21 +668,20 @@ export default function TalkType() {
                       保存带二维码的结果卡，朋友扫码就能直接进入测试页。
                     </p>
                   </div>
-                  <div className="grid gap-3">
-                    <Button className="h-11 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700" onClick={saveShareCardImage}>
-                      <Download className="h-4 w-4" />
-                      保存卡片图片
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button className="h-11 bg-gradient-to-r from-blue-600 to-purple-600 px-3 text-white hover:from-blue-700 hover:to-purple-700" onClick={saveShareCardImage}>
+                      <Download className="h-4 w-4 shrink-0" />
+                      <span className="truncate">保存图片</span>
                     </Button>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Button variant="outline" className="border-blue-200 bg-white text-blue-700 hover:bg-blue-50" onClick={shareResult}>
-                        <Share2 className="h-4 w-4" />
-                        立即分享
-                      </Button>
-                      <Button variant="outline" className="border-blue-200 bg-white text-blue-700 hover:bg-blue-50" onClick={copyShareText}>
-                        <Copy className="h-4 w-4" />
-                        复制文案
-                      </Button>
-                    </div>
+                    <Button
+                      variant="outline"
+                      className="h-11 border-blue-200 bg-white px-3 text-blue-700 hover:bg-blue-50"
+                      onClick={shareResult}
+                      disabled={isDeepReportLoading}
+                    >
+                      <Share2 className="h-4 w-4 shrink-0" />
+                      <span className="truncate">{isDeepReportLoading ? "生成中" : "分享结果"}</span>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -597,6 +737,7 @@ export default function TalkType() {
           )}
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }
@@ -739,7 +880,7 @@ function drawTalkTypeShareCard(
 
   context.fillStyle = "#6B7280";
   context.font = '400 24px "PingFang SC", "Microsoft YaHei", sans-serif';
-  context.fillText("扫码测试", 768, 1308);
+  context.fillText("扫码测试", 778, 1328);
 
   context.fillStyle = "#6B7280";
   context.font = '400 22px "PingFang SC", "Microsoft YaHei", sans-serif';
@@ -872,7 +1013,60 @@ function TalkTypeSeoContent({ seo }: { seo: ReturnType<typeof getTalkTypePageSeo
   );
 }
 
-function DeepReportSection({ report, isLoading }: { report: TalkTypeDeepReport; isLoading: boolean }) {
+function DeepReportLoadingSection() {
+  return (
+    <section className="mt-8 rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 via-white to-blue-50 p-5 shadow-sm shadow-amber-100/70 md:p-6">
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-medium text-amber-700 ring-1 ring-amber-100">
+            <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+            AI 深度报告
+          </div>
+          <h3 className="mt-3 text-2xl font-semibold text-gray-900">AI 正在认真读懂你</h3>
+          <p className="mt-2 text-sm leading-6 text-stone-600">
+            正在生成专属深度报告，可能需要几秒钟。先别急，这份报告正在努力变得更像你。
+          </p>
+        </div>
+        <span className="w-fit rounded-full bg-white/80 px-3 py-1 text-xs text-amber-700 ring-1 ring-amber-100">
+          生成中
+        </span>
+      </div>
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+        {[0, 1].map((item) => (
+          <article key={item} className="rounded-2xl bg-white/85 p-5 ring-1 ring-amber-100">
+            <div className="h-4 w-32 animate-pulse rounded-full bg-amber-100" />
+            <div className="mt-5 space-y-3">
+              <div className="h-3 animate-pulse rounded-full bg-stone-100" />
+              <div className="h-3 w-11/12 animate-pulse rounded-full bg-stone-100" />
+              <div className="h-3 w-4/5 animate-pulse rounded-full bg-stone-100" />
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function DeepReportErrorSection({ onRetry }: { onRetry: () => void }) {
+  return (
+    <section className="mt-8 rounded-2xl border border-rose-100 bg-gradient-to-br from-rose-50 via-white to-amber-50 p-5 shadow-sm shadow-rose-100/60 md:p-6">
+      <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-medium text-rose-700 ring-1 ring-rose-100">
+        <Sparkles className="h-3.5 w-3.5" />
+        AI 深度报告
+      </div>
+      <h3 className="mt-3 text-2xl font-semibold text-gray-900">情商太高啦，服务器先懵了一下</h3>
+      <p className="mt-2 text-sm leading-7 text-stone-600">
+        这次 AI 深度报告生成失败了，不是你的问题，是服务器刚刚没接住你的高阶沟通信号。可以稍后重新进入结果页再试一次。
+      </p>
+      <Button className="mt-5 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700" onClick={onRetry}>
+        重新生成
+      </Button>
+    </section>
+  );
+}
+
+function DeepReportSection({ report }: { report: TalkTypeDeepReport }) {
   const relationshipLabels = {
     relationship: "亲密关系里的你",
     workplace: "职场沟通里的你",
@@ -892,8 +1086,8 @@ function DeepReportSection({ report, isLoading }: { report: TalkTypeDeepReport; 
             把你的四维分数和人格画像翻译成更生活化的解读，看看哪些沟通习惯正在影响你的关系体验。
           </p>
         </div>
-        <span className="w-fit rounded-full bg-white/80 px-3 py-1 text-xs text-stone-500 ring-1 ring-stone-100">
-          {isLoading ? "生成中" : "解读完成"}
+        <span className="w-fit whitespace-nowrap rounded-full bg-white/80 px-3 py-1 text-xs text-stone-500 ring-1 ring-stone-100">
+          解读完成
         </span>
       </div>
 

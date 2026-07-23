@@ -24,6 +24,7 @@ import AdminStatistics from "./pages/AdminStatistics";
 import Orders from "./pages/Orders";
 import { useAuth } from "./contexts/AuthContext";
 import TalkType from "./pages/TalkType";
+import TalkTypeSharedResult from "./pages/TalkTypeSharedResult";
 
 function Redirect({ to }: { to: string }) {
   const [, navigate] = useLocation();
@@ -53,6 +54,10 @@ function Router() {
       <ScrollToTop />
       <Switch>
         <Route path={"/"} component={Home} />
+        <Route path={"/talktype/result/:shareId"}>
+          {({ shareId }: { shareId: string }) => <TalkTypeSharedResult shareId={shareId} />}
+        </Route>
+        <Route path={"/talktype/result"} component={TalkType} />
         <Route path={"/talktype"} component={TalkType} />
         <Route path={"/login"} component={Login} />
         <Route path={"/register"} component={Register} />

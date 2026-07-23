@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import type { TalkTypeDeepReport, TalkTypeDeepReportRequest } from "@/data/talktype";
+import type { TalkTypeDeepReport, TalkTypeDeepReportRequest, TalkTypeShareReport, TalkTypeShareReportPayload } from "@/data/talktype";
 
 // API 基础 URL
 // 开发环境：使用 Vite 代理 /api
@@ -415,6 +415,20 @@ export const guestApi = {
     const response = await axios.post(`${API_BASE_URL}/guest/talktype/deep-report`, data, {
       headers: guestHeaders(),
       timeout: 0,
+    });
+    return response.data;
+  },
+
+  createTalkTypeShareReport: async (data: TalkTypeShareReportPayload): Promise<{ code: number; message: string; data: TalkTypeShareReport }> => {
+    const response = await axios.post(`${API_BASE_URL}/guest/talktype/reports/share`, data, {
+      headers: guestHeaders(),
+    });
+    return response.data;
+  },
+
+  getTalkTypeShareReport: async (shareId: string): Promise<{ code: number; message: string; data: TalkTypeShareReport }> => {
+    const response = await axios.get(`${API_BASE_URL}/guest/talktype/reports/${shareId}`, {
+      headers: guestHeaders(),
     });
     return response.data;
   },

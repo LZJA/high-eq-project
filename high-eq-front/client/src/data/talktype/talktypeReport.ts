@@ -1,4 +1,54 @@
-import type { TalkTypeDeepReport, TalkTypeDeepReportRequest, TalkTypeResult } from "./types";
+import type { TalkTypeAnswer, TalkTypeDeepReport, TalkTypeDeepReportRequest, TalkTypeResult, TalkTypeShareReportPayload, TalkTypeVisualAsset } from "./types";
+
+const latestResultStorageKey = "talktype-latest-result";
+
+export function saveLatestTalkTypeResult(answers: TalkTypeAnswer[]): void {
+  if (typeof window === "undefined") return;
+
+  window.localStorage.setItem(latestResultStorageKey, JSON.stringify({ answers, savedAt: Date.now() }));
+}
+
+export function loadLatestTalkTypeAnswers(): TalkTypeAnswer[] {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const rawValue = window.localStorage.getItem(latestResultStorageKey);
+    if (!rawValue) return [];
+    const parsed = JSON.parse(rawValue) as { answers?: TalkTypeAnswer[] };
+    return Array.isArray(parsed.answers) ? parsed.answers : [];
+  } catch {
+    return [];
+  }
+}
+
+export function buildTalkTypeShareReportPayload(result: TalkTypeResult, visualAsset: TalkTypeVisualAsset, deepReport?: TalkTypeDeepReport | null): TalkTypeShareReportPayload {
+  const snapshot = buildTalkTypeSnapshotReport(result);
+
+  return {
+    personalityId: result.personality.id,
+    personalityName: result.personality.name,
+    codeName: result.personality.codeName,
+    communicationCode: result.communicationCode,
+    maturityScore: result.maturityScore,
+    dimensionScores: result.dimensionScores,
+    tagline: result.personality.tagline,
+    summary: result.personality.summary,
+    shareText: result.personality.shareText,
+    imagePath: visualAsset.imagePath,
+    primaryColor: visualAsset.primaryColor,
+    secondaryColor: visualAsset.secondaryColor,
+    tags: result.personality.strengths.slice(0, 3),
+    identityInsight: snapshot.identityInsight.body,
+    strengths: result.personality.strengths,
+    blindSpots: result.personality.blindSpots,
+    trainingFocus: result.personality.trainingFocus,
+    relationshipBehavior: result.personality.relationshipBehavior,
+    workplaceBehavior: result.personality.workplaceBehavior,
+    friendshipBehavior: result.personality.friendshipBehavior,
+    snapshotReport: snapshot,
+    deepReport: deepReport || undefined,
+  };
+}
 
 export function buildTalkTypeSnapshotReport(result: TalkTypeResult) {
   const { personality } = result;

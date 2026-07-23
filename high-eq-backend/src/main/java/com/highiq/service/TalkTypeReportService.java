@@ -1,12 +1,16 @@
 package com.highiq.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.highiq.dto.TalkTypeDeepReportRequest;
 import com.highiq.dto.TalkTypeDeepReportResponse;
 import com.highiq.enums.AiModel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -14,6 +18,7 @@ import java.util.Map;
 @Service
 public class TalkTypeReportService {
     private static final String BASIC_MODEL = AiModel.DEFAULT_MODEL;
+    private static final int TALKTYPE_REPORT_MAX_TOKENS = 1200;
 
     private final AiService aiService;
     private final ObjectMapper objectMapper;
@@ -25,8 +30,8 @@ public class TalkTypeReportService {
 
     public TalkTypeDeepReportResponse generateDeepReport(TalkTypeDeepReportRequest request) {
         try {
-            String rawContent = aiService.generateText(buildPrompt(request), BASIC_MODEL);
-            TalkTypeDeepReportResponse response = objectMapper.readValue(stripJsonFence(rawContent), TalkTypeDeepReportResponse.class);
+            String rawContent = aiService.generateText(buildPrompt(request), BASIC_MODEL, TALKTYPE_REPORT_MAX_TOKENS);
+            TalkTypeDeepReportResponse response = parseResponse(stripJsonFence(rawContent));
             normalize(response);
             response.setModelUsed(BASIC_MODEL);
             response.setFallback(false);
@@ -104,6 +109,85 @@ public class TalkTypeReportService {
             return content.substring(start, end + 1);
         }
         return content;
+    }
+
+    private TalkTypeDeepReportResponse parseResponse(String content) throws Exception {
+        JsonNode root = objectMapper.copy()
+                .configure(JsonReadFeature.ALLOW_UNESCAPED_CONTROL_CHARS.mappedFeature(), true)
+                .readTree(content);
+
+        return TalkTypeDeepReportResponse.builder()
+                .hiddenPattern(text(root, "hiddenPattern"))
+                .innerNeed(text(root, "innerNeed"))
+                .triggerPhrases(textList(root.get("triggerPhrases")))
+                .misreadByOthers(text(root, "misreadByOthers"))
+                .relationshipNotes(textMap(root.get("relationshipNotes")))
+                .growthSuggestion(text(root, "growthSuggestion"))
+                .practicePrompts(textList(root.get("practicePrompts")))
+                .build();
+    }
+
+    private String text(JsonNode root, String fieldName) {
+        if (root == null || !root.has(fieldName)) {
+            return "";
+        }
+
+        return nodeToText(root.get(fieldName));
+    }
+
+    private List<String> textList(JsonNode node) {
+        if (node == null || node.isNull()) {
+            return List.of();
+        }
+
+        List<String> values = new ArrayList<>();
+        if (node.isArray()) {
+            node.forEach((item) -> {
+                String value = nodeToText(item);
+                if (!value.isBlank()) {
+                    values.add(value);
+                }
+            });
+            return values;
+        }
+
+        String value = nodeToText(node);
+        return value.isBlank() ? List.of() : List.of(value);
+    }
+
+    private Map<String, String> textMap(JsonNode node) {
+        if (node == null || !node.isObject()) {
+            return Map.of();
+        }
+
+        Map<String, String> values = new LinkedHashMap<>();
+        node.fields().forEachRemaining((entry) -> {
+            String value = nodeToText(entry.getValue());
+            if (!value.isBlank()) {
+                values.put(entry.getKey(), value);
+            }
+        });
+        return values;
+    }
+
+    private String nodeToText(JsonNode node) {
+        if (node == null || node.isNull()) {
+            return "";
+        }
+        if (node.isTextual() || node.isNumber() || node.isBoolean()) {
+            return node.asText();
+        }
+        if (node.isObject()) {
+            for (String key : List.of("text", "content", "value", "body", "description", "suggestion")) {
+                if (node.has(key)) {
+                    String value = nodeToText(node.get(key));
+                    if (!value.isBlank()) {
+                        return value;
+                    }
+                }
+            }
+        }
+        return node.toString();
     }
 
     private void normalize(TalkTypeDeepReportResponse response) {

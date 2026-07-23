@@ -108,6 +108,52 @@ export interface TalkTypeDeepReportRequest {
   friendshipBehavior: string;
 }
 
+export interface TalkTypeSnapshotReport {
+  identityInsight: {
+    title: string;
+    body: string;
+  };
+  externalImpression: {
+    title: string;
+    tags: string[];
+    body: string;
+  };
+  blindSpotInsight: {
+    title: string;
+    body: string;
+  };
+}
+
+export interface TalkTypeShareReportPayload {
+  personalityId: string;
+  personalityName: string;
+  codeName: string;
+  communicationCode: string;
+  maturityScore?: number;
+  dimensionScores?: TalkTypeScoreVector;
+  tagline: string;
+  summary: string;
+  shareText: string;
+  imagePath?: string;
+  primaryColor: string;
+  secondaryColor: string;
+  tags: string[];
+  identityInsight: string;
+  strengths?: string[];
+  blindSpots?: string[];
+  trainingFocus?: string[];
+  relationshipBehavior?: string;
+  workplaceBehavior?: string;
+  friendshipBehavior?: string;
+  snapshotReport?: TalkTypeSnapshotReport;
+  deepReport?: TalkTypeDeepReport;
+}
+
+export interface TalkTypeShareReport extends TalkTypeShareReportPayload {
+  shareId: string;
+  shareUrl: string;
+}
+
 export type TalkTypeScorerCategory =
   | "relationship"
   | "workplace"
