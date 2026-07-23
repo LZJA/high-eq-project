@@ -6,3 +6,4 @@ export * from "./scoring";
 export * from "./scorerScenarios";
 export * from "./seoContent";
 export * from "./talktypePage";
+export * from "./talktypeReport";

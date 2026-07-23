@@ -4,6 +4,7 @@ import {
   buildTalkTypeShareImageFilename,
   buildTalkTypeSharePayload,
   buildTalkTypeShareText,
+  getTalkTypeDimensionScoreInsight,
   getTalkTypePageSeo,
   getTalkTypeProgress,
   getTalkTypeVisualAsset,
@@ -23,6 +24,13 @@ describe("TalkType page helpers", () => {
     expect(getTalkTypeProgress(0, TALKTYPE_TEST_QUESTIONS.length)).toBe(0);
     expect(getTalkTypeProgress(12, TALKTYPE_TEST_QUESTIONS.length)).toBe(50);
     expect(getTalkTypeProgress(99, TALKTYPE_TEST_QUESTIONS.length)).toBe(100);
+  });
+
+  it("describes dimension scores by range instead of using one fixed copy", () => {
+    expect(getTalkTypeDimensionScoreInsight("S", 88)).toContain("很容易捕捉");
+    expect(getTalkTypeDimensionScoreInsight("S", 38)).toContain("更相信对方说出来的话");
+    expect(getTalkTypeDimensionScoreInsight("B", 92)).toContain("守住自己的节奏");
+    expect(getTalkTypeDimensionScoreInsight("B", 42)).toContain("容易先顾全关系");
   });
 
   it("matches a personality to its visual asset", () => {

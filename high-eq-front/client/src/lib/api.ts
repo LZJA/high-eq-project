@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
+import type { TalkTypeDeepReport, TalkTypeDeepReportRequest } from "@/data/talktype";
 
 // API 基础 URL
 // 开发环境：使用 Vite 代理 /api
@@ -406,6 +407,14 @@ export const guestApi = {
   getRemainingQuota: async () => {
     const response = await axios.get(`${API_BASE_URL}/guest/reply/quota`, {
       headers: guestHeaders(),
+    });
+    return response.data;
+  },
+
+  generateTalkTypeDeepReport: async (data: TalkTypeDeepReportRequest): Promise<{ code: number; message: string; data: TalkTypeDeepReport }> => {
+    const response = await axios.post(`${API_BASE_URL}/guest/talktype/deep-report`, data, {
+      headers: guestHeaders(),
+      timeout: 0,
     });
     return response.data;
   },

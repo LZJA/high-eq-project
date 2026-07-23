@@ -56,6 +56,16 @@ public class AiService {
         return generateReplies(chatContent, roleBackground, userIntent, replyCount, tone, model);
     }
 
+    public String generateText(String prompt, String requestedModel) {
+        try {
+            Map<String, Object> response = callDeepSeekApi(prompt, requestedModel);
+            return extractContent(response);
+        } catch (Exception e) {
+            log.error("Failed to generate text from AI", e);
+            throw new RuntimeException("AI 文本生成失败: " + e.getMessage());
+        }
+    }
+
     public List<String> generateReplies(String chatContent, String roleBackground, String userIntent, Integer replyCount, String tone, String requestedModel) {
         try {
             if (replyCount == null || replyCount <= 0) {
@@ -178,27 +188,22 @@ public class AiService {
         List<String> replies = new ArrayList<>();
 
         try {
-            List<Map<String, Object>> choices = (List<Map<String, Object>>) response.get("choices");
-            if (choices != null && !choices.isEmpty()) {
-                Map<String, Object> choice = choices.get(0);
-                Map<String, Object> message = (Map<String, Object>) choice.get("message");
-                String content = (String) message.get("content");
+            String content = extractContent(response);
 
-                // 按 === 分隔符分割不同建议
-                String[] suggestions = content.split("===");
+            // 按 === 分隔符分割不同建议
+            String[] suggestions = content.split("===");
 
-                for (String suggestion : suggestions) {
-                    // 提取【回复内容】和【推荐理由】
-                    String contentPart = extractSection(suggestion, "【回复内容】", "【推荐理由】");
-                    String reasonPart = extractSection(suggestion, "【推荐理由】", null);
+            for (String suggestion : suggestions) {
+                // 提取【回复内容】和【推荐理由】
+                String contentPart = extractSection(suggestion, "【回复内容】", "【推荐理由】");
+                String reasonPart = extractSection(suggestion, "【推荐理由】", null);
 
-                    // 只返回回复内容部分（推荐理由在前端需要时可以单独解析）
-                    if (contentPart != null && !contentPart.trim().isEmpty()) {
-                        // 将回复内容和推荐理由用特殊标记组合，后续 ReplyService 会解析
-                        String combined = contentPart.trim() + "|||REASON|||" +
-                                (reasonPart != null ? reasonPart.trim() : "高情商回复，能得体地表达意图");
-                        replies.add(combined);
-                    }
+                // 只返回回复内容部分（推荐理由在前端需要时可以单独解析）
+                if (contentPart != null && !contentPart.trim().isEmpty()) {
+                    // 将回复内容和推荐理由用特殊标记组合，后续 ReplyService 会解析
+                    String combined = contentPart.trim() + "|||REASON|||" +
+                            (reasonPart != null ? reasonPart.trim() : "高情商回复，能得体地表达意图");
+                    replies.add(combined);
                 }
             }
         } catch (Exception e) {
@@ -210,6 +215,22 @@ public class AiService {
         }
 
         return replies;
+    }
+
+    @SuppressWarnings("unchecked")
+    private String extractContent(Map<String, Object> response) {
+        List<Map<String, Object>> choices = (List<Map<String, Object>>) response.get("choices");
+        if (choices == null || choices.isEmpty()) {
+            throw new IllegalArgumentException("AI 响应中没有 choices");
+        }
+
+        Map<String, Object> choice = choices.get(0);
+        Map<String, Object> message = (Map<String, Object>) choice.get("message");
+        if (message == null || message.get("content") == null) {
+            throw new IllegalArgumentException("AI 响应中没有 message.content");
+        }
+
+        return (String) message.get("content");
     }
 
     /**

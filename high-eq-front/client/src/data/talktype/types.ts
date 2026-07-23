@@ -78,6 +78,36 @@ export interface TalkTypeResult {
   matchDistance: number;
 }
 
+export interface TalkTypeDeepReport {
+  hiddenPattern: string;
+  innerNeed: string;
+  triggerPhrases: string[];
+  misreadByOthers: string;
+  relationshipNotes: {
+    relationship: string;
+    workplace: string;
+    friendship: string;
+  };
+  growthSuggestion: string;
+  practicePrompts: string[];
+  modelUsed?: string;
+  fallback?: boolean;
+}
+
+export interface TalkTypeDeepReportRequest {
+  personalityName: string;
+  codeName: string;
+  communicationCode: string;
+  maturityScore: number;
+  dimensionScores: TalkTypeScoreVector;
+  strengths: string[];
+  blindSpots: string[];
+  trainingFocus: string[];
+  relationshipBehavior: string;
+  workplaceBehavior: string;
+  friendshipBehavior: string;
+}
+
 export type TalkTypeScorerCategory =
   | "relationship"
   | "workplace"

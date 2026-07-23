@@ -5,15 +5,21 @@ import { Progress } from "@/components/ui/progress";
 import {
   TALKTYPE_DIMENSIONS,
   TALKTYPE_TEST_QUESTIONS,
+  buildFallbackTalkTypeDeepReport,
+  buildTalkTypeSnapshotReport,
+  buildTalkTypeDeepReportRequest,
   buildTalkTypeShareImageFilename,
   buildTalkTypeSharePayload,
   buildTalkTypeShareText,
   calculateTalkTypeResult,
   getTalkTypePageSeo,
   getTalkTypeProgress,
+  getTalkTypeDimensionScoreInsight,
   getTalkTypeVisualAsset,
+  type TalkTypeDeepReport,
   type TalkTypeAnswer,
 } from "@/data/talktype";
+import { guestApi } from "@/lib/api";
 import { ArrowLeft, ArrowRight, Brain, Check, Copy, Download, RotateCcw, Share2, Sparkles } from "lucide-react";
 import QRCode from "qrcode";
 import { useEffect, useMemo, useState } from "react";
@@ -52,6 +58,8 @@ export default function TalkType() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answersByQuestionId, setAnswersByQuestionId] = useState<Record<string, string>>({});
   const [sharePreviewImage, setSharePreviewImage] = useState<{ url: string; filename: string } | null>(null);
+  const [deepReport, setDeepReport] = useState<TalkTypeDeepReport | null>(null);
+  const [isDeepReportLoading, setIsDeepReportLoading] = useState(false);
 
   const currentQuestion = TALKTYPE_TEST_QUESTIONS[currentIndex];
   const answeredCount = Object.keys(answersByQuestionId).length;
@@ -70,6 +78,7 @@ export default function TalkType() {
 
   const result = useMemo(() => (canShowResult ? calculateTalkTypeResult(answers) : null), [answers, canShowResult]);
   const visualAsset = result ? getTalkTypeVisualAsset(result.personality.id) : null;
+  const snapshotReport = result ? buildTalkTypeSnapshotReport(result) : null;
   const introVisualAsset = getTalkTypeVisualAsset("emotion-translator");
   const canonicalUrl = "https://www.higheq.top/talktype";
   const structuredData = [
@@ -132,6 +141,40 @@ export default function TalkType() {
       }
     };
   }, [sharePreviewImage]);
+
+  useEffect(() => {
+    if (stage !== "result" || !result) {
+      setDeepReport(null);
+      setIsDeepReportLoading(false);
+      return;
+    }
+
+    let ignore = false;
+    setDeepReport(buildFallbackTalkTypeDeepReport(result));
+    setIsDeepReportLoading(true);
+
+    guestApi
+      .generateTalkTypeDeepReport(buildTalkTypeDeepReportRequest(result))
+      .then((response) => {
+        if (!ignore && response.data) {
+          setDeepReport(response.data);
+        }
+      })
+      .catch(() => {
+        if (!ignore) {
+          setDeepReport(buildFallbackTalkTypeDeepReport(result));
+        }
+      })
+      .finally(() => {
+        if (!ignore) {
+          setIsDeepReportLoading(false);
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [result, stage]);
 
   const copyShareText = async () => {
     if (!result) return;
@@ -438,23 +481,37 @@ export default function TalkType() {
                 </div>
               </div>
 
+              {snapshotReport && (
+                <SnapshotReportCards report={snapshotReport} />
+              )}
+
               <div className="mt-6 grid gap-4">
-                {TALKTYPE_DIMENSIONS.map((dimension) => (
-                  <div key={dimension.key}>
-                    <div className="mb-2 flex items-center justify-between">
-                      <span className="font-medium">
-                        {dimension.key} {dimension.name}
-                      </span>
-                      <span className="text-sm text-stone-500">{result.dimensionScores[dimension.key]}</span>
+                {TALKTYPE_DIMENSIONS.map((dimension) => {
+                  const score = result.dimensionScores[dimension.key];
+
+                  return (
+                    <div key={dimension.key}>
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="font-medium">
+                          {dimension.key} {dimension.name}
+                        </span>
+                        <span className="text-sm text-stone-500">{score}</span>
+                      </div>
+                      <Progress
+                        value={score}
+                        className="h-2 bg-blue-100 [&_[data-slot=progress-indicator]]:bg-gradient-to-r [&_[data-slot=progress-indicator]]:from-blue-600 [&_[data-slot=progress-indicator]]:to-purple-600"
+                      />
+                      <p className="mt-2 text-sm leading-6 text-stone-500">
+                        {getTalkTypeDimensionScoreInsight(dimension.key, score)}
+                      </p>
                     </div>
-                    <Progress
-                      value={result.dimensionScores[dimension.key]}
-                      className="h-2 bg-blue-100 [&_[data-slot=progress-indicator]]:bg-gradient-to-r [&_[data-slot=progress-indicator]]:from-blue-600 [&_[data-slot=progress-indicator]]:to-purple-600"
-                    />
-                    <p className="mt-2 text-sm text-stone-500">{dimension.description}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
+
+              {deepReport && (
+                <DeepReportSection report={deepReport} isLoading={isDeepReportLoading} />
+              )}
 
               <div className="mt-8 grid gap-4 md:grid-cols-3">
                 <ResultList title="优势" items={result.personality.strengths} />
@@ -811,6 +868,112 @@ function TalkTypeSeoContent({ seo }: { seo: ReturnType<typeof getTalkTypePageSeo
           </div>
         </div>
       </div>
+    </section>
+  );
+}
+
+function DeepReportSection({ report, isLoading }: { report: TalkTypeDeepReport; isLoading: boolean }) {
+  const relationshipLabels = {
+    relationship: "亲密关系里的你",
+    workplace: "职场沟通里的你",
+    friendship: "朋友眼中的你",
+  };
+
+  return (
+    <section className="mt-8 rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 via-white to-blue-50 p-5 shadow-sm shadow-amber-100/70 md:p-6">
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-medium text-amber-700 ring-1 ring-amber-100">
+            <Sparkles className="h-3.5 w-3.5" />
+            AI 深度报告
+          </div>
+          <h3 className="mt-3 text-2xl font-semibold text-gray-900">为什么你会这样沟通？</h3>
+          <p className="mt-2 text-sm leading-6 text-stone-600">
+            把你的四维分数和人格画像翻译成更生活化的解读，看看哪些沟通习惯正在影响你的关系体验。
+          </p>
+        </div>
+        <span className="w-fit rounded-full bg-white/80 px-3 py-1 text-xs text-stone-500 ring-1 ring-stone-100">
+          {isLoading ? "生成中" : "解读完成"}
+        </span>
+      </div>
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+        <article className="rounded-2xl bg-white/85 p-5 ring-1 ring-amber-100">
+          <p className="text-sm font-semibold text-amber-700">AI 读到的隐藏模式</p>
+          <p className="mt-3 text-sm leading-7 text-stone-700">{report.hiddenPattern}</p>
+          <div className="mt-5 rounded-xl bg-amber-50/80 p-4">
+            <p className="text-sm font-semibold text-gray-900">你真正需要的</p>
+            <p className="mt-2 text-sm leading-7 text-stone-700">{report.innerNeed}</p>
+          </div>
+        </article>
+
+        <article className="rounded-2xl bg-white/85 p-5 ring-1 ring-blue-100">
+          <p className="text-sm font-semibold text-blue-700">最容易戳中你的三句话</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {report.triggerPhrases.slice(0, 3).map((phrase) => (
+              <span key={phrase} className="rounded-full bg-blue-50 px-3 py-2 text-sm text-blue-700">
+                {phrase}
+              </span>
+            ))}
+          </div>
+          <div className="mt-5 rounded-xl bg-blue-50/80 p-4">
+            <p className="text-sm font-semibold text-gray-900">别人可能误解你的地方</p>
+            <p className="mt-2 text-sm leading-7 text-stone-700">{report.misreadByOthers}</p>
+          </div>
+        </article>
+      </div>
+
+      <div className="mt-4 grid gap-4 md:grid-cols-3">
+        {Object.entries(report.relationshipNotes).map(([key, value]) => (
+          <article key={key} className="rounded-2xl bg-white/80 p-4 ring-1 ring-stone-100">
+            <p className="text-sm font-semibold text-gray-900">{relationshipLabels[key as keyof typeof relationshipLabels]}</p>
+            <p className="mt-2 text-sm leading-7 text-stone-600">{value}</p>
+          </article>
+        ))}
+      </div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1fr]">
+        <article className="rounded-2xl bg-white/80 p-5 ring-1 ring-purple-100">
+          <p className="text-sm font-semibold text-purple-700">一句专属提醒</p>
+          <p className="mt-3 text-sm leading-7 text-stone-700">{report.growthSuggestion}</p>
+        </article>
+        <article className="rounded-2xl bg-white/80 p-5 ring-1 ring-green-100">
+          <p className="text-sm font-semibold text-green-700">接下来可以练什么</p>
+          <ul className="mt-3 space-y-2 text-sm leading-6 text-stone-700">
+            {report.practicePrompts.slice(0, 3).map((prompt) => (
+              <li key={prompt}>· {prompt}</li>
+            ))}
+          </ul>
+        </article>
+      </div>
+    </section>
+  );
+}
+
+function SnapshotReportCards({ report }: { report: ReturnType<typeof buildTalkTypeSnapshotReport> }) {
+  const cards: Array<{ title: string; body: string; tags?: string[] }> = [
+    report.identityInsight,
+    report.externalImpression,
+    report.blindSpotInsight,
+  ];
+
+  return (
+    <section className="mt-6 grid gap-4 md:grid-cols-3">
+      {cards.map((card) => (
+        <article key={card.title} className="rounded-2xl border border-blue-100 bg-gradient-to-br from-white to-blue-50/70 p-4 shadow-sm shadow-blue-100/50">
+          <h4 className="text-base font-semibold text-gray-900">{card.title}</h4>
+          {card.tags && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {card.tags.map((tag) => (
+                <span key={tag} className="rounded-full bg-white px-3 py-1 text-xs text-blue-700 ring-1 ring-blue-100">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+          <p className="mt-3 text-sm leading-7 text-stone-600">{card.body}</p>
+        </article>
+      ))}
     </section>
   );
 }
