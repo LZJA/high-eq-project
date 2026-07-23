@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.highiq.dto.QuotaStatusDTO;
 import com.highiq.entity.User;
+import com.highiq.enums.AiModel;
 import com.highiq.enums.SubscriptionTier;
 import com.highiq.mapper.UserMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,14 @@ public class QuotaService extends ServiceImpl<UserMapper, User> {
      */
     @Transactional
     public boolean checkAndConsumeQuota(String userId) {
+        return checkAndConsumeQuota(userId, AiModel.DEFAULT_MODEL);
+    }
+
+    /**
+     * 检查并按模型消耗点数
+     */
+    @Transactional
+    public boolean checkAndConsumeQuota(String userId, String model) {
         User user = baseMapper.selectById(userId);
         if (user == null) {
             throw new RuntimeException("用户不存在");
@@ -44,11 +53,12 @@ public class QuotaService extends ServiceImpl<UserMapper, User> {
         resetDailyQuotaIfNeeded(user);
         user = baseMapper.selectById(userId);
 
-        if (user.getDailyQuotaUsed() >= user.getDailyQuota()) {
+        int pointCost = AiModel.pointCostOf(model);
+        if (user.getDailyQuotaUsed() + pointCost > user.getDailyQuota()) {
             return false;
         }
 
-        user.setDailyQuotaUsed(user.getDailyQuotaUsed() + 1);
+        user.setDailyQuotaUsed(user.getDailyQuotaUsed() + pointCost);
         baseMapper.updateById(user);
         return true;
     }
@@ -60,14 +70,14 @@ public class QuotaService extends ServiceImpl<UserMapper, User> {
     public void resetDailyQuotaIfNeeded(User user) {
         LocalDate today = LocalDate.now();
         LocalDate resetDate = user.getQuotaResetDate();
+        SubscriptionTier tier = SubscriptionTier.fromCode(user.getSubscriptionTier());
 
-        if (resetDate == null || !resetDate.equals(today)) {
-            SubscriptionTier tier = SubscriptionTier.fromCode(user.getSubscriptionTier());
+        if (resetDate == null || !resetDate.equals(today) || user.getDailyQuota() == null || user.getDailyQuota() != tier.getDailyQuota()) {
             user.setDailyQuota(tier.getDailyQuota());
             user.setDailyQuotaUsed(0);
             user.setQuotaResetDate(today);
             baseMapper.updateById(user);
-            log.info("Reset daily quota for user {}: quota={}, used=0", user.getId(), tier.getDailyQuota());
+            log.info("Reset daily points for user {}: quota={}, used=0", user.getId(), tier.getDailyQuota());
         }
     }
 

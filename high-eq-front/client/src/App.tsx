@@ -20,6 +20,7 @@ import PersonProfileChat from "./pages/PersonProfileChat";
 import PersonProfileDetail from "./pages/PersonProfileDetail";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminStatistics from "./pages/AdminStatistics";
+import Orders from "./pages/Orders";
 import { useAuth } from "./contexts/AuthContext";
 
 
@@ -53,6 +54,9 @@ function Router() {
             <Favorites />
           </ProtectedRoute>
         )}
+      </Route>
+      <Route path={"/orders"}>
+        {() => <ProtectedRoute><Orders /></ProtectedRoute>}
       </Route>
       <Route path={"/profiles"}>
         {() => (

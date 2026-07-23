@@ -1,6 +1,7 @@
 package com.highiq.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.highiq.enums.AiModel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -87,7 +88,7 @@ public class QwenVisionService {
         messages.add(userMessage);
 
         Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", "qwen-vl-plus");
+        requestBody.put("model", AiModel.QWEN3_VL_PLUS.getId());
         requestBody.put("messages", messages);
         requestBody.put("temperature", 0.7);
         requestBody.put("max_tokens", 2000);

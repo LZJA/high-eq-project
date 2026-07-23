@@ -253,7 +253,6 @@ public class StatisticsService {
         try {
             userStatsMapper.insert(UserStatistics.builder()
                     .userId(userId)
-                    .date(LocalDate.now())
                     .replyCount(replyCount)
                     .profileReplyCount(profileReplyCount)
                     .upgradeClickCount(liteCount + proCount)

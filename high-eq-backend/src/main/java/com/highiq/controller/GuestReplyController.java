@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @RestController
 @RequestMapping("/guest/reply")
-@CrossOrigin(origins = "*", maxAge = 3600)
+@CrossOrigin(origins = "*", allowedHeaders = "*", maxAge = 3600)
 public class GuestReplyController {
 
     private final GuestReplyService guestReplyService;
@@ -26,8 +26,8 @@ public class GuestReplyController {
             @Valid @RequestBody GenerateReplyRequest request,
             HttpServletRequest httpRequest) {
         try {
-            String clientIp = getClientIp(httpRequest);
-            GenerateReplyResponse response = guestReplyService.generateReplies(clientIp, request);
+            String clientKey = getClientKey(httpRequest);
+            GenerateReplyResponse response = guestReplyService.generateReplies(clientKey, request);
             return ApiResponse.success("回复生成成功", response);
         } catch (IllegalStateException e) {
             return ApiResponse.error(429, e.getMessage());
@@ -40,8 +40,8 @@ public class GuestReplyController {
     @GetMapping("/quota")
     public ApiResponse<Integer> getRemainingQuota(HttpServletRequest httpRequest) {
         try {
-            String clientIp = getClientIp(httpRequest);
-            int remaining = guestReplyService.getRemainingQuota(clientIp);
+            String clientKey = getClientKey(httpRequest);
+            int remaining = guestReplyService.getRemainingQuota(clientKey);
             return ApiResponse.success("获取成功", remaining);
         } catch (Exception e) {
             log.error("Failed to get quota", e);
@@ -62,5 +62,17 @@ public class GuestReplyController {
             ip = "127.0.0.1";
         }
         return ip;
+    }
+
+    private String getClientKey(HttpServletRequest request) {
+        String guestId = request.getHeader("X-Guest-Id");
+        if (guestId == null || guestId.isBlank()) {
+            guestId = "anonymous";
+        }
+        guestId = guestId.replaceAll("[^a-zA-Z0-9_-]", "");
+        if (guestId.length() > 64) {
+            guestId = guestId.substring(0, 64);
+        }
+        return getClientIp(request) + ":" + guestId;
     }
 }

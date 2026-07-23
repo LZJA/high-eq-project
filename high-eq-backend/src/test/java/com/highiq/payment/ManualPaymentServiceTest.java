@@ -1,0 +1,71 @@
+package com.highiq.payment;
+
+import com.highiq.dto.payment.CreatePaymentOrderRequest;
+import com.highiq.dto.payment.PaymentOrderDTO;
+import com.highiq.entity.ManualPaymentOrder;
+import com.highiq.mapper.ManualPaymentOrderMapper;
+import com.highiq.service.ManualPaymentService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.List;
+
+class ManualPaymentServiceTest {
+    private ManualPaymentOrderMapper orderMapper;
+    private ManualPaymentService service;
+
+    @BeforeEach
+    void setUp() {
+        orderMapper = mock(ManualPaymentOrderMapper.class);
+        service = new ManualPaymentService(orderMapper, "https://lite.example", "https://pro.example",
+                "/images/lite.jpg", "/images/pro.jpg");
+    }
+
+    @Test
+    void createsLiteOrderWithServerOwnedPriceAndPaymentDetails() {
+        when(orderMapper.selectOpenOrder("user-1", "lite")).thenReturn(null);
+        CreatePaymentOrderRequest request = new CreatePaymentOrderRequest();
+        request.setTier("lite");
+        request.setEmail("buyer@example.com");
+
+        PaymentOrderDTO order = service.createOrder("user-1", request);
+
+        assertThat(order.getTier()).isEqualTo("lite");
+        assertThat(order.getAmountCents()).isEqualTo(499);
+        assertThat(order.getPaymentUrl()).startsWith("alipays://platformapi/startapp?saId=10000007&qrcode=");
+        assertThat(order.getPaymentUrl()).contains("https%3A%2F%2Flite.example");
+        verify(orderMapper).insert(any(ManualPaymentOrder.class));
+    }
+
+    @Test
+    void preventsAnotherUserFromSubmittingAnOrder() {
+        when(orderMapper.selectById("order-1")).thenReturn(ManualPaymentOrder.builder()
+                .id("order-1").userId("user-1").status("PENDING").build());
+
+        assertThatThrownBy(() -> service.submitOrder("user-2", "order-1"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("订单不存在或不可提交");
+    }
+
+    @Test
+    void listsOrdersWithPaymentDetailsForRecoveringPendingPayments() {
+        when(orderMapper.selectList(any())).thenReturn(List.of(ManualPaymentOrder.builder()
+                .id("order-1").orderNo("PM123").userId("user-1").email("buyer@example.com")
+                .tier("pro").amountCents(999).status("PENDING").build()));
+
+        List<PaymentOrderDTO> orders = service.listOrders("user-1");
+
+        assertThat(orders).hasSize(1);
+        assertThat(orders.get(0).getPaymentUrl()).startsWith("alipays://platformapi/startapp?saId=10000007&qrcode=");
+        assertThat(orders.get(0).getPaymentUrl()).contains("https%3A%2F%2Fpro.example");
+        assertThat(orders.get(0).getQrImageUrl()).isEqualTo("/images/pro.jpg");
+        verify(orderMapper).selectList(any());
+    }
+}

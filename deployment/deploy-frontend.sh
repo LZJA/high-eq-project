@@ -36,7 +36,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # 配置
-PROJECT_DIR="/root/workspace/high-eq-project"
+PROJECT_DIR="/opt/high-eq-project"
 FRONTEND_DIR="$PROJECT_DIR/high-eq-front"
 NGINX_WEB_ROOT="/var/www/high-eq-front"
 BUILD_CACHE_DIR="$FRONTEND_DIR/.cache"

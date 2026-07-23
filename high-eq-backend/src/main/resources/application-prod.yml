@@ -34,6 +34,19 @@ spring:
     charset: UTF-8
     time-zone: Asia/Shanghai
 
+  flyway:
+    baseline-on-migrate: true
+    baseline-version: 10
+
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+
   mvc:
     throw-exception-if-no-handler-found: true
   web:
@@ -51,7 +64,7 @@ mybatis-plus:
     use-column-label: true
     default-statement-timeout: 30000
     default-fetch-size: 100
-    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
 
 server:
   port: 8080
@@ -99,7 +112,7 @@ ai:
   deepseek:
     api-key: ${DEEPSEEK_API_KEY}
     api-url: https://api.deepseek.com/v1
-    model: deepseek-chat
+    model: deepseek-v4-flash
     temperature: 0.7
     max-tokens: 500
     timeout:
@@ -111,7 +124,7 @@ ai:
   doubao:
     api-key: ${DOUBAO_API_KEY:}
     api-url: https://ark.cn-beijing.volces.com/api/v3
-    model: doubao-seed-1-8-251228
+    model: doubao-seed-2.0-pro
 
 aliyun:
   oss:
@@ -123,6 +136,14 @@ aliyun:
     access-key-id: ${ALIYUN_OSS_ACCESS_KEY_ID:}
     access-key-secret: ${ALIYUN_OSS_ACCESS_KEY_SECRET:}
     presign-expire-seconds: ${ALIYUN_OSS_PRESIGN_EXPIRE_SECONDS:300}
+
+payment:
+  alipay:
+    lite-url: ${PAYMENT_ALIPAY_LITE_URL:https://qr.alipay.com/fkx13678ugdq9rjgxvq8l11}
+    pro-url: ${PAYMENT_ALIPAY_PRO_URL:https://qr.alipay.com/fkx15144l2dpquafgpgyf39}
+    lite-qr-url: ${PAYMENT_ALIPAY_LITE_QR_URL:/images/payment/alipay-lite.jpg}
+    pro-qr-url: ${PAYMENT_ALIPAY_PRO_QR_URL:/images/payment/alipay-pro.jpg}
+  mail-from: ${PAYMENT_MAIL_FROM:}
 
 management:
   endpoints:

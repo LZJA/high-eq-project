@@ -23,6 +23,16 @@ spring:
     default-property-inclusion: non_null
     charset: UTF-8
 
+  flyway:
+    baseline-on-migrate: true
+    baseline-version: 10
+
+  mail:
+    host: ${MAIL_HOST:smtp.example.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:sender@example.com}
+    password: ${MAIL_PASSWORD:app-specific-password}
+
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: com.highiq.entity
@@ -66,7 +76,7 @@ ai:
   deepseek:
     api-key: ${DEEPSEEK_API_KEY:your_deepseek_api_key_here}
     api-url: https://api.deepseek.com/v1
-    model: deepseek-chat
+    model: deepseek-v4-flash
     temperature: 0.7
     max-tokens: 500
   qwen:
@@ -86,3 +96,12 @@ aliyun:
     access-key-id: ${ALIYUN_OSS_ACCESS_KEY_ID:your-access-key-id}
     access-key-secret: ${ALIYUN_OSS_ACCESS_KEY_SECRET:your-access-key-secret}
     presign-expire-seconds: ${ALIYUN_OSS_PRESIGN_EXPIRE_SECONDS:300}
+
+# Manual payment and redemption email configuration
+payment:
+  alipay:
+    lite-url: ${PAYMENT_ALIPAY_LITE_URL:https://qr.alipay.com/fkx13678ugdq9rjgxvq8l11}
+    pro-url: ${PAYMENT_ALIPAY_PRO_URL:https://qr.alipay.com/fkx15144l2dpquafgpgyf39}
+    lite-qr-url: ${PAYMENT_ALIPAY_LITE_QR_URL:/images/payment/alipay-lite.jpg}
+    pro-qr-url: ${PAYMENT_ALIPAY_PRO_QR_URL:/images/payment/alipay-pro.jpg}
+  mail-from: ${PAYMENT_MAIL_FROM:sender@example.com}

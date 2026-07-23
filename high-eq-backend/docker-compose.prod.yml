@@ -17,7 +17,7 @@ services:
       - "13306:3306"
     volumes:
       - mysql_data_prod:/var/lib/mysql
-      - ./src/main/resources/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - /opt/high-eq-project/high-eq-backend/src/main/resources/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --max_connections=200
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
@@ -25,7 +25,10 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - high-eq-network
+      high-eq-network:
+      legacy-backend-default:
+        aliases:
+          - high-eq-mysql-prod
     logging:
       driver: "json-file"
       options:
@@ -80,7 +83,7 @@ services:
           "--no-verbose",
           "--tries=1",
           "--spider",
-          "http://localhost:8080/actuator/health",
+          "http://localhost:8080/api/actuator/health",
         ]
       interval: 30s
       timeout: 10s
@@ -107,3 +110,6 @@ volumes:
 networks:
   high-eq-network:
     driver: bridge
+  legacy-backend-default:
+    external: true
+    name: high-eq-backend_default

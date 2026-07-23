@@ -25,12 +25,26 @@ spring:
     default-property-inclusion: non_null
     charset: UTF-8
 
+  flyway:
+    baseline-on-migrate: true
+    baseline-version: 10
+
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
   type-aliases-package: com.highiq.entity
   configuration:
     map-underscore-to-camel-case: true
     cache-enabled: true
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
     lazy-loading-enabled: true
     multiple-result-sets-enabled: true
     use-column-label: true
@@ -56,6 +70,11 @@ logging:
     org.springframework.web: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+management:
+  health:
+    mail:
+      enabled: false
 
 # JWT Configuration
 jwt:
@@ -88,3 +107,11 @@ aliyun:
     access-key-id: ${ALIYUN_OSS_ACCESS_KEY_ID:}
     access-key-secret: ${ALIYUN_OSS_ACCESS_KEY_SECRET:}
     presign-expire-seconds: ${ALIYUN_OSS_PRESIGN_EXPIRE_SECONDS:300}
+
+payment:
+  alipay:
+    lite-url: ${PAYMENT_ALIPAY_LITE_URL:https://qr.alipay.com/fkx13678ugdq9rjgxvq8l11}
+    pro-url: ${PAYMENT_ALIPAY_PRO_URL:https://qr.alipay.com/fkx15144l2dpquafgpgyf39}
+    lite-qr-url: ${PAYMENT_ALIPAY_LITE_QR_URL:/images/payment/alipay-lite.jpg}
+    pro-qr-url: ${PAYMENT_ALIPAY_PRO_QR_URL:/images/payment/alipay-pro.jpg}
+  mail-from: ${PAYMENT_MAIL_FROM:}

@@ -20,11 +20,38 @@ CREATE TABLE IF NOT EXISTS `user` (
     `daily_quota` INT NOT NULL DEFAULT 5,
     `daily_quota_used` INT NOT NULL DEFAULT 0,
     `quota_reset_date` DATE NULL,
+    `current_token` VARCHAR(500) NULL,
+    `role` VARCHAR(20) NOT NULL DEFAULT 'USER',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX `idx_user_username` (`username`),
     INDEX `idx_user_email` (`email`),
     INDEX `idx_user_phone` (`phone`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `guest_statistics` (
+    `id` VARCHAR(36) PRIMARY KEY,
+    `client_ip` VARCHAR(50) NOT NULL,
+    `reply_count` INT NOT NULL DEFAULT 0,
+    `upgrade_click_count` INT NOT NULL DEFAULT 0,
+    `lite_upgrade_click_count` INT NOT NULL DEFAULT 0,
+    `pro_upgrade_click_count` INT NOT NULL DEFAULT 0,
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY `uk_client_ip` (`client_ip`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `user_statistics` (
+    `id` VARCHAR(36) PRIMARY KEY,
+    `user_id` VARCHAR(36) NOT NULL,
+    `reply_count` INT NOT NULL DEFAULT 0,
+    `profile_reply_count` INT NOT NULL DEFAULT 0,
+    `upgrade_click_count` INT NOT NULL DEFAULT 0,
+    `lite_upgrade_click_count` INT NOT NULL DEFAULT 0,
+    `pro_upgrade_click_count` INT NOT NULL DEFAULT 0,
+    `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY `uk_user_id` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `person_profile` (

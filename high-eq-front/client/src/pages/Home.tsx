@@ -15,12 +15,15 @@ import {
   UserCircle,
   BookmarkCheck
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { PRICING_PLANS } from "@/data/pricingPlans";
 import { analytics } from "@/lib/analytics";
 import { toast } from "sonner";
 import ContactSidebar from "@/components/ContactSidebar";
+import { PaymentDialog } from "@/components/PaymentDialog";
+import { getRecoverablePaymentTier } from "@/components/paymentDialogState";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ROLE_OPTIONS = [
   { value: "同事", emoji: "💼", color: "from-blue-500 to-blue-600" },
@@ -42,11 +45,28 @@ const TONE_OPTIONS = [
 export default function Home() {
   const [, navigate] = useLocation();
   const [activeDemo, setActiveDemo] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
+  const [paymentTier, setPaymentTier] = useState<"lite" | "pro" | null>(null);
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
-    setIsVisible(true);
-  }, []);
+    if (!isAuthenticated) return;
+    setPaymentTier((currentTier) => currentTier || getRecoverablePaymentTier(sessionStorage));
+  }, [isAuthenticated]);
+  const homeStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "高情商回复生成助手",
+    alternateName: "HighEQ",
+    url: "https://www.higheq.top/",
+    description: "AI 智能生成高情商聊天回复，支持聊天截图识别、角色背景适配和多种语气风格，帮你在职场、恋爱、朋友和家庭沟通中说出得体的话。",
+    applicationCategory: "UtilitiesApplication",
+    operatingSystem: "Web",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "CNY",
+    },
+  };
 
   const handleStart = () => {
     navigate("/app");
@@ -55,7 +75,11 @@ export default function Home() {
   const handleUpgradeClick = async (planId: string) => {
     const targetTier = planId === 'lite' ? 'lite' : 'pro';
     await analytics.trackUpgradeClick(targetTier);
-    toast.info('支付功能开发中，敬请期待');
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+    setPaymentTier(targetTier);
   };
 
   const demoScenarios = [
@@ -81,23 +105,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950">
-      <SEO />
-      <script type="application/ld+json">
-        {JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "WebApplication",
-          "name": "高情商回复生成助手",
-          "description": "AI 智能生成高情商聊天回复,帮你在各种社交场景下说出得体的话。",
-          "url": "https://www.higheq.top",
-          "applicationCategory": "UtilitiesApplication",
-          "offers": {
-            "@type": "Offer",
-            "price": "0",
-            "priceCurrency": "CNY"
-          }
-        })}
-      </script>
+      <SEO structuredData={homeStructuredData} />
       <ContactSidebar />
+      {paymentTier && <PaymentDialog tier={paymentTier} open={true} onOpenChange={(open) => !open && setPaymentTier(null)} />}
       {/* Navigation */}
       <nav className="fixed top-0 w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md z-50 border-b border-gray-200 dark:border-gray-800">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -112,12 +122,21 @@ export default function Home() {
               HighEQ
             </span>
           </div>
-          <Button
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg shadow-blue-500/30 transition-all duration-300 hover:scale-105"
-            onClick={handleStart}
-          >
-            开始使用 <ChevronRight className="ml-1 w-4 h-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              className="hidden border-purple-200 bg-white/70 text-purple-700 hover:bg-purple-50 sm:inline-flex dark:border-purple-800 dark:bg-gray-900/70 dark:text-purple-300 dark:hover:bg-purple-900/20"
+              onClick={() => navigate("/talktype")}
+            >
+              沟通人格测试
+            </Button>
+            <Button
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg shadow-blue-500/30 transition-all duration-300 hover:scale-105"
+              onClick={handleStart}
+            >
+              开始使用 <ChevronRight className="ml-1 w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </nav>
 
@@ -129,14 +148,14 @@ export default function Home() {
         </div>
 
         {/* 浮动装饰 */}
-        <div className="absolute top-20 left-10 w-96 h-96 bg-blue-300/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-300/20 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
+        <div className="absolute top-20 left-10 w-96 h-96 bg-blue-300/20 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-300/20 rounded-full blur-3xl"></div>
 
-        <div className={`container mx-auto px-4 relative z-10 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+        <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             {/* 标签 */}
-            <div className="inline-flex items-center gap-2 mb-8 px-4 py-2 bg-white/80 dark:bg-gray-800/80 rounded-full shadow-lg border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300 animate-float">
-              <Sparkles className="w-4 h-4 text-blue-500 animate-pulse" />
+            <div className="inline-flex items-center gap-2 mb-8 px-4 py-2 bg-white/80 dark:bg-gray-800/80 rounded-full shadow-lg border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300">
+              <Sparkles className="w-4 h-4 text-blue-500" />
               <span className="text-sm font-medium bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 AI 驱动的高情商沟通助手
               </span>
@@ -155,10 +174,10 @@ export default function Home() {
             </p>
 
             {/* CTA 按钮 */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center opacity-0 animate-fade-in-up animation-delay-200">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button
                 size="lg"
-                className="group bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-lg px-8 py-6 shadow-xl shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105"
+                className="group h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-lg px-8 shadow-xl shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105"
                 onClick={handleStart}
               >
                 <Wand2 className="mr-2 w-5 h-5 group-hover:rotate-12 transition-transform duration-300" />
@@ -167,7 +186,15 @@ export default function Home() {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-2 border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400 text-lg px-8 py-6 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-300 hover:scale-105"
+                className="h-12 border-2 border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400 text-lg px-8 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-300 hover:scale-105"
+                onClick={() => navigate("/talktype")}
+              >
+                测测我的 TalkType
+              </Button>
+              <Button
+                size="lg"
+                variant="ghost"
+                className="text-gray-600 dark:text-gray-300 text-lg px-8 py-6 hover:bg-white/70 dark:hover:bg-gray-900/40 transition-all duration-300 hover:scale-105"
                 onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
               >
                 查看演示
@@ -175,12 +202,12 @@ export default function Home() {
             </div>
 
             {/* 免费试用说明 */}
-            <p className="mt-6 text-sm text-gray-500 dark:text-gray-400 opacity-0 animate-fade-in-up animation-delay-300">
-              🎉 无需注册，每日 5 次免费体验
+            <p className="mt-6 text-sm text-gray-500 dark:text-gray-400">
+              🎉 无需注册，每日 3 点免费体验
             </p>
 
             {/* 信任指标 */}
-            <div className="mt-12 flex flex-wrap justify-center gap-8 text-gray-500 dark:text-gray-400 opacity-0 animate-fade-in-up animation-delay-400">
+            <div className="mt-12 flex flex-wrap justify-center gap-8 text-gray-500 dark:text-gray-400">
               <div className="flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 hover:scale-110 cursor-pointer">
                 <Image className="w-5 h-5" />
                 <span>截图识别</span>
@@ -382,7 +409,24 @@ export default function Home() {
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+            <Card className="p-6 text-center hover:shadow-xl transition-all border-2 hover:border-blue-300 dark:hover:border-blue-700">
+              <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                <Brain className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="font-bold text-lg mb-2">TalkType 测试</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                24 道场景题测出沟通人格和 SWBC 四维画像
+              </p>
+              <Button
+                variant="link"
+                className="mt-3 h-auto p-0 text-blue-600 dark:text-blue-400"
+                onClick={() => navigate("/talktype")}
+              >
+                免费测试 <ArrowRight className="w-3 h-3" />
+              </Button>
+            </Card>
+
             <Card className="p-6 text-center hover:shadow-xl transition-all border-2 hover:border-blue-300 dark:hover:border-blue-700">
               <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
                 <Image className="w-6 h-6 text-white" />
@@ -531,16 +575,16 @@ export default function Home() {
           </div>
           <p className="text-sm">高情商回复生成助手 · 让沟通更有温度</p>
           <p className="text-xs mt-4 text-gray-500">© 2026 HighEQ. All rights reserved.</p>
-          <p className="text-xs mt-2 flex items-center gap-1 justify-center">
+          <div className="text-xs mt-2 flex items-center gap-1 justify-center">
             <a href="http://beian.miit.gov.cn" target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-400">
               浙ICP备2025210322号-2
             </a>
-            <div className="w-[1px] h-[10px] bg-gray-500 block mx-[4px]"></div>
+            <span className="w-[1px] h-[10px] bg-gray-500 block mx-[4px]" />
             <a href="https://beian.mps.gov.cn/#/query/webSearch?code=33010202005538" rel="noreferrer" target="_blank" className="text-gray-500 hover:text-gray-400 inline-flex items-center gap-1">
               <img src="/images/beian_icon.png" alt="公安备案" className="w-3 h-3" />
               浙公网安备33010202005538号
             </a>
-          </p>
+          </div>
         </div>
       </footer>
     </div>

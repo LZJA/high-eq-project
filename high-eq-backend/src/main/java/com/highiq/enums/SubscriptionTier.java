@@ -7,12 +7,21 @@ import lombok.Getter;
  */
 @Getter
 public enum SubscriptionTier {
-    FREE("free", 20, new String[]{"deepseek-chat"}),
-    LITE("lite", 100, new String[]{"deepseek-chat", "qwen-vl-plus"}),
-    PRO("pro", -1, new String[]{"deepseek-chat", "qwen-vl-plus", "doubao-seed-1-8-251228"});
+    FREE("free", 10, new String[]{AiModel.DEEPSEEK_V4_FLASH.getId()}),
+    LITE("lite", 60, new String[]{
+            AiModel.DEEPSEEK_V4_FLASH.getId(),
+            AiModel.DEEPSEEK_V4_PRO.getId(),
+            AiModel.QWEN3_VL_PLUS.getId()
+    }),
+    PRO("pro", 150, new String[]{
+            AiModel.DEEPSEEK_V4_FLASH.getId(),
+            AiModel.DEEPSEEK_V4_PRO.getId(),
+            AiModel.QWEN3_VL_PLUS.getId(),
+            AiModel.DOUBAO_SEED_2_PRO.getId()
+    });
 
     private final String code;
-    private final int dailyQuota;  // -1 表示无限制
+    private final int dailyQuota;  // 每日点数
     private final String[] allowedModels;
 
     SubscriptionTier(String code, int dailyQuota, String[] allowedModels) {
