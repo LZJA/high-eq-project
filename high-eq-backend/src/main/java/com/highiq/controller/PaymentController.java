@@ -1,11 +1,8 @@
 package com.highiq.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.highiq.dto.ApiResponse;
 import com.highiq.dto.payment.CreatePaymentOrderRequest;
 import com.highiq.dto.payment.PaymentOrderDTO;
-import com.highiq.entity.ManualPaymentOrder;
-import com.highiq.mapper.ManualPaymentOrderMapper;
 import com.highiq.service.ManualPaymentService;
 import com.highiq.util.JwtUtil;
 import jakarta.validation.Valid;
@@ -17,12 +14,10 @@ import java.util.List;
 @RequestMapping("/payment/orders")
 public class PaymentController {
     private final ManualPaymentService paymentService;
-    private final ManualPaymentOrderMapper orderMapper;
     private final JwtUtil jwtUtil;
 
-    public PaymentController(ManualPaymentService paymentService, ManualPaymentOrderMapper orderMapper, JwtUtil jwtUtil) {
+    public PaymentController(ManualPaymentService paymentService, JwtUtil jwtUtil) {
         this.paymentService = paymentService;
-        this.orderMapper = orderMapper;
         this.jwtUtil = jwtUtil;
     }
 
@@ -39,10 +34,8 @@ public class PaymentController {
     }
 
     @GetMapping
-    public ApiResponse<List<ManualPaymentOrder>> mine(@RequestHeader("Authorization") String authorization) {
-        List<ManualPaymentOrder> orders = orderMapper.selectList(new QueryWrapper<ManualPaymentOrder>()
-                .eq("user_id", userId(authorization)).orderByDesc("create_time"));
-        return ApiResponse.success("获取成功", orders);
+    public ApiResponse<List<PaymentOrderDTO>> mine(@RequestHeader("Authorization") String authorization) {
+        return ApiResponse.success("获取成功", paymentService.listOrders(userId(authorization)));
     }
 
     private String userId(String authorization) {

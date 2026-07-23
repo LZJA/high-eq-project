@@ -11,9 +11,11 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import java.util.List;
 
 class ManualPaymentServiceTest {
     private ManualPaymentOrderMapper orderMapper;
@@ -50,5 +52,20 @@ class ManualPaymentServiceTest {
         assertThatThrownBy(() -> service.submitOrder("user-2", "order-1"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("订单不存在或不可提交");
+    }
+
+    @Test
+    void listsOrdersWithPaymentDetailsForRecoveringPendingPayments() {
+        when(orderMapper.selectList(any())).thenReturn(List.of(ManualPaymentOrder.builder()
+                .id("order-1").orderNo("PM123").userId("user-1").email("buyer@example.com")
+                .tier("pro").amountCents(999).status("PENDING").build()));
+
+        List<PaymentOrderDTO> orders = service.listOrders("user-1");
+
+        assertThat(orders).hasSize(1);
+        assertThat(orders.get(0).getPaymentUrl()).startsWith("alipays://platformapi/startapp?saId=10000007&qrcode=");
+        assertThat(orders.get(0).getPaymentUrl()).contains("https%3A%2F%2Fpro.example");
+        assertThat(orders.get(0).getQrImageUrl()).isEqualTo("/images/pro.jpg");
+        verify(orderMapper).selectList(any());
     }
 }

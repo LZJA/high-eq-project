@@ -15,13 +15,14 @@ import {
   UserCircle,
   BookmarkCheck
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { PRICING_PLANS } from "@/data/pricingPlans";
 import { analytics } from "@/lib/analytics";
 import { toast } from "sonner";
 import ContactSidebar from "@/components/ContactSidebar";
 import { PaymentDialog } from "@/components/PaymentDialog";
+import { getRecoverablePaymentTier } from "@/components/paymentDialogState";
 import { useAuth } from "@/contexts/AuthContext";
 
 const ROLE_OPTIONS = [
@@ -46,6 +47,11 @@ export default function Home() {
   const [activeDemo, setActiveDemo] = useState(0);
   const [paymentTier, setPaymentTier] = useState<"lite" | "pro" | null>(null);
   const { isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    setPaymentTier((currentTier) => currentTier || getRecoverablePaymentTier(sessionStorage));
+  }, [isAuthenticated]);
   const homeStructuredData = {
     "@context": "https://schema.org",
     "@type": "WebApplication",

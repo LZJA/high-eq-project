@@ -1,5 +1,6 @@
 package com.highiq.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.highiq.dto.payment.CreatePaymentOrderRequest;
 import com.highiq.dto.payment.PaymentOrderDTO;
 import com.highiq.entity.ManualPaymentOrder;
@@ -12,6 +13,7 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @Service
 public class ManualPaymentService {
@@ -59,6 +61,14 @@ public class ManualPaymentService {
         order.setSubmittedTime(LocalDateTime.now());
         orderMapper.updateById(order);
         return toDto(order);
+    }
+
+    public List<PaymentOrderDTO> listOrders(String userId) {
+        return orderMapper.selectList(new QueryWrapper<ManualPaymentOrder>()
+                        .eq("user_id", userId).orderByDesc("create_time"))
+                .stream()
+                .map(this::toDto)
+                .toList();
     }
 
     private PaymentOrderDTO toDto(ManualPaymentOrder order) {
