@@ -1,5 +1,6 @@
 import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import {
   TALKTYPE_DIMENSIONS,
@@ -15,7 +16,7 @@ import {
 } from "@/data/talktype";
 import { ArrowLeft, ArrowRight, Brain, Check, Copy, Download, RotateCcw, Share2, Sparkles } from "lucide-react";
 import QRCode from "qrcode";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 
@@ -50,6 +51,7 @@ export default function TalkType() {
   const [stage, setStage] = useState<TalkTypeStage>("intro");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answersByQuestionId, setAnswersByQuestionId] = useState<Record<string, string>>({});
+  const [sharePreviewImage, setSharePreviewImage] = useState<{ url: string; filename: string } | null>(null);
 
   const currentQuestion = TALKTYPE_TEST_QUESTIONS[currentIndex];
   const answeredCount = Object.keys(answersByQuestionId).length;
@@ -97,17 +99,15 @@ export default function TalkType() {
 
   const selectOption = (optionId: string) => {
     setAnswersByQuestionId((prev) => ({ ...prev, [currentQuestion.id]: optionId }));
-  };
 
-  const goNext = () => {
-    if (currentIndex < TALKTYPE_TEST_QUESTIONS.length - 1) {
-      setCurrentIndex((value) => value + 1);
-      return;
-    }
+    window.setTimeout(() => {
+      if (currentIndex < TALKTYPE_TEST_QUESTIONS.length - 1) {
+        setCurrentIndex((value) => value + 1);
+        return;
+      }
 
-    if (canShowResult || selectedOptionId) {
       setStage("result");
-    }
+    }, 180);
   };
 
   const goBack = () => {
@@ -124,6 +124,14 @@ export default function TalkType() {
     setCurrentIndex(0);
     setStage("test");
   };
+
+  useEffect(() => {
+    return () => {
+      if (sharePreviewImage) {
+        URL.revokeObjectURL(sharePreviewImage.url);
+      }
+    };
+  }, [sharePreviewImage]);
 
   const copyShareText = async () => {
     if (!result) return;
@@ -176,52 +184,31 @@ export default function TalkType() {
     if (!result || !visualAsset) return;
 
     try {
-      const testUrl = window.location.origin + "/talktype";
-      const [personaImage, qrImage] = await Promise.all([
-        loadCanvasImage(visualAsset.imagePath),
-        QRCode.toDataURL(testUrl, {
-          width: 220,
-          margin: 1,
-          color: {
-            dark: "#111827",
-            light: "#FFFFFF",
-          },
-        }).then(loadCanvasImage),
-      ]);
-      const canvas = document.createElement("canvas");
-      const width = 1080;
-      const height = 1500;
-      const scale = window.devicePixelRatio > 1 ? 2 : 1;
-      canvas.width = width * scale;
-      canvas.height = height * scale;
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-
-      const context = canvas.getContext("2d");
-      if (!context) {
-        throw new Error("Canvas is not supported");
-      }
-
-      context.scale(scale, scale);
-      drawTalkTypeShareCard(context, {
-        width,
-        height,
-        personaImage,
-        qrImage,
-        personalityName: result.personality.name,
-        tagline: result.personality.tagline,
-        shareText: visualAsset.shareText,
+      const filename = buildTalkTypeShareImageFilename(visualAsset.assetId);
+      const blob = await buildShareCardBlob({
         communicationCode: result.communicationCode,
-        testUrl,
+        personalityName: result.personality.name,
         primaryColor: visualAsset.primaryColor,
         secondaryColor: visualAsset.secondaryColor,
+        shareText: visualAsset.shareText,
+        tagline: result.personality.tagline,
+        testUrl: window.location.origin + "/talktype",
+        visualAssetImagePath: visualAsset.imagePath,
       });
+      const isMobileLike = window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768;
 
-      const blob = await canvasToPngBlob(canvas);
+      if (isMobileLike) {
+        if (sharePreviewImage) {
+          URL.revokeObjectURL(sharePreviewImage.url);
+        }
+        setSharePreviewImage({ filename, url: URL.createObjectURL(blob) });
+        return;
+      }
+
       const objectUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = objectUrl;
-      link.download = buildTalkTypeShareImageFilename(visualAsset.assetId);
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -230,6 +217,15 @@ export default function TalkType() {
     } catch {
       toast.error("保存图片失败，可以先复制文案或手动截图");
     }
+  };
+
+  const closeSharePreview = (open: boolean) => {
+    if (open) return;
+
+    if (sharePreviewImage) {
+      URL.revokeObjectURL(sharePreviewImage.url);
+    }
+    setSharePreviewImage(null);
   };
 
   return (
@@ -328,9 +324,9 @@ export default function TalkType() {
       )}
 
       {stage === "test" && (
-        <main className="mx-auto max-w-4xl px-4 py-10">
-          <div className="mb-8">
-            <div className="mb-3 flex items-center justify-between text-sm text-stone-500">
+        <main className="mx-auto max-w-4xl px-3 py-4 sm:px-4 md:py-10">
+          <div className="mb-4 md:mb-8">
+            <div className="mb-2 flex items-center justify-between text-xs text-stone-500 sm:text-sm">
               <span>
                 {currentIndex + 1} / {TALKTYPE_TEST_QUESTIONS.length}
               </span>
@@ -339,16 +335,16 @@ export default function TalkType() {
             <Progress value={progress} className="h-2 bg-blue-100 [&_[data-slot=progress-indicator]]:bg-gradient-to-r [&_[data-slot=progress-indicator]]:from-blue-600 [&_[data-slot=progress-indicator]]:to-purple-600" />
           </div>
 
-          <section className="rounded-2xl border border-blue-100 bg-white/90 p-5 shadow-lg shadow-blue-100/70 backdrop-blur md:p-8">
-            <div className="mb-6 flex flex-wrap items-center gap-3">
+          <section className="rounded-2xl border border-blue-100 bg-white/90 p-4 shadow-lg shadow-blue-100/70 backdrop-blur md:p-8">
+            <div className="mb-3 flex flex-wrap items-center gap-2 md:mb-6 md:gap-3">
               <span className="rounded-full bg-stone-100 px-3 py-1 text-xs text-stone-600">
                 {categoryLabels[currentQuestion.category]}
               </span>
-              <span className="text-sm text-stone-500">{currentQuestion.scene}</span>
+              <span className="text-xs text-stone-500 sm:text-sm">{currentQuestion.scene}</span>
             </div>
-            <h2 className="text-2xl font-semibold leading-snug md:text-3xl">{currentQuestion.prompt}</h2>
+            <h2 className="text-xl font-semibold leading-snug sm:text-2xl md:text-3xl">{currentQuestion.prompt}</h2>
 
-            <div className="mt-8 grid gap-3">
+            <div className="mt-4 grid gap-2.5 md:mt-8 md:gap-3">
               {currentQuestion.options.map((option) => {
                 const selected = selectedOptionId === option.id;
 
@@ -357,7 +353,7 @@ export default function TalkType() {
                     key={option.id}
                     type="button"
                     onClick={() => selectOption(option.id)}
-                    className={`flex min-h-16 items-start gap-4 rounded-xl border p-4 text-left transition ${
+                    className={`flex min-h-14 items-start gap-3 rounded-xl border p-3 text-left text-sm transition sm:min-h-16 sm:gap-4 sm:p-4 sm:text-base ${
                       selected
                         ? "border-blue-300 bg-blue-50 text-gray-900 shadow-sm"
                         : "border-blue-100 bg-white hover:border-purple-300 hover:bg-blue-50/40"
@@ -370,21 +366,18 @@ export default function TalkType() {
                     >
                       {option.id.toUpperCase()}
                     </span>
-                    <span className="leading-7">{option.text}</span>
+                    <span className="leading-6 sm:leading-7">{option.text}</span>
                   </button>
                 );
               })}
             </div>
 
-            <div className="mt-8 flex items-center justify-between">
+            <div className="mt-4 flex items-center justify-between md:mt-8">
               <Button variant="outline" className="border-blue-200 bg-white text-blue-700 hover:bg-blue-50" onClick={goBack}>
                 <ArrowLeft className="h-4 w-4" />
                 上一题
               </Button>
-              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700" disabled={!selectedOptionId} onClick={goNext}>
-                {currentIndex === TALKTYPE_TEST_QUESTIONS.length - 1 ? "查看结果" : "下一题"}
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+              <span className="text-xs text-stone-400">选择后自动进入下一题</span>
             </div>
           </section>
         </main>
@@ -523,8 +516,85 @@ export default function TalkType() {
           </section>
         </main>
       )}
+
+      <Dialog open={!!sharePreviewImage} onOpenChange={closeSharePreview}>
+        <DialogContent className="max-h-[92vh] max-w-[calc(100%-1rem)] overflow-y-auto p-4 sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>保存 TalkType 结果卡</DialogTitle>
+            <DialogDescription>长按图片，选择“保存图片”即可存到手机相册。</DialogDescription>
+          </DialogHeader>
+          {sharePreviewImage && (
+            <div className="space-y-3">
+              <div className="overflow-hidden rounded-2xl border border-blue-100 bg-white shadow-sm">
+                <img
+                  src={sharePreviewImage.url}
+                  alt="TalkType 结果卡预览"
+                  className="h-auto w-full select-auto"
+                  draggable={false}
+                />
+              </div>
+              <p className="text-center text-xs leading-5 text-stone-500">
+                如果浏览器不支持长按保存，可以截图保存这张卡片。
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
+}
+
+async function buildShareCardBlob(input: {
+  communicationCode: string;
+  personalityName: string;
+  primaryColor: string;
+  secondaryColor: string;
+  shareText: string;
+  tagline: string;
+  testUrl: string;
+  visualAssetImagePath?: string;
+}): Promise<Blob> {
+  const [personaImage, qrImage] = await Promise.all([
+    loadCanvasImage(input.visualAssetImagePath),
+    QRCode.toDataURL(input.testUrl, {
+      width: 220,
+      margin: 1,
+      color: {
+        dark: "#111827",
+        light: "#FFFFFF",
+      },
+    }).then(loadCanvasImage),
+  ]);
+  const canvas = document.createElement("canvas");
+  const width = 1080;
+  const height = 1500;
+  const scale = window.devicePixelRatio > 1 ? 2 : 1;
+  canvas.width = width * scale;
+  canvas.height = height * scale;
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("Canvas is not supported");
+  }
+
+  context.scale(scale, scale);
+  drawTalkTypeShareCard(context, {
+    width,
+    height,
+    personaImage,
+    qrImage,
+    personalityName: input.personalityName,
+    tagline: input.tagline,
+    shareText: input.shareText,
+    communicationCode: input.communicationCode,
+    testUrl: input.testUrl,
+    primaryColor: input.primaryColor,
+    secondaryColor: input.secondaryColor,
+  });
+
+  return canvasToPngBlob(canvas);
 }
 
 function canvasToPngBlob(canvas: HTMLCanvasElement): Promise<Blob> {
@@ -596,10 +666,6 @@ function drawTalkTypeShareCard(
   wrapCanvasText(context, input.tagline, 112, 360, 856, 42, 2);
 
   drawCoverImage(context, input.personaImage, 112, 430, 856, 620, 40);
-
-  context.fillStyle = "rgba(255,255,255,0.92)";
-  drawRoundRect(context, 112, 1088, 856, 152, 28);
-  context.fill();
 
   context.fillStyle = "#374151";
   context.font = '400 30px "PingFang SC", "Microsoft YaHei", sans-serif';

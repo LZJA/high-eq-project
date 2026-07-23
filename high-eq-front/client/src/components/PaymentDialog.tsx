@@ -79,6 +79,10 @@ export function PaymentDialog({ tier, open, onOpenChange }: { tier: "lite" | "pr
   };
 
   const pausePayment = () => {
+    closePaymentDialog();
+  };
+
+  const closePaymentDialog = () => {
     forgetPaymentAttempt(sessionStorage);
     onOpenChange(false);
   };
@@ -101,7 +105,7 @@ export function PaymentDialog({ tier, open, onOpenChange }: { tier: "lite" | "pr
   const stage = order ? getPaymentDialogStage(order.status) : null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(nextOpen) => (nextOpen ? onOpenChange(true) : closePaymentDialog())}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>{tier === "lite" ? "Lite 月度会员" : "Pro 月度会员"}</DialogTitle>
@@ -151,9 +155,14 @@ export function PaymentDialog({ tier, open, onOpenChange }: { tier: "lite" | "pr
                 </Button>
               </div>
             ) : (
-              <p className="text-center text-sm text-muted-foreground">
-                已通知核账，完成付款后无需重复提交；若刚才未支付成功，可重新支付。
-              </p>
+              <div className="space-y-2">
+                <p className="text-center text-sm text-muted-foreground">
+                  已通知核账，完成付款后无需重复提交；若刚才未支付成功，可重新支付。
+                </p>
+                <Button type="button" variant="ghost" className="w-full text-base" onClick={closePaymentDialog}>
+                  关闭
+                </Button>
+              </div>
             )}
           </div>
         )}

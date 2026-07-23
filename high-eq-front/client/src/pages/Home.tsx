@@ -185,14 +185,6 @@ export default function Home() {
               </Button>
               <Button
                 size="lg"
-                variant="outline"
-                className="h-12 border-2 border-blue-300 dark:border-blue-600 text-blue-600 dark:text-blue-400 text-lg px-8 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-300 hover:scale-105"
-                onClick={() => navigate("/talktype")}
-              >
-                测测我的 TalkType
-              </Button>
-              <Button
-                size="lg"
                 variant="ghost"
                 className="text-gray-600 dark:text-gray-300 text-lg px-8 py-6 hover:bg-white/70 dark:hover:bg-gray-900/40 transition-all duration-300 hover:scale-105"
                 onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
@@ -205,6 +197,23 @@ export default function Home() {
             <p className="mt-6 text-sm text-gray-500 dark:text-gray-400">
               🎉 无需注册，每日 3 点免费体验
             </p>
+
+            <button
+              type="button"
+              onClick={() => navigate("/talktype")}
+              className="mx-auto mt-6 flex w-full max-w-md items-center gap-4 rounded-2xl border border-purple-100 bg-white/80 p-3 text-left shadow-lg shadow-purple-100/60 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-purple-200 hover:shadow-purple-200/70 dark:border-purple-900/40 dark:bg-gray-900/70 dark:shadow-none"
+            >
+              <img
+                src="/images/talktype/personas/emotion-translator.png"
+                alt="TalkType 沟通人格插画"
+                className="h-16 w-16 shrink-0 rounded-xl object-cover object-top"
+              />
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold text-gray-900 dark:text-gray-100">不知道怎么回，可能和你的沟通人格有关</span>
+                <span className="mt-1 block text-xs leading-5 text-gray-500 dark:text-gray-400">24 道题测出你的 TalkType，生成可分享人格卡</span>
+              </span>
+              <ArrowRight className="h-4 w-4 shrink-0 text-purple-600" />
+            </button>
 
             {/* 信任指标 */}
             <div className="mt-12 flex flex-wrap justify-center gap-8 text-gray-500 dark:text-gray-400">
@@ -229,6 +238,60 @@ export default function Home() {
                 <span>收藏历史</span>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* TalkType 测试入口 */}
+      <section className="bg-white py-14 dark:bg-gray-950 md:py-20">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto grid max-w-5xl gap-8 overflow-hidden rounded-3xl border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-purple-50 p-5 shadow-xl shadow-blue-100/70 dark:border-purple-900/40 dark:from-gray-900 dark:via-gray-950 dark:to-purple-950/20 md:grid-cols-[1fr_320px] md:p-8">
+            <div className="flex flex-col justify-center">
+              <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-medium text-purple-700 shadow-sm dark:bg-gray-900/80 dark:text-purple-300">
+                <Sparkles className="h-3.5 w-3.5" />
+                新增公开测试
+              </div>
+              <h2 className="text-2xl font-bold leading-tight text-gray-900 dark:text-gray-100 md:text-4xl">
+                你是哪种说话人格？
+              </h2>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-gray-600 dark:text-gray-400 md:text-base">
+                别人说“没事”，你会继续追问、先安抚，还是等情绪过去？TalkType 用真实聊天场景测出你的沟通人格、优势和容易踩坑的表达方式。
+              </p>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {["情绪翻译官", "边界守门员", "直球真诚派"].map((item) => (
+                  <span key={item} className="rounded-full bg-white px-3 py-1 text-xs text-blue-700 shadow-sm dark:bg-gray-900 dark:text-blue-300">
+                    {item}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-7">
+                <Button
+                  className="h-11 bg-gradient-to-r from-blue-600 to-purple-600 px-6 text-white hover:from-blue-700 hover:to-purple-700"
+                  onClick={() => navigate("/talktype")}
+                >
+                  开始 3 分钟测试 <ArrowRight className="ml-1 h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => navigate("/talktype")}
+              className="group rounded-2xl bg-white p-3 shadow-lg shadow-purple-100/70 transition-all duration-300 hover:-translate-y-1 hover:shadow-purple-200/80 dark:bg-gray-900 dark:shadow-none"
+            >
+              <div className="relative overflow-hidden rounded-xl">
+                <img
+                  src="/images/talktype/personas/boundary-guardian.png"
+                  alt="TalkType 边界守门员人格插画"
+                  className="aspect-[4/5] w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                />
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-white via-white/95 to-transparent px-4 pb-4 pt-16 text-left dark:from-gray-950 dark:via-gray-950/90">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">示例人格</p>
+                  <p className="mt-1 text-xl font-bold text-gray-900 dark:text-gray-100">边界守门员</p>
+                  <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">我可以温柔，但不会被拿捏。</p>
+                </div>
+              </div>
+            </button>
           </div>
         </div>
       </section>
