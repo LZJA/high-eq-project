@@ -35,87 +35,100 @@ function Redirect({ to }: { to: string }) {
   return null;
 }
 
+function ScrollToTop() {
+  const [location] = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0 });
+  }, [location]);
+
+  return null;
+}
+
 function Router() {
   const { user } = useAuth();
 
   return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/talktype"} component={TalkType} />
-      <Route path={"/login"} component={Login} />
-      <Route path={"/register"} component={Register} />
-      <Route path={"/app"}>
-        {() => user ? (
-          <ProtectedRoute>
-            <ReplyApp />
-          </ProtectedRoute>
-        ) : (
-          <GuestReplyApp />
-        )}
-      </Route>
-      <Route path={"/history"}>
-        {() => (
-          <ProtectedRoute>
-            <History />
-          </ProtectedRoute>
-        )}
-      </Route>
-      <Route path={"/favorites"}>
-        {() => (
-          <ProtectedRoute>
-            <Favorites />
-          </ProtectedRoute>
-        )}
-      </Route>
-      <Route path={"/orders"}>
-        {() => <ProtectedRoute><Orders /></ProtectedRoute>}
-      </Route>
-      <Route path={"/profiles"}>
-        {() => (
-          <ProtectedRoute>
-            <PersonProfiles />
-          </ProtectedRoute>
-        )}
-      </Route>
-      <Route path={"/profiles/new"}>
-        {() => (
-          <ProtectedRoute>
-            <PersonProfileForm />
-          </ProtectedRoute>
-        )}
-      </Route>
-      <Route path={"/profiles/:profileId/edit"}>
-        {({ profileId }: { profileId: string }) => (
-          <ProtectedRoute>
-            <PersonProfileForm profileId={profileId} />
-          </ProtectedRoute>
-        )}
-      </Route>
-      <Route path={"/profiles/:profileId/chat"}>
-        {({ profileId }: { profileId: string }) => (
-          <ProtectedRoute>
-            <PersonProfileChat profileId={profileId} />
-          </ProtectedRoute>
-        )}
-      </Route>
-      <Route path={"/profiles/:profileId"}>
-        {({ profileId }: { profileId: string }) => (
-          <ProtectedRoute>
-            <PersonProfileDetail profileId={profileId} />
-          </ProtectedRoute>
-        )}
-      </Route>
-      <Route path={"/admin"}>
-        {() => (
-          <ProtectedRoute>
-            <AdminStatistics />
-          </ProtectedRoute>
-        )}
-      </Route>
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
-    </Switch>
+    <>
+      <ScrollToTop />
+      <Switch>
+        <Route path={"/"} component={Home} />
+        <Route path={"/talktype"} component={TalkType} />
+        <Route path={"/login"} component={Login} />
+        <Route path={"/register"} component={Register} />
+        <Route path={"/app"}>
+          {() => user ? (
+            <ProtectedRoute>
+              <ReplyApp />
+            </ProtectedRoute>
+          ) : (
+            <GuestReplyApp />
+          )}
+        </Route>
+        <Route path={"/history"}>
+          {() => (
+            <ProtectedRoute>
+              <History />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path={"/favorites"}>
+          {() => (
+            <ProtectedRoute>
+              <Favorites />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path={"/orders"}>
+          {() => <ProtectedRoute><Orders /></ProtectedRoute>}
+        </Route>
+        <Route path={"/profiles"}>
+          {() => (
+            <ProtectedRoute>
+              <PersonProfiles />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path={"/profiles/new"}>
+          {() => (
+            <ProtectedRoute>
+              <PersonProfileForm />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path={"/profiles/:profileId/edit"}>
+          {({ profileId }: { profileId: string }) => (
+            <ProtectedRoute>
+              <PersonProfileForm profileId={profileId} />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path={"/profiles/:profileId/chat"}>
+          {({ profileId }: { profileId: string }) => (
+            <ProtectedRoute>
+              <PersonProfileChat profileId={profileId} />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path={"/profiles/:profileId"}>
+          {({ profileId }: { profileId: string }) => (
+            <ProtectedRoute>
+              <PersonProfileDetail profileId={profileId} />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path={"/admin"}>
+          {() => (
+            <ProtectedRoute>
+              <AdminStatistics />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path={"/404"} component={NotFound} />
+        {/* Final fallback route */}
+        <Route component={NotFound} />
+      </Switch>
+    </>
   );
 }
 
