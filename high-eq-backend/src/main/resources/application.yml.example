@@ -97,6 +97,11 @@ aliyun:
     access-key-secret: ${ALIYUN_OSS_ACCESS_KEY_SECRET:your-access-key-secret}
     presign-expire-seconds: ${ALIYUN_OSS_PRESIGN_EXPIRE_SECONDS:300}
 
+wechat:
+  mp:
+    app-id: ${WECHAT_MP_APP_ID:your-wechat-mp-app-id}
+    app-secret: ${WECHAT_MP_APP_SECRET:your-wechat-mp-app-secret}
+
 # Manual payment and redemption email configuration
 payment:
   alipay:

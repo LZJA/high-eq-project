@@ -95,6 +95,42 @@ export function buildTalkTypeSharePayload(input: {
   };
 }
 
+export function buildTalkTypeWechatSharePayload(input: {
+  personalityName: string;
+  communicationCode: string;
+  url: string;
+  imagePath?: string;
+  identityInsight?: string;
+  personalityShareText?: string;
+  siteUrl?: string;
+}): { title: string; desc: string; link: string; imgUrl: string } {
+  const siteUrl = input.siteUrl || "https://www.higheq.top";
+  const descText = input.identityInsight || input.personalityShareText || "测测你的沟通人格，看看你在关系里最自然的表达方式。";
+
+  return {
+    title: `我的 TalkType 是「${input.personalityName}」`,
+    desc: `沟通代码 ${input.communicationCode}。${descText}`,
+    link: input.url,
+    imgUrl: input.imagePath ? new URL(input.imagePath, siteUrl).toString() : `${siteUrl}/icons/icon-512x512.png`,
+  };
+}
+
+export function getTalkTypeSharePath(shareUrl: string): string {
+  if (shareUrl.startsWith("/")) {
+    return shareUrl;
+  }
+
+  return new URL(shareUrl).pathname;
+}
+
+export function isWeChatBrowser(userAgent: string): boolean {
+  return /MicroMessenger/i.test(userAgent);
+}
+
+export function shouldUseNativeShare(input: { canNativeShare: boolean; userAgent: string }): boolean {
+  return input.canNativeShare && !isWeChatBrowser(input.userAgent);
+}
+
 export function buildTalkTypeShareImageFilename(assetId: string): string {
   return `talktype-${assetId}.png`;
 }

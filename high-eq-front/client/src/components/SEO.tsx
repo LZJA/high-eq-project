@@ -34,6 +34,9 @@ export default function SEO({
       <meta property="og:description" content={description} />
       <meta property="og:site_name" content="HighEQ" />
       {imageUrl && <meta property="og:image" content={imageUrl} />}
+      {imageUrl && <meta property="og:image:secure_url" content={imageUrl} />}
+      {imageUrl && <meta property="og:image:width" content="1200" />}
+      {imageUrl && <meta property="og:image:height" content="630" />}
       <meta name="twitter:card" content={imageUrl ? "summary_large_image" : "summary"} />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />

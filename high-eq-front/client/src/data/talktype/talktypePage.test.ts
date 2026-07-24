@@ -4,10 +4,14 @@ import {
   buildTalkTypeShareImageFilename,
   buildTalkTypeSharePayload,
   buildTalkTypeShareText,
+  buildTalkTypeWechatSharePayload,
+  getTalkTypeSharePath,
   getTalkTypeDimensionScoreInsight,
   getTalkTypePageSeo,
   getTalkTypeProgress,
   getTalkTypeVisualAsset,
+  isWeChatBrowser,
+  shouldUseNativeShare,
 } from "./talktypePage";
 
 describe("TalkType page helpers", () => {
@@ -68,6 +72,29 @@ describe("TalkType page helpers", () => {
     expect(Object.keys(payload)).not.toContain("png");
   });
 
+  it("builds a WeChat card share payload with absolute card image", () => {
+    const payload = buildTalkTypeWechatSharePayload({
+      personalityName: "情绪翻译官",
+      communicationCode: "S90 W75 B50 C60",
+      url: "https://www.higheq.top/talktype/result/abc",
+      imagePath: "/images/talktype/personas/emotion-translator.png",
+      identityInsight: "别人没说出口的话，你常常已经听懂。",
+      siteUrl: "https://www.higheq.top",
+    });
+
+    expect(payload).toEqual({
+      title: "我的 TalkType 是「情绪翻译官」",
+      desc: "沟通代码 S90 W75 B50 C60。别人没说出口的话，你常常已经听懂。",
+      link: "https://www.higheq.top/talktype/result/abc",
+      imgUrl: "https://www.higheq.top/images/talktype/personas/emotion-translator.png",
+    });
+  });
+
+  it("extracts the public share detail path from an absolute share URL", () => {
+    expect(getTalkTypeSharePath("https://www.higheq.top/talktype/result/abc123")).toBe("/talktype/result/abc123");
+    expect(getTalkTypeSharePath("/talktype/result/abc123")).toBe("/talktype/result/abc123");
+  });
+
   it("builds a concise share text without repeating the personality intro", () => {
     const shareText = buildTalkTypeShareText({
       personalityName: "关系经营者",
@@ -84,5 +111,14 @@ describe("TalkType page helpers", () => {
 
   it("builds a stable share image filename", () => {
     expect(buildTalkTypeShareImageFilename("relationship-curator")).toBe("talktype-relationship-curator.png");
+  });
+
+  it("does not use native share inside WeChat browser", () => {
+    const weChatUserAgent =
+      "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 MicroMessenger/8.0.50";
+
+    expect(isWeChatBrowser(weChatUserAgent)).toBe(true);
+    expect(shouldUseNativeShare({ canNativeShare: true, userAgent: weChatUserAgent })).toBe(false);
+    expect(shouldUseNativeShare({ canNativeShare: true, userAgent: "Mozilla/5.0 Safari/605.1.15" })).toBe(true);
   });
 });

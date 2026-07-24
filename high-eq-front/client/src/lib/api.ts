@@ -1,6 +1,14 @@
 import axios, { AxiosInstance } from 'axios';
 import type { TalkTypeDeepReport, TalkTypeDeepReportRequest, TalkTypeShareReport, TalkTypeShareReportPayload } from "@/data/talktype";
 
+export interface WechatJsSdkSignature {
+  appId: string;
+  timestamp: number;
+  nonceStr: string;
+  signature: string;
+  jsApiList: string[];
+}
+
 // API 基础 URL
 // 开发环境：使用 Vite 代理 /api
 // 生产环境：使用环境变�?VITE_API_URL 或相对路径
@@ -384,6 +392,14 @@ const guestHeaders = () => ({
   "X-Guest-Id": getGuestId(),
 });
 
+function assertTalkTypeResponse<T extends { code?: number; message?: string; data?: unknown }>(response: T): T {
+  if (response.code !== undefined && response.code !== 200) {
+    throw new Error(response.message || "TalkType 请求失败");
+  }
+
+  return response;
+}
+
 export const guestApi = {
   /**
    * 游客生成回复
@@ -416,21 +432,29 @@ export const guestApi = {
       headers: guestHeaders(),
       timeout: 0,
     });
-    return response.data;
+    return assertTalkTypeResponse(response.data);
   },
 
   createTalkTypeShareReport: async (data: TalkTypeShareReportPayload): Promise<{ code: number; message: string; data: TalkTypeShareReport }> => {
     const response = await axios.post(`${API_BASE_URL}/guest/talktype/reports/share`, data, {
       headers: guestHeaders(),
     });
-    return response.data;
+    return assertTalkTypeResponse(response.data);
   },
 
   getTalkTypeShareReport: async (shareId: string): Promise<{ code: number; message: string; data: TalkTypeShareReport }> => {
     const response = await axios.get(`${API_BASE_URL}/guest/talktype/reports/${shareId}`, {
       headers: guestHeaders(),
     });
-    return response.data;
+    return assertTalkTypeResponse(response.data);
+  },
+
+  getWechatJsSdkSignature: async (url: string): Promise<{ code: number; message: string; data: WechatJsSdkSignature }> => {
+    const response = await axios.get(`${API_BASE_URL}/guest/wechat/js-sdk-signature`, {
+      headers: guestHeaders(),
+      params: { url },
+    });
+    return assertTalkTypeResponse(response.data);
   },
 };
 

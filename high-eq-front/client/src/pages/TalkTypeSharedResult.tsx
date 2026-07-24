@@ -1,18 +1,44 @@
 import SEO from "@/components/SEO";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import {
   TALKTYPE_DIMENSIONS,
   TALKTYPE_PERSONALITIES,
+  buildTalkTypeSharePayload,
   buildTalkTypeSnapshotReport,
+  buildTalkTypeWechatSharePayload,
   getTalkTypeDimensionScoreInsight,
+  isWeChatBrowser,
   type TalkTypeDeepReport,
   type TalkTypeShareReport,
 } from "@/data/talktype";
 import { guestApi } from "@/lib/api";
-import { ArrowRight, Brain, Sparkles } from "lucide-react";
+import { ArrowRight, Brain, Share2, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
+
+declare global {
+  interface Window {
+    wx?: {
+      config: (config: {
+        debug: boolean;
+        appId: string;
+        timestamp: number;
+        nonceStr: string;
+        signature: string;
+        jsApiList: string[];
+      }) => void;
+      ready: (callback: () => void) => void;
+      error: (callback: (error: unknown) => void) => void;
+      updateAppMessageShareData: (payload: { title: string; desc: string; link: string; imgUrl: string }) => void;
+      updateTimelineShareData: (payload: { title: string; link: string; imgUrl: string }) => void;
+    };
+  }
+}
+
+const WECHAT_JS_SDK_URL = "https://res.wx.qq.com/open/js/jweixin-1.6.0.js";
+let wechatJsSdkPromise: Promise<void> | null = null;
 
 export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
   const [, navigate] = useLocation();
@@ -20,6 +46,7 @@ export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [sharedDeepReport, setSharedDeepReport] = useState<TalkTypeDeepReport | null>(null);
+  const [shareGuideOpen, setShareGuideOpen] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -69,6 +96,16 @@ export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
   const relationshipBehavior = report?.relationshipBehavior || localPersonality?.relationshipBehavior;
   const workplaceBehavior = report?.workplaceBehavior || localPersonality?.workplaceBehavior;
   const friendshipBehavior = report?.friendshipBehavior || localPersonality?.friendshipBehavior;
+  const shareUrl = `https://www.higheq.top/talktype/result/${shareId}`;
+  const sharePayload = report
+    ? buildTalkTypeSharePayload({
+      personalityName: report.personalityName,
+      communicationCode: report.communicationCode,
+      url: shareUrl,
+      personalityShareText: report.shareText,
+    })
+    : null;
+  const shareImageUrl = report?.imagePath ? new URL(report.imagePath, "https://www.higheq.top").toString() : undefined;
 
   useEffect(() => {
     if (!report) {
@@ -84,12 +121,80 @@ export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
     setSharedDeepReport(null);
   }, [report]);
 
+  useEffect(() => {
+    if (!report) return;
+
+    const expectedPath = `/talktype/result/${shareId}`;
+    if (window.sessionStorage.getItem("talktype-open-share-guide") === expectedPath) {
+      window.sessionStorage.removeItem("talktype-open-share-guide");
+      setShareGuideOpen(true);
+    }
+  }, [report, shareId]);
+
+  useEffect(() => {
+    if (!report || !shareImageUrl || !isWeChatBrowser(window.navigator.userAgent)) {
+      return;
+    }
+
+    let ignore = false;
+    const wechatSharePayload = buildTalkTypeWechatSharePayload({
+      personalityName: report.personalityName,
+      communicationCode: report.communicationCode,
+      url: shareUrl,
+      imagePath: shareImageUrl,
+      identityInsight: report.identityInsight || report.snapshotReport?.identityInsight?.body,
+    });
+    const signatureUrl = window.location.href.split("#")[0];
+
+    loadWechatJsSdk()
+      .then(() => guestApi.getWechatJsSdkSignature(signatureUrl))
+      .then((response) => {
+        if (ignore || !window.wx) return;
+
+        window.wx.config({
+          debug: false,
+          appId: response.data.appId,
+          timestamp: response.data.timestamp,
+          nonceStr: response.data.nonceStr,
+          signature: response.data.signature,
+          jsApiList: response.data.jsApiList,
+        });
+        window.wx.ready(() => {
+          if (!window.wx) return;
+          window.wx.updateAppMessageShareData(wechatSharePayload);
+          window.wx.updateTimelineShareData({
+            title: wechatSharePayload.title,
+            link: wechatSharePayload.link,
+            imgUrl: wechatSharePayload.imgUrl,
+          });
+        });
+        window.wx.error((error) => {
+          console.warn("WeChat JS-SDK config failed", error);
+        });
+      })
+      .catch((error) => {
+        console.warn("WeChat JS-SDK share setup failed", error);
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [report, shareId, shareImageUrl, shareUrl]);
+
+  const copyShareLink = async () => {
+    if (!sharePayload) return;
+
+    await navigator.clipboard.writeText(`${sharePayload.text}\n${sharePayload.url}`);
+    setShareGuideOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 text-gray-900">
       <SEO
         title={`${title} - TalkType 沟通人格测试`}
         description={report?.identityInsight || "查看朋友分享的 TalkType 沟通人格结果，并测测你自己的沟通人格。"}
-        canonicalUrl={`https://www.higheq.top/talktype/result/${shareId}`}
+        canonicalUrl={shareUrl}
+        imageUrl={shareImageUrl}
       />
 
       <header className="sticky top-0 z-30 border-b border-blue-100/80 bg-white/85 backdrop-blur">
@@ -210,7 +315,13 @@ export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
               </div>
 
               <div className="mt-8 rounded-2xl border border-purple-100 bg-gradient-to-br from-purple-50 via-white to-blue-50 p-5">
-                <p className="font-semibold text-gray-900">你会是哪种沟通人格？</p>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="font-semibold text-gray-900">你会是哪种沟通人格？</p>
+                  <Button variant="outline" className="w-fit border-blue-200 bg-white text-blue-700 hover:bg-blue-50" onClick={() => setShareGuideOpen(true)}>
+                    <Share2 className="h-4 w-4" />
+                    分享这份结果
+                  </Button>
+                </div>
                 <p className="mt-2 text-sm leading-6 text-stone-600">
                   用 24 道真实聊天场景测出你的 TalkType，看看你在关系里最自然的表达方式。
                 </p>
@@ -222,8 +333,59 @@ export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
           </section>
         )}
       </main>
+
+      <Dialog open={shareGuideOpen} onOpenChange={setShareGuideOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>用微信卡片分享结果</DialogTitle>
+            <DialogDescription>
+              当前已经是公开结果详情页。请点微信右上角菜单，选择“发送给朋友”或“分享到朋友圈”。
+            </DialogDescription>
+          </DialogHeader>
+          {sharePayload && (
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-purple-100 bg-gradient-to-br from-purple-50 via-white to-blue-50 p-4">
+                {shareImageUrl && <img src={shareImageUrl} alt="" className="mb-3 aspect-[1.91/1] w-full rounded-xl object-cover object-top" />}
+                <p className="text-sm font-semibold text-gray-900">{sharePayload.title}</p>
+                <p className="mt-2 line-clamp-4 text-sm leading-6 text-stone-600">{sharePayload.text}</p>
+                <p className="mt-3 break-all rounded-xl bg-white/80 px-3 py-2 text-xs leading-5 text-blue-700">{sharePayload.url}</p>
+              </div>
+              <Button variant="outline" className="w-full border-blue-200 bg-white text-blue-700 hover:bg-blue-50" onClick={copyShareLink}>
+                复制链接备用
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
+}
+
+function loadWechatJsSdk(): Promise<void> {
+  if (window.wx) {
+    return Promise.resolve();
+  }
+  if (wechatJsSdkPromise) {
+    return wechatJsSdkPromise;
+  }
+
+  wechatJsSdkPromise = new Promise((resolve, reject) => {
+    const existingScript = document.querySelector<HTMLScriptElement>(`script[src="${WECHAT_JS_SDK_URL}"]`);
+    if (existingScript) {
+      existingScript.addEventListener("load", () => resolve(), { once: true });
+      existingScript.addEventListener("error", () => reject(new Error("WeChat JS-SDK load failed")), { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = WECHAT_JS_SDK_URL;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("WeChat JS-SDK load failed"));
+    document.head.appendChild(script);
+  });
+
+  return wechatJsSdkPromise;
 }
 
 function SharedSnapshotReportCards({ report }: { report: NonNullable<TalkTypeShareReport["snapshotReport"]> }) {

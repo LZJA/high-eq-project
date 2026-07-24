@@ -108,6 +108,11 @@ aliyun:
     access-key-secret: ${ALIYUN_OSS_ACCESS_KEY_SECRET:}
     presign-expire-seconds: ${ALIYUN_OSS_PRESIGN_EXPIRE_SECONDS:300}
 
+wechat:
+  mp:
+    app-id: ${WECHAT_MP_APP_ID:}
+    app-secret: ${WECHAT_MP_APP_SECRET:}
+
 payment:
   alipay:
     lite-url: ${PAYMENT_ALIPAY_LITE_URL:https://qr.alipay.com/fkx13678ugdq9rjgxvq8l11}

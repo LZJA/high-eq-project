@@ -14,7 +14,10 @@ import {
   getTalkTypePageSeo,
   getTalkTypeProgress,
   getTalkTypeDimensionScoreInsight,
+  getTalkTypeSharePath,
   getTalkTypeVisualAsset,
+  isWeChatBrowser,
+  shouldUseNativeShare,
   loadLatestTalkTypeAnswers,
   saveLatestTalkTypeResult,
   type TalkTypeDeepReport,
@@ -64,6 +67,9 @@ export default function TalkType() {
   const [isDeepReportFailed, setIsDeepReportFailed] = useState(false);
   const [isResultRouteReady, setIsResultRouteReady] = useState(false);
   const [deepReportRetryCount, setDeepReportRetryCount] = useState(0);
+  const [isShareCreating, setIsShareCreating] = useState(false);
+  const [publicShareUrl, setPublicShareUrl] = useState<{ answersKey: string; url: string } | null>(null);
+  const [shareGuide, setShareGuide] = useState<{ title: string; text: string; url: string } | null>(null);
   const autoAdvanceTimerRef = useRef<number | null>(null);
   const deepReportRequestKeyRef = useRef<string | null>(null);
 
@@ -300,15 +306,23 @@ export default function TalkType() {
 
   const createPublicShareUrl = async () => {
     if (!result || !visualAsset) return window.location.origin + "/talktype";
+    if (publicShareUrl?.answersKey === answersKey) return publicShareUrl.url;
 
     const reportForShare = await ensureDeepReportForShare();
     const response = await guestApi.createTalkTypeShareReport(buildTalkTypeShareReportPayload(result, visualAsset, reportForShare));
-    return window.location.origin + response.data.shareUrl;
+    if (!response.data?.shareUrl) {
+      throw new Error("TalkType share report is empty");
+    }
+
+    const url = window.location.origin + response.data.shareUrl;
+    setPublicShareUrl({ answersKey, url });
+    return url;
   };
 
   const shareResult = async () => {
     if (!result) return;
 
+    setIsShareCreating(true);
     try {
       const shareUrl = await createPublicShareUrl();
       const payload = buildTalkTypeSharePayload({
@@ -317,14 +331,27 @@ export default function TalkType() {
         url: shareUrl,
         personalityShareText: result.personality.shareText,
       });
+      const sharePath = getTalkTypeSharePath(shareUrl);
 
-      if (navigator.share) {
-        await navigator.share(payload);
+      if (isWeChatBrowser(navigator.userAgent)) {
+        window.sessionStorage.setItem("talktype-open-share-guide", sharePath);
+        navigate(sharePath);
         return;
       }
 
-      await navigator.clipboard.writeText(payload.text);
-      toast.success("分享文案已复制");
+      if (shouldUseNativeShare({ canNativeShare: typeof navigator.share === "function", userAgent: navigator.userAgent })) {
+        try {
+          await navigator.share(payload);
+          navigate(sharePath);
+          return;
+        } catch (error) {
+          if (error instanceof DOMException && error.name === "AbortError") {
+            return;
+          }
+        }
+      }
+
+      setShareGuide(payload);
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
         return;
@@ -334,7 +361,16 @@ export default function TalkType() {
         setIsDeepReportFailed(true);
       }
       toast.error("分享失败，可以稍后再试");
+    } finally {
+      setIsShareCreating(false);
     }
+  };
+
+  const copyShareLink = async () => {
+    if (!shareGuide) return;
+
+    await navigator.clipboard.writeText(`${shareGuide.text}\n${shareGuide.url}`);
+    toast.success("分享链接已复制");
   };
 
   const saveShareCardImage = async () => {
@@ -677,10 +713,10 @@ export default function TalkType() {
                       variant="outline"
                       className="h-11 border-blue-200 bg-white px-3 text-blue-700 hover:bg-blue-50"
                       onClick={shareResult}
-                      disabled={isDeepReportLoading}
+                      disabled={isDeepReportLoading || isShareCreating}
                     >
                       <Share2 className="h-4 w-4 shrink-0" />
-                      <span className="truncate">{isDeepReportLoading ? "生成中" : "分享结果"}</span>
+                      <span className="truncate">{isDeepReportLoading ? "生成中" : isShareCreating ? "准备中" : "分享结果"}</span>
                     </Button>
                   </div>
                 </div>
@@ -733,6 +769,34 @@ export default function TalkType() {
               <p className="text-center text-xs leading-5 text-stone-500">
                 如果浏览器不支持长按保存，可以截图保存这张卡片。
               </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!shareGuide} onOpenChange={(open) => !open && setShareGuide(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>分享这份 TalkType 结果</DialogTitle>
+            <DialogDescription>
+              在微信里请点右上角菜单，选择“发送给朋友”或“分享到朋友圈”。链接会打开完整结果页。
+            </DialogDescription>
+          </DialogHeader>
+          {shareGuide && (
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-purple-100 bg-gradient-to-br from-purple-50 via-white to-blue-50 p-4">
+                <p className="text-sm font-semibold text-gray-900">{shareGuide.title}</p>
+                <p className="mt-2 line-clamp-4 text-sm leading-6 text-stone-600">{shareGuide.text}</p>
+                <p className="mt-3 break-all rounded-xl bg-white/80 px-3 py-2 text-xs leading-5 text-blue-700">{shareGuide.url}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Button variant="outline" className="border-blue-200 bg-white text-blue-700 hover:bg-blue-50" onClick={copyShareLink}>
+                  复制链接
+                </Button>
+                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700" onClick={() => setShareGuide(null)}>
+                  知道了
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
