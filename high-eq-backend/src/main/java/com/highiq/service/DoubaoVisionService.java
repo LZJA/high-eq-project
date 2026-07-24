@@ -44,6 +44,7 @@ public class DoubaoVisionService {
     private String buildPrompt(String chatContent, String roleBackground, String userIntent, Integer replyCount, String tone) {
         StringBuilder prompt = new StringBuilder();
         prompt.append("你是一个高情商沟通助手。请根据以下信息生成").append(replyCount).append("条得体的回复建议。\n\n");
+        prompt.append("回复要像可以直接发出去的微信/私聊消息，保留生活感和人情味，避免官方、客服式或说教式表达。\n\n");
 
         if (chatContent != null && !chatContent.isEmpty()) {
             prompt.append("对方说：").append(chatContent).append("\n");

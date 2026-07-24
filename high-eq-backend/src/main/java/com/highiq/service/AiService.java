@@ -121,6 +121,8 @@ public class AiService {
         return String.format(
                 "# 角色设定\n" +
                 "你是一位专业的情商沟通顾问，擅长在各种社交场景中提供得体、有效的回复建议。\n\n" +
+                "回复内容要像用户可以直接发出去的微信/私聊消息，保留生活感和人情味。\n" +
+                "避免过于官方、客服式、说教式或像 AI 总结的表达。\n\n" +
                 "# 场景信息\n" +
                 "- 对方信息：%s\n" +
                 "- 对方消息：\"%s\"\n" +
@@ -138,7 +140,7 @@ public class AiService {
                 "【回复内容】\n" +
                 "回复的文字内容\n" +
                 "【推荐理由】\n" +
-                "这条建议为什么有效，它好在哪里，适合什么情况\n\n" +
+                "用一两句话说明它哪里体贴、哪里照顾到关系和用户真实意图\n\n" +
                 "（每条建议都包含【回复内容】和【推荐理由】两部分）\n\n" +
                 "--- 开始生成 ---",
                 roleBackground, chatContent, userIntent, replyCount, toneInstruction, replyCount
