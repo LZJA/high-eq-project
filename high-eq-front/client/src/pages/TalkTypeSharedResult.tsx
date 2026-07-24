@@ -51,10 +51,7 @@ export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
   const [sharedDeepReport, setSharedDeepReport] = useState<TalkTypeDeepReport | null>(null);
   const [shareGuideOpen, setShareGuideOpen] = useState(false);
   const [wechatShareReady, setWechatShareReady] = useState(false);
-  const [wechatShareDebug, setWechatShareDebug] = useState<string[]>([]);
 
-  const isWechatDebugEnabled =
-    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("wechatDebug") === "1";
   const isWechatClient = typeof navigator !== "undefined" && isWeChatBrowser(navigator.userAgent);
 
   useEffect(() => {
@@ -141,14 +138,8 @@ export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
   }, [report, shareId]);
 
   useEffect(() => {
-    const pushWechatDebug = (message: string) => {
-      if (!isWechatDebugEnabled) return;
-      setWechatShareDebug((items) => [...items.slice(-10), `${new Date().toLocaleTimeString()} ${message}`]);
-    };
-
     if (!report || !shareImageUrl || !isWeChatBrowser(window.navigator.userAgent)) {
       setWechatShareReady(false);
-      pushWechatDebug(`skip config: report=${Boolean(report)} image=${Boolean(shareImageUrl)} wechat=${isWeChatBrowser(window.navigator.userAgent)}`);
       return;
     }
 
@@ -162,18 +153,11 @@ export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
       identityInsight: report.identityInsight || report.snapshotReport?.identityInsight?.body,
     });
     const signatureUrl = window.location.href.split("#")[0];
-    pushWechatDebug(`start config url=${signatureUrl}`);
-    pushWechatDebug(`payload link=${wechatSharePayload.link}`);
-    pushWechatDebug(`payload img=${wechatSharePayload.imgUrl}`);
 
     loadWechatJsSdk()
-      .then(() => {
-        pushWechatDebug(`sdk loaded wx=${Boolean(window.wx)}`);
-        return guestApi.getWechatJsSdkSignature(signatureUrl);
-      })
+      .then(() => guestApi.getWechatJsSdkSignature(signatureUrl))
       .then((response) => {
         if (ignore || !window.wx) return;
-        pushWechatDebug(`signature ok apis=${response.data.jsApiList.join(",")}`);
 
         window.wx.config({
           debug: false,
@@ -185,7 +169,6 @@ export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
         });
         window.wx.ready(() => {
           if (!window.wx) return;
-          pushWechatDebug("wx.ready");
           window.wx.updateAppMessageShareData(wechatSharePayload);
           window.wx.onMenuShareAppMessage?.(wechatSharePayload);
           window.wx.updateTimelineShareData({
@@ -202,13 +185,11 @@ export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
         });
         window.wx.error((error) => {
           setWechatShareReady(false);
-          pushWechatDebug(`wx.error ${JSON.stringify(error)}`);
           console.warn("WeChat JS-SDK config failed", error);
         });
       })
       .catch((error) => {
         setWechatShareReady(false);
-        pushWechatDebug(`setup failed ${error instanceof Error ? error.message : String(error)}`);
         console.warn("WeChat JS-SDK share setup failed", error);
       });
 
@@ -392,21 +373,6 @@ export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
           </section>
         )}
 
-        {isWechatDebugEnabled && (
-          <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-6 text-amber-900">
-            <p className="font-semibold">微信分享诊断</p>
-            <p className="break-all">UA: {navigator.userAgent}</p>
-            <p>isWeChat: {String(isWechatClient)}</p>
-            <p>ready: {String(wechatShareReady)}</p>
-            <div className="mt-2 space-y-1">
-              {wechatShareDebug.map((item, index) => (
-                <p key={`${item}-${index}`} className="break-all">
-                  {item}
-                </p>
-              ))}
-            </div>
-          </section>
-        )}
       </main>
 
       <Dialog open={shareGuideOpen} onOpenChange={setShareGuideOpen}>
