@@ -6,6 +6,7 @@ import {
   buildTalkTypeShareText,
   buildTalkTypeWechatSharePayload,
   getTalkTypeSharePath,
+  getTalkTypeSharedResultShareAction,
   getTalkTypeDimensionScoreInsight,
   getTalkTypePageSeo,
   getTalkTypeProgress,
@@ -120,5 +121,24 @@ describe("TalkType page helpers", () => {
     expect(isWeChatBrowser(weChatUserAgent)).toBe(true);
     expect(shouldUseNativeShare({ canNativeShare: true, userAgent: weChatUserAgent })).toBe(false);
     expect(shouldUseNativeShare({ canNativeShare: true, userAgent: "Mozilla/5.0 Safari/605.1.15" })).toBe(true);
+  });
+
+  it("uses native share on shared result pages outside WeChat when available", () => {
+    expect(
+      getTalkTypeSharedResultShareAction({
+        canNativeShare: true,
+        userAgent: "Mozilla/5.0 Safari/605.1.15",
+      }),
+    ).toBe("native-share");
+  });
+
+  it("shows WeChat guide on shared result pages inside WeChat", () => {
+    expect(
+      getTalkTypeSharedResultShareAction({
+        canNativeShare: true,
+        userAgent:
+          "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 MicroMessenger/8.0.50",
+      }),
+    ).toBe("wechat-guide");
   });
 });

@@ -131,6 +131,17 @@ export function shouldUseNativeShare(input: { canNativeShare: boolean; userAgent
   return input.canNativeShare && !isWeChatBrowser(input.userAgent);
 }
 
+export function getTalkTypeSharedResultShareAction(input: {
+  canNativeShare: boolean;
+  userAgent: string;
+}): "native-share" | "wechat-guide" | "copy-guide" {
+  if (isWeChatBrowser(input.userAgent)) {
+    return "wechat-guide";
+  }
+
+  return input.canNativeShare ? "native-share" : "copy-guide";
+}
+
 export function buildTalkTypeShareImageFilename(assetId: string): string {
   return `talktype-${assetId}.png`;
 }

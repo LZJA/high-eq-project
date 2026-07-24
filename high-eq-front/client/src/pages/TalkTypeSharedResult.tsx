@@ -8,6 +8,7 @@ import {
   buildTalkTypeSharePayload,
   buildTalkTypeSnapshotReport,
   buildTalkTypeWechatSharePayload,
+  getTalkTypeSharedResultShareAction,
   getTalkTypeDimensionScoreInsight,
   isWeChatBrowser,
   type TalkTypeDeepReport,
@@ -50,6 +51,11 @@ export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
   const [sharedDeepReport, setSharedDeepReport] = useState<TalkTypeDeepReport | null>(null);
   const [shareGuideOpen, setShareGuideOpen] = useState(false);
   const [wechatShareReady, setWechatShareReady] = useState(false);
+  const [wechatShareDebug, setWechatShareDebug] = useState<string[]>([]);
+
+  const isWechatDebugEnabled =
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("wechatDebug") === "1";
+  const isWechatClient = typeof navigator !== "undefined" && isWeChatBrowser(navigator.userAgent);
 
   useEffect(() => {
     let ignore = false;
@@ -135,8 +141,14 @@ export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
   }, [report, shareId]);
 
   useEffect(() => {
+    const pushWechatDebug = (message: string) => {
+      if (!isWechatDebugEnabled) return;
+      setWechatShareDebug((items) => [...items.slice(-10), `${new Date().toLocaleTimeString()} ${message}`]);
+    };
+
     if (!report || !shareImageUrl || !isWeChatBrowser(window.navigator.userAgent)) {
       setWechatShareReady(false);
+      pushWechatDebug(`skip config: report=${Boolean(report)} image=${Boolean(shareImageUrl)} wechat=${isWeChatBrowser(window.navigator.userAgent)}`);
       return;
     }
 
@@ -150,11 +162,18 @@ export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
       identityInsight: report.identityInsight || report.snapshotReport?.identityInsight?.body,
     });
     const signatureUrl = window.location.href.split("#")[0];
+    pushWechatDebug(`start config url=${signatureUrl}`);
+    pushWechatDebug(`payload link=${wechatSharePayload.link}`);
+    pushWechatDebug(`payload img=${wechatSharePayload.imgUrl}`);
 
     loadWechatJsSdk()
-      .then(() => guestApi.getWechatJsSdkSignature(signatureUrl))
+      .then(() => {
+        pushWechatDebug(`sdk loaded wx=${Boolean(window.wx)}`);
+        return guestApi.getWechatJsSdkSignature(signatureUrl);
+      })
       .then((response) => {
         if (ignore || !window.wx) return;
+        pushWechatDebug(`signature ok apis=${response.data.jsApiList.join(",")}`);
 
         window.wx.config({
           debug: false,
@@ -166,6 +185,7 @@ export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
         });
         window.wx.ready(() => {
           if (!window.wx) return;
+          pushWechatDebug("wx.ready");
           window.wx.updateAppMessageShareData(wechatSharePayload);
           window.wx.onMenuShareAppMessage?.(wechatSharePayload);
           window.wx.updateTimelineShareData({
@@ -182,11 +202,13 @@ export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
         });
         window.wx.error((error) => {
           setWechatShareReady(false);
+          pushWechatDebug(`wx.error ${JSON.stringify(error)}`);
           console.warn("WeChat JS-SDK config failed", error);
         });
       })
       .catch((error) => {
         setWechatShareReady(false);
+        pushWechatDebug(`setup failed ${error instanceof Error ? error.message : String(error)}`);
         console.warn("WeChat JS-SDK share setup failed", error);
       });
 
@@ -194,6 +216,29 @@ export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
       ignore = true;
     };
   }, [report, shareId, shareImageUrl, shareUrl]);
+
+  const handleShareResult = async () => {
+    if (!sharePayload) return;
+
+    const action = getTalkTypeSharedResultShareAction({
+      canNativeShare: typeof navigator.share === "function",
+      userAgent: navigator.userAgent,
+    });
+
+    if (action === "native-share") {
+      try {
+        await navigator.share(sharePayload);
+        setShareGuideOpen(false);
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+      }
+    }
+
+    setShareGuideOpen(true);
+  };
 
   const copyShareLink = async () => {
     if (!sharePayload) return;
@@ -331,7 +376,7 @@ export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
               <div className="mt-8 rounded-2xl border border-purple-100 bg-gradient-to-br from-purple-50 via-white to-blue-50 p-5">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="font-semibold text-gray-900">你会是哪种沟通人格？</p>
-                  <Button variant="outline" className="w-fit border-blue-200 bg-white text-blue-700 hover:bg-blue-50" onClick={() => setShareGuideOpen(true)}>
+                  <Button variant="outline" className="w-fit border-blue-200 bg-white text-blue-700 hover:bg-blue-50" onClick={handleShareResult}>
                     <Share2 className="h-4 w-4" />
                     分享这份结果
                   </Button>
@@ -346,6 +391,22 @@ export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
             </div>
           </section>
         )}
+
+        {isWechatDebugEnabled && (
+          <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs leading-6 text-amber-900">
+            <p className="font-semibold">微信分享诊断</p>
+            <p className="break-all">UA: {navigator.userAgent}</p>
+            <p>isWeChat: {String(isWechatClient)}</p>
+            <p>ready: {String(wechatShareReady)}</p>
+            <div className="mt-2 space-y-1">
+              {wechatShareDebug.map((item, index) => (
+                <p key={`${item}-${index}`} className="break-all">
+                  {item}
+                </p>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
 
       <Dialog open={shareGuideOpen} onOpenChange={setShareGuideOpen}>
@@ -353,7 +414,7 @@ export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
           <DialogHeader>
             <DialogTitle>分享这份结果</DialogTitle>
             <DialogDescription>
-              请点微信右上角菜单，选择“发送给朋友”或“分享到朋友圈”。
+              {isWechatClient ? "请点微信右上角菜单，选择“发送给朋友”或“分享到朋友圈”。" : "当前浏览器不支持直接分享时，可以先复制链接发给朋友。"}
             </DialogDescription>
           </DialogHeader>
           {sharePayload && (
@@ -365,10 +426,12 @@ export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
                   </span>
                   <div>
                     <p className="text-sm font-semibold text-gray-900">
-                      {wechatShareReady ? "微信卡片已准备好" : "正在准备微信卡片"}
+                      {isWechatClient ? (wechatShareReady ? "微信卡片已准备好" : "正在准备微信卡片") : "复制链接备用"}
                     </p>
                     <p className="mt-1 text-xs leading-5 text-stone-600">
-                      {wechatShareReady ? "现在从右上角分享，会以卡片形式发出去。" : "如果稍等后仍没有变好，可以先复制链接备用。"}
+                      {isWechatClient
+                        ? (wechatShareReady ? "现在从右上角分享，会以卡片形式发出去。" : "如果稍等后仍没有变好，可以先复制链接备用。")
+                        : "系统分享不可用时，复制链接也能打开完整结果页。"}
                     </p>
                   </div>
                 </div>
