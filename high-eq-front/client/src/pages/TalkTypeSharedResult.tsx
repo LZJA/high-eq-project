@@ -33,6 +33,8 @@ declare global {
       error: (callback: (error: unknown) => void) => void;
       updateAppMessageShareData: (payload: { title: string; desc: string; link: string; imgUrl: string }) => void;
       updateTimelineShareData: (payload: { title: string; link: string; imgUrl: string }) => void;
+      onMenuShareAppMessage?: (payload: { title: string; desc: string; link: string; imgUrl: string }) => void;
+      onMenuShareTimeline?: (payload: { title: string; link: string; imgUrl: string }) => void;
     };
   }
 }
@@ -47,6 +49,7 @@ export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
   const [failed, setFailed] = useState(false);
   const [sharedDeepReport, setSharedDeepReport] = useState<TalkTypeDeepReport | null>(null);
   const [shareGuideOpen, setShareGuideOpen] = useState(false);
+  const [wechatShareReady, setWechatShareReady] = useState(false);
 
   useEffect(() => {
     let ignore = false;
@@ -133,10 +136,12 @@ export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
 
   useEffect(() => {
     if (!report || !shareImageUrl || !isWeChatBrowser(window.navigator.userAgent)) {
+      setWechatShareReady(false);
       return;
     }
 
     let ignore = false;
+    setWechatShareReady(false);
     const wechatSharePayload = buildTalkTypeWechatSharePayload({
       personalityName: report.personalityName,
       communicationCode: report.communicationCode,
@@ -162,17 +167,26 @@ export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
         window.wx.ready(() => {
           if (!window.wx) return;
           window.wx.updateAppMessageShareData(wechatSharePayload);
+          window.wx.onMenuShareAppMessage?.(wechatSharePayload);
           window.wx.updateTimelineShareData({
             title: wechatSharePayload.title,
             link: wechatSharePayload.link,
             imgUrl: wechatSharePayload.imgUrl,
           });
+          window.wx.onMenuShareTimeline?.({
+            title: wechatSharePayload.title,
+            link: wechatSharePayload.link,
+            imgUrl: wechatSharePayload.imgUrl,
+          });
+          setWechatShareReady(true);
         });
         window.wx.error((error) => {
+          setWechatShareReady(false);
           console.warn("WeChat JS-SDK config failed", error);
         });
       })
       .catch((error) => {
+        setWechatShareReady(false);
         console.warn("WeChat JS-SDK share setup failed", error);
       });
 
@@ -335,20 +349,29 @@ export default function TalkTypeSharedResult({ shareId }: { shareId: string }) {
       </main>
 
       <Dialog open={shareGuideOpen} onOpenChange={setShareGuideOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-sm rounded-3xl p-5">
           <DialogHeader>
-            <DialogTitle>用微信卡片分享结果</DialogTitle>
+            <DialogTitle>分享这份结果</DialogTitle>
             <DialogDescription>
-              当前已经是公开结果详情页。请点微信右上角菜单，选择“发送给朋友”或“分享到朋友圈”。
+              请点微信右上角菜单，选择“发送给朋友”或“分享到朋友圈”。
             </DialogDescription>
           </DialogHeader>
           {sharePayload && (
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-purple-100 bg-gradient-to-br from-purple-50 via-white to-blue-50 p-4">
-                {shareImageUrl && <img src={shareImageUrl} alt="" className="mb-3 aspect-[1.91/1] w-full rounded-xl object-cover object-top" />}
-                <p className="text-sm font-semibold text-gray-900">{sharePayload.title}</p>
-                <p className="mt-2 line-clamp-4 text-sm leading-6 text-stone-600">{sharePayload.text}</p>
-                <p className="mt-3 break-all rounded-xl bg-white/80 px-3 py-2 text-xs leading-5 text-blue-700">{sharePayload.url}</p>
+            <div className="space-y-3">
+              <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-4">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-blue-700 ring-1 ring-blue-100">
+                    <Share2 className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {wechatShareReady ? "微信卡片已准备好" : "正在准备微信卡片"}
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-stone-600">
+                      {wechatShareReady ? "现在从右上角分享，会以卡片形式发出去。" : "如果稍等后仍没有变好，可以先复制链接备用。"}
+                    </p>
+                  </div>
+                </div>
               </div>
               <Button variant="outline" className="w-full border-blue-200 bg-white text-blue-700 hover:bg-blue-50" onClick={copyShareLink}>
                 复制链接备用

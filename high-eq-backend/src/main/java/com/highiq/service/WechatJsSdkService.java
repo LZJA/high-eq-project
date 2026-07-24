@@ -16,7 +16,12 @@ import java.util.List;
 
 @Service
 public class WechatJsSdkService {
-    private static final List<String> SHARE_JS_API_LIST = List.of("updateAppMessageShareData", "updateTimelineShareData");
+    private static final List<String> SHARE_JS_API_LIST = List.of(
+            "updateAppMessageShareData",
+            "updateTimelineShareData",
+            "onMenuShareAppMessage",
+            "onMenuShareTimeline"
+    );
     private static final char[] NONCE_ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
     private static final long REFRESH_SAFETY_SECONDS = 300L;
 
