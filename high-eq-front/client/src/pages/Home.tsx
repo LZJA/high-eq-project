@@ -111,9 +111,10 @@ export default function Home() {
       {/* Navigation */}
       <nav className="fixed top-0 w-full bg-white/80 dark:bg-gray-900/80 backdrop-blur-md z-50 border-b border-gray-200 dark:border-gray-800">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div
-            className="flex items-center gap-2 cursor-pointer"
-            onClick={() => navigate("/")}
+          <a
+            href="/"
+            className="flex items-center gap-2"
+            aria-label="HighEQ 首页"
           >
             <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
               <Brain className="w-6 h-6 text-white" />
@@ -121,14 +122,14 @@ export default function Home() {
             <span className="font-bold text-lg bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               HighEQ
             </span>
-          </div>
+          </a>
           <div className="flex items-center gap-2">
             <Button
+              asChild
               variant="outline"
               className="hidden border-purple-200 bg-white/70 text-purple-700 hover:bg-purple-50 sm:inline-flex dark:border-purple-800 dark:bg-gray-900/70 dark:text-purple-300 dark:hover:bg-purple-900/20"
-              onClick={() => navigate("/talktype")}
             >
-              沟通人格测试
+              <a href="/talktype">沟通人格测试</a>
             </Button>
             <Button
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg shadow-blue-500/30 transition-all duration-300 hover:scale-105"
@@ -198,9 +199,8 @@ export default function Home() {
               🎉 无需注册，每日 3 点免费体验
             </p>
 
-            <button
-              type="button"
-              onClick={() => navigate("/talktype")}
+            <a
+              href="/talktype"
               className="mx-auto mt-6 flex w-full max-w-md items-center gap-4 rounded-2xl border border-purple-100 bg-white/80 p-3 text-left shadow-lg shadow-purple-100/60 backdrop-blur transition-all duration-300 hover:-translate-y-0.5 hover:border-purple-200 hover:shadow-purple-200/70 dark:border-purple-900/40 dark:bg-gray-900/70 dark:shadow-none"
             >
               <img
@@ -213,7 +213,7 @@ export default function Home() {
                 <span className="mt-1 block text-xs leading-5 text-gray-500 dark:text-gray-400">24 道题测出你的 TalkType，生成可分享人格卡</span>
               </span>
               <ArrowRight className="h-4 w-4 shrink-0 text-purple-600" />
-            </button>
+            </a>
 
             {/* 信任指标 */}
             <div className="mt-12 flex flex-wrap justify-center gap-8 text-gray-500 dark:text-gray-400">
@@ -266,17 +266,16 @@ export default function Home() {
               </div>
               <div className="mt-7">
                 <Button
+                  asChild
                   className="h-11 bg-gradient-to-r from-blue-600 to-purple-600 px-6 text-white hover:from-blue-700 hover:to-purple-700"
-                  onClick={() => navigate("/talktype")}
                 >
-                  开始 3 分钟测试 <ArrowRight className="ml-1 h-4 w-4" />
+                  <a href="/talktype">开始 3 分钟测试 <ArrowRight className="ml-1 h-4 w-4" /></a>
                 </Button>
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => navigate("/talktype")}
+            <a
+              href="/talktype"
               className="group rounded-2xl bg-white p-3 shadow-lg shadow-purple-100/70 transition-all duration-300 hover:-translate-y-1 hover:shadow-purple-200/80 dark:bg-gray-900 dark:shadow-none"
             >
               <div className="relative overflow-hidden rounded-xl">
@@ -291,7 +290,7 @@ export default function Home() {
                   <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">我可以温柔，但不会被拿捏。</p>
                 </div>
               </div>
-            </button>
+            </a>
           </div>
         </div>
       </section>
