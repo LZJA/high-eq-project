@@ -8,14 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+import { Pagination } from "@/components/ui/pagination";
 import { toast } from "sonner";
 import { ArrowLeft, Edit, Heart, MessageCircle, Trash2, User } from "lucide-react";
 import {
@@ -331,35 +324,11 @@ export default function PersonProfileDetail({ profileId }: PersonProfileDetailPr
                   </Card>
                 ))}
 
-                {totalPages > 1 && (
-                  <Pagination>
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious
-                          className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                          onClick={() => currentPage > 1 && setCurrentPage(p => p - 1)}
-                        />
-                      </PaginationItem>
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                        <PaginationItem key={page}>
-                          <PaginationLink
-                            className="cursor-pointer"
-                            isActive={currentPage === page}
-                            onClick={() => setCurrentPage(page)}
-                          >
-                            {page}
-                          </PaginationLink>
-                        </PaginationItem>
-                      ))}
-                      <PaginationItem>
-                        <PaginationNext
-                          className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                          onClick={() => currentPage < totalPages && setCurrentPage(p => p + 1)}
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
-                )}
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                />
               </div>
             )}
           </TabsContent>
@@ -487,4 +456,3 @@ export default function PersonProfileDetail({ profileId }: PersonProfileDetailPr
     </div>
   );
 }
-

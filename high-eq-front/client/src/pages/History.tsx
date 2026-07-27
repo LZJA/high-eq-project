@@ -26,14 +26,7 @@ import { toast } from "sonner";
 import { ArrowLeft, Clock, Heart, Trash2, User, Copy } from "lucide-react";
 import { Link } from "wouter";
 import { AppNav } from "@/components/AppNav";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+import { Pagination } from "@/components/ui/pagination";
 import { ImagePreview } from "@/components/ImagePreview";
 
 interface HistoryItem {
@@ -275,51 +268,12 @@ export default function History() {
                 )}
 
                 {/* 分页 */}
-                {totalPages > 1 && (
-                  <div className="mt-4">
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <PaginationPrevious
-                            className={
-                              currentPage === 1
-                                ? "pointer-events-none opacity-50"
-                                : "cursor-pointer"
-                            }
-                            onClick={() =>
-                              currentPage > 1 && setCurrentPage((p) => p - 1)
-                            }
-                          />
-                        </PaginationItem>
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                          (page) => (
-                            <PaginationItem key={page}>
-                              <PaginationLink
-                                className="cursor-pointer"
-                                isActive={currentPage === page}
-                                onClick={() => setCurrentPage(page)}
-                              >
-                                {page}
-                              </PaginationLink>
-                            </PaginationItem>
-                          )
-                        )}
-                        <PaginationItem>
-                          <PaginationNext
-                            className={
-                              currentPage === totalPages
-                                ? "pointer-events-none opacity-50"
-                                : "cursor-pointer"
-                            }
-                            onClick={() =>
-                              currentPage < totalPages && setCurrentPage((p) => p + 1)
-                            }
-                          />
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
-                  </div>
-                )}
+                <Pagination
+                  className="mt-4"
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                />
               </CardContent>
             </Card>
           </div>

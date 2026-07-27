@@ -145,6 +145,9 @@ importers:
       react-hook-form:
         specifier: ^7.64.0
         version: 7.64.0(react@19.2.1)
+      react-paginate:
+        specifier: ^8.3.0
+        version: 8.3.0(react@19.2.1)
       react-photo-view:
         specifier: ^1.2.7
         version: 1.2.7(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
@@ -2921,6 +2924,11 @@ packages:
     peerDependencies:
       '@types/react': '>=18'
       react: '>=18'
+
+  react-paginate@8.3.0:
+    resolution: {integrity: sha512-TptZE37HPkT3R+7AszWA++LOTIsIHXcCSWMP9WW/abeF8sLpJzExFB/dVs7xbtqteJ5njF6kk+udTDC0AR3y5w==}
+    peerDependencies:
+      react: ^16 || ^17 || ^18 || ^19
 
   react-photo-view@1.2.7:
     resolution: {integrity: sha512-MfOWVPxuibncRLaycZUNxqYU8D9IA+rbGDDaq6GM8RIoGJal592hEJoRAyRSI7ZxyyJNJTLMUWWL3UIXHJJOpw==}
@@ -6336,6 +6344,11 @@ snapshots:
       vfile: 6.0.3
     transitivePeerDependencies:
       - supports-color
+
+  react-paginate@8.3.0(react@19.2.1):
+    dependencies:
+      prop-types: 15.8.1
+      react: 19.2.1
 
   react-photo-view@1.2.7(react-dom@19.2.1(react@19.2.1))(react@19.2.1):
     dependencies:

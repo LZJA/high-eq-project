@@ -1,4 +1,5 @@
 import * as React from "react";
+import ReactPaginate from "react-paginate";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -8,7 +9,67 @@ import {
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
 
-function Pagination({ className, ...props }: React.ComponentProps<"nav">) {
+type AppPaginationProps = {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  className?: string;
+};
+
+function Pagination({
+  currentPage,
+  totalPages,
+  onPageChange,
+  className,
+}: AppPaginationProps) {
+  if (totalPages <= 1) {
+    return null;
+  }
+
+  const itemClassName = "shrink-0";
+  const linkClassName = cn(
+    buttonVariants({ variant: "ghost", size: "icon" }),
+    "size-8 sm:size-9 select-none"
+  );
+
+  return (
+    <ReactPaginate
+      forcePage={currentPage - 1}
+      pageCount={totalPages}
+      pageRangeDisplayed={1}
+      marginPagesDisplayed={1}
+      onPageChange={({ selected }) => onPageChange(selected + 1)}
+      breakLabel="..."
+      previousLabel={<ChevronLeftIcon className="size-4" />}
+      nextLabel={<ChevronRightIcon className="size-4" />}
+      previousAriaLabel="上一页"
+      nextAriaLabel="下一页"
+      breakAriaLabels={{ backward: "向前跳页", forward: "向后跳页" }}
+      renderOnZeroPageCount={null}
+      containerClassName={cn(
+        "mx-auto flex w-full max-w-full items-center justify-center gap-1",
+        className
+      )}
+      pageClassName={itemClassName}
+      pageLinkClassName={linkClassName}
+      activeClassName="[&>a]:border [&>a]:border-input [&>a]:bg-background [&>a]:shadow-xs"
+      previousClassName={itemClassName}
+      nextClassName={itemClassName}
+      previousLinkClassName={linkClassName}
+      nextLinkClassName={linkClassName}
+      disabledClassName="pointer-events-none opacity-50"
+      breakClassName="shrink-0 pointer-events-none"
+      breakLinkClassName={cn(
+        "flex size-6 sm:size-8 items-center justify-center text-sm text-muted-foreground"
+      )}
+      ariaLabelBuilder={(page, selected) =>
+        selected ? `当前第 ${page} 页` : `跳转到第 ${page} 页`
+      }
+    />
+  );
+}
+
+function PaginationNav({ className, ...props }: React.ComponentProps<"nav">) {
   return (
     <nav
       role="navigation"
@@ -118,6 +179,7 @@ function PaginationEllipsis({
 
 export {
   Pagination,
+  PaginationNav,
   PaginationContent,
   PaginationLink,
   PaginationItem,
