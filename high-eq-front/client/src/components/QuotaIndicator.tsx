@@ -9,10 +9,18 @@ import { toast } from 'sonner';
 /**
  * 配额指示器组件
  */
-export function QuotaIndicator({ overrideRemainingQuota }: { overrideRemainingQuota?: number } = {}) {
+export function QuotaIndicator({
+  overrideRemainingQuota,
+  showSubscriptionRemaining = true,
+}: {
+  overrideRemainingQuota?: number;
+  showSubscriptionRemaining?: boolean;
+} = {}) {
   const { quota, isLoading, tier, remainingQuota: hookRemainingQuota, isUnlimited } = useQuota();
   const remainingQuota = overrideRemainingQuota ?? hookRemainingQuota;
-  const subscriptionRemainingText = formatSubscriptionRemaining(quota?.subscriptionRemainingSeconds);
+  const subscriptionRemainingText = showSubscriptionRemaining
+    ? formatSubscriptionRemaining(quota?.subscriptionRemainingSeconds)
+    : null;
 
   const handleUpgradeClick = async () => {
     const targetTier = tier === 'free' ? 'lite' : 'pro';

@@ -19,8 +19,10 @@ import { QuotaIndicator } from "@/components/QuotaIndicator";
 import { useQuota } from "@/hooks/useQuota";
 import { AI_MODELS } from "@/types";
 import { replyChatAPI } from "@/lib/api";
+import { uploadChatImageToOss } from "@/lib/oss";
+import { ImagePreview } from "@/components/ImagePreview";
 import { toast } from "sonner";
-import { ArrowLeft, Copy, RefreshCw, Send, Sparkles } from "lucide-react";
+import { ArrowLeft, Copy, RefreshCw, Send, Sparkles, Upload, X } from "lucide-react";
 
 interface ReplyChatSessionProps {
   sessionId: string;
@@ -61,7 +63,10 @@ export default function ReplyChatSession({ sessionId }: ReplyChatSessionProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isAdopting, setIsAdopting] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [opponentMessage, setOpponentMessage] = useState("");
+  const [chatImage, setChatImage] = useState<string | null>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [userIntent, setUserIntent] = useState("");
   const [modelPreference, setModelPreference] = useState("deepseek-v4-flash");
   const [adoptingSuggestion, setAdoptingSuggestion] = useState<ChatSuggestion | null>(null);
@@ -69,14 +74,31 @@ export default function ReplyChatSession({ sessionId }: ReplyChatSessionProps) {
 
   const selectedModel = AI_MODELS.find((model) => model.value === modelPreference);
   const selectedModelCost = selectedModel?.costPoints ?? 1;
-  const isSessionEnded = session?.status !== "active" || (session?.turnCount ?? 0) >= (session?.maxTurnCount ?? 12);
-  const shouldWarnLimit = (session?.turnCount ?? 0) >= (session?.warnTurnCount ?? 9);
+  const supportsImage = selectedModel?.supportsImage || false;
+  const effectiveMaxTurnCount = Math.max(session?.maxTurnCount ?? 100, 100);
+  const effectiveWarnTurnCount = Math.max(session?.warnTurnCount ?? 85, 85);
+  const isSessionEnded = session?.status !== "active" || (session?.turnCount ?? 0) >= effectiveMaxTurnCount;
+  const shouldWarnLimit = (session?.turnCount ?? 0) >= effectiveWarnTurnCount;
 
   useEffect(() => {
     loadSession();
   }, [sessionId]);
 
+  useEffect(() => {
+    if (!supportsImage && chatImage) {
+      setChatImage(null);
+    }
+  }, [supportsImage, chatImage]);
+
   const suggestions = useMemo(() => session?.latestSuggestions || [], [session]);
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      window.history.back();
+      return;
+    }
+    navigate("/app");
+  };
 
   const loadSession = async () => {
     setIsLoading(true);
@@ -105,9 +127,49 @@ export default function ReplyChatSession({ sessionId }: ReplyChatSessionProps) {
     return true;
   };
 
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("请上传图片文件");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("图片大小不能超过10MB");
+      return;
+    }
+
+    setIsUploadingImage(true);
+    uploadChatImageToOss(file)
+      .then((publicUrl) => {
+        setChatImage(publicUrl);
+        toast.success("图片上传成功");
+      })
+      .catch((error: any) => {
+        toast.error(error?.message || "图片上传失败");
+      })
+      .finally(() => {
+        setIsUploadingImage(false);
+        event.target.value = "";
+      });
+  };
+
+  const handleRemoveImage = () => {
+    setChatImage(null);
+  };
+
   const handleGenerate = async () => {
-    if (!opponentMessage.trim()) {
-      toast.error("请输入对方最新回复");
+    if (!opponentMessage.trim() && !chatImage) {
+      toast.error("请输入对方说了什么");
+      return;
+    }
+    if (chatImage && !supportsImage) {
+      toast.error("上传聊天截图需要选择支持截图的模型");
+      return;
+    }
+    if (isUploadingImage) {
+      toast.error("图片还在上传中，请稍等");
       return;
     }
     if (!ensureQuota()) return;
@@ -116,11 +178,13 @@ export default function ReplyChatSession({ sessionId }: ReplyChatSessionProps) {
     try {
       const response = await replyChatAPI.generateSuggestions(sessionId, {
         opponentMessage,
+        chatImage,
         userIntent,
         modelPreference,
       });
       setSession((prev) => prev ? { ...prev, latestSuggestions: response.data.suggestions } : prev);
       setOpponentMessage("");
+      setChatImage(null);
       setUserIntent("");
       refreshQuota();
       toast.success("已生成这一轮回复");
@@ -201,44 +265,44 @@ export default function ReplyChatSession({ sessionId }: ReplyChatSessionProps) {
   return (
     <div className="min-h-screen bg-slate-50">
       <AppNav activePage="app" showLogout />
-      <main className="mx-auto flex min-h-[calc(100vh-64px)] max-w-5xl flex-col px-4 py-4 sm:py-6">
-        <div className="mb-4 flex flex-wrap items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate("/app")}>
+      <main className="mx-auto flex min-h-[calc(100vh-64px)] max-w-5xl flex-col px-4 py-2 sm:py-4">
+        <div className="mb-2 flex flex-wrap items-center gap-2 sm:mb-3 sm:gap-3">
+          <Button variant="ghost" size="sm" onClick={handleBack}>
             <ArrowLeft className="mr-2 size-4" />
-            返回生成器
+            返回上一页
           </Button>
           <Badge variant={isSessionEnded ? "secondary" : "outline"}>
-            {session.status === "active" ? `第 ${session.turnCount}/${session.maxTurnCount} 轮` : "已结束"}
+            {session.status === "active" ? `第 ${session.turnCount}/${effectiveMaxTurnCount} 轮` : "已结束"}
           </Badge>
           {shouldWarnLimit && !isSessionEnded && (
             <Badge variant="secondary">接近上限，建议收尾</Badge>
           )}
-          <div className="ml-auto">
-            <QuotaIndicator />
+          <div className="basis-full sm:ml-auto sm:basis-auto">
+            <QuotaIndicator showSubscriptionRemaining={false} />
           </div>
         </div>
 
-        <div className="grid flex-1 gap-4 lg:grid-cols-[1fr_360px]">
-          <Card className="min-h-[520px] shadow-sm">
-            <CardContent className="flex h-full flex-col p-4">
-              <div className="mb-4">
-                <h1 className="text-xl font-semibold">继续聊</h1>
-                <p className="mt-1 text-sm text-muted-foreground">
+        <div className="grid gap-2.5 lg:grid-cols-[1fr_360px] lg:gap-3">
+          <Card className="border-slate-200 py-0 shadow-sm">
+            <CardContent className="flex flex-col p-3">
+              <div className="mb-2.5">
+                <h1 className="text-lg font-semibold sm:text-xl">继续聊</h1>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground sm:text-sm">
                   这里会记录对方说了什么、你实际发了什么，AI 会按这段上下文继续给建议。
                 </p>
               </div>
 
-              <div className="flex-1 space-y-3 overflow-y-auto pr-1">
+              <div className="max-h-[360px] space-y-3 overflow-y-auto pr-1.5 sm:max-h-[460px] sm:pr-2 lg:max-h-[calc(100vh-260px)]">
                 {session.messages.map((message) => (
                   <div
                     key={message.id}
                     className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                   >
                     <div
-                      className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm ${
+                      className={`max-w-[82%] rounded-2xl border px-4 py-3 text-sm leading-6 shadow-sm ${
                         message.role === "user"
-                          ? "bg-blue-600 text-white"
-                          : "bg-white text-slate-900 ring-1 ring-slate-200"
+                          ? "border-blue-500 bg-blue-600 text-white shadow-blue-100"
+                          : "border-slate-200 bg-white text-slate-900 shadow-slate-100"
                       }`}
                     >
                       <div className={`mb-1 text-xs ${message.role === "user" ? "text-blue-100" : "text-slate-500"}`}>
@@ -252,18 +316,18 @@ export default function ReplyChatSession({ sessionId }: ReplyChatSessionProps) {
             </CardContent>
           </Card>
 
-          <div className="space-y-4">
-            <Card className="shadow-sm">
-              <CardContent className="space-y-3 p-4">
+          <div className="space-y-2.5 lg:space-y-3">
+            <Card className="py-0 shadow-sm">
+              <CardContent className="space-y-2.5 p-3">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">对方最新回复</label>
+                  <label className="text-sm font-medium">对方说了什么</label>
                   <Textarea
                     value={opponentMessage}
                     onChange={(event) => setOpponentMessage(event.target.value)}
-                    placeholder="粘贴对方新回你的内容..."
+                    placeholder="可以粘贴对方刚说的话，也可以总结最近几轮对方大概表达了什么..."
                     rows={4}
                     maxLength={500}
-                    disabled={isGenerating || isSessionEnded}
+                    disabled={isGenerating || isUploadingImage || isSessionEnded}
                     className="resize-none"
                   />
                   <p className="text-right text-xs text-muted-foreground">{opponentMessage.length}/500</p>
@@ -283,10 +347,56 @@ export default function ReplyChatSession({ sessionId }: ReplyChatSessionProps) {
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">AI 模型</label>
-                  <ModelSelector value={modelPreference} onChange={setModelPreference} disabled={isGenerating || isSessionEnded} />
+                  <ModelSelector value={modelPreference} onChange={setModelPreference} disabled={isGenerating || isUploadingImage || isSessionEnded} />
                   <p className="text-xs text-muted-foreground">本次将消耗 {selectedModelCost} 点</p>
                 </div>
-                <Button className="w-full" onClick={handleGenerate} disabled={isGenerating || isSessionEnded}>
+                {(supportsImage || !!chatImage) && (
+                  <div className="space-y-2">
+                    {!chatImage ? (
+                      <div>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                          id="reply-chat-image-upload"
+                          disabled={isGenerating || isUploadingImage || isSessionEnded}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          disabled={isGenerating || isUploadingImage || isSessionEnded}
+                          onClick={() => document.getElementById("reply-chat-image-upload")?.click()}
+                        >
+                          <Upload className="mr-2 size-4" />
+                          {isUploadingImage ? "图片上传中..." : "上传聊天截图"}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="relative inline-block">
+                        <img
+                          src={chatImage}
+                          alt="聊天截图"
+                          className="h-20 w-20 cursor-pointer rounded border object-cover hover:opacity-80"
+                          onClick={() => setPreviewImage(chatImage)}
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon-sm"
+                          className="absolute -right-2 -top-2 h-6 w-6 rounded-full"
+                          onClick={handleRemoveImage}
+                          disabled={isGenerating || isUploadingImage || isSessionEnded}
+                        >
+                          <X className="size-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <Button className="w-full" onClick={handleGenerate} disabled={isGenerating || isUploadingImage || isSessionEnded}>
                   {isGenerating ? <Spinner className="mr-2" /> : <Sparkles className="mr-2 size-4" />}
                   生成这一轮回复
                 </Button>
@@ -304,16 +414,16 @@ export default function ReplyChatSession({ sessionId }: ReplyChatSessionProps) {
             </div>
 
             {suggestions.length === 0 ? (
-              <Card className="shadow-sm">
-                <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                  输入对方最新回复后，这里会出现 5 条可选回复。
+              <Card className="py-0 shadow-sm">
+                <CardContent className="py-5 text-center text-sm text-muted-foreground">
+                  输入对方说了什么后，这里会出现 5 条可选回复。
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {suggestions.map((suggestion) => (
-                  <Card key={suggestion.id} className="shadow-sm">
-                    <CardContent className="space-y-3 p-4">
+                  <Card key={suggestion.id} className="py-0 shadow-sm">
+                    <CardContent className="space-y-2.5 p-3">
                       <div className="flex flex-wrap items-center gap-2">
                         <Badge variant="outline">{suggestion.styleLabel || "自然得体"}</Badge>
                       </div>
@@ -370,6 +480,7 @@ export default function ReplyChatSession({ sessionId }: ReplyChatSessionProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <ImagePreview src={previewImage} open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)} />
     </div>
   );
 }

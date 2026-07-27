@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type ActivePage = "app" | "history" | "favorites" | "profiles" | "orders" | "admin";
+type ActivePage = "app" | "history" | "replyChatHistory" | "favorites" | "profiles" | "orders" | "admin";
 
 interface AppNavProps {
   /** 当前所在页面，用于高亮或隐藏对应导航项 */
@@ -23,6 +23,7 @@ const NAV_LINKS: { href: string; label: string; page: ActivePage }[] = [
   { href: "/app", label: "回复生成器", page: "app" },
   { href: "/profiles", label: "人物档案", page: "profiles" },
   { href: "/history", label: "历史记录", page: "history" },
+  { href: "/reply-chat-history", label: "继续聊记录", page: "replyChatHistory" },
   { href: "/favorites", label: "收藏", page: "favorites" },
   { href: "/orders", label: "兑换码", page: "orders" },
 ];

@@ -12,6 +12,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ReplyApp from "./pages/ReplyApp";
+import ReplyChatHistory from "./pages/ReplyChatHistory";
 import ReplyChatSession from "./pages/ReplyChatSession";
 import GuestReplyApp from "./pages/GuestReplyApp";
 import History from "./pages/History";
@@ -82,6 +83,13 @@ function Router() {
           {({ sessionId }: { sessionId: string }) => (
             <ProtectedRoute>
               <ReplyChatSession sessionId={sessionId} />
+            </ProtectedRoute>
+          )}
+        </Route>
+        <Route path={"/reply-chat-history"}>
+          {() => (
+            <ProtectedRoute>
+              <ReplyChatHistory />
             </ProtectedRoute>
           )}
         </Route>

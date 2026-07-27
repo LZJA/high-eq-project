@@ -6,8 +6,10 @@ import com.highiq.dto.AdoptChatSuggestionRequest;
 import com.highiq.dto.CreateReplyChatSessionRequest;
 import com.highiq.dto.GenerateChatSuggestionsRequest;
 import com.highiq.dto.GenerateChatSuggestionsResponse;
+import com.highiq.dto.PageResponse;
 import com.highiq.dto.ReplyChatMessageDTO;
 import com.highiq.dto.ReplyChatSessionDTO;
+import com.highiq.dto.ReplyChatSessionListItemDTO;
 import com.highiq.dto.ReplyChatSuggestionDTO;
 import com.highiq.entity.History;
 import com.highiq.entity.ProfileChatHistory;
@@ -37,11 +39,12 @@ import java.util.stream.Collectors;
 @Service
 public class ReplyChatSessionService extends ServiceImpl<ReplyChatSessionMapper, ReplyChatSession> {
 
-    private static final int MAX_TURN_COUNT = 12;
-    private static final int WARN_TURN_COUNT = 9;
+    private static final int MAX_TURN_COUNT = 100;
+    private static final int WARN_TURN_COUNT = 85;
     private static final int MAX_CONTEXT_MESSAGES = 16;
     private static final int MAX_MESSAGE_LENGTH = 500;
     private static final int MAX_INTENT_LENGTH = 300;
+    private static final int MAX_SUMMARY_LENGTH = 1200;
 
     private final HistoryMapper historyMapper;
     private final ReplySuggestionMapper replySuggestionMapper;
@@ -50,6 +53,8 @@ public class ReplyChatSessionService extends ServiceImpl<ReplyChatSessionMapper,
     private final ReplyChatMessageMapper messageMapper;
     private final ReplyChatSuggestionMapper suggestionMapper;
     private final AiService aiService;
+    private final QwenVisionService qwenVisionService;
+    private final DoubaoVisionService doubaoVisionService;
     private final QuotaService quotaService;
 
     public ReplyChatSessionService(
@@ -60,6 +65,8 @@ public class ReplyChatSessionService extends ServiceImpl<ReplyChatSessionMapper,
             ReplyChatMessageMapper messageMapper,
             ReplyChatSuggestionMapper suggestionMapper,
             AiService aiService,
+            QwenVisionService qwenVisionService,
+            DoubaoVisionService doubaoVisionService,
             QuotaService quotaService) {
         this.historyMapper = historyMapper;
         this.replySuggestionMapper = replySuggestionMapper;
@@ -68,6 +75,8 @@ public class ReplyChatSessionService extends ServiceImpl<ReplyChatSessionMapper,
         this.messageMapper = messageMapper;
         this.suggestionMapper = suggestionMapper;
         this.aiService = aiService;
+        this.qwenVisionService = qwenVisionService;
+        this.doubaoVisionService = doubaoVisionService;
         this.quotaService = quotaService;
     }
 
@@ -109,6 +118,35 @@ public class ReplyChatSessionService extends ServiceImpl<ReplyChatSessionMapper,
         return toSessionDTO(session, listMessages(sessionId), listLatestSuggestions(sessionId));
     }
 
+    public PageResponse<ReplyChatSessionListItemDTO> listSessions(String userId, Integer page, Integer size) {
+        if (page == null || page < 1) page = 1;
+        if (size == null || size < 1) size = 10;
+        int offset = (page - 1) * size;
+
+        QueryWrapper<ReplyChatSession> countWrapper = new QueryWrapper<>();
+        countWrapper.eq("user_id", userId);
+        Long total = baseMapper.selectCount(countWrapper);
+
+        QueryWrapper<ReplyChatSession> dataWrapper = new QueryWrapper<>();
+        dataWrapper.eq("user_id", userId)
+                .orderByDesc("update_time")
+                .orderByDesc("create_time")
+                .last("LIMIT " + offset + ", " + size);
+        List<ReplyChatSessionListItemDTO> items = baseMapper.selectList(dataWrapper).stream()
+                .peek(this::normalizeSessionLimit)
+                .map(this::toListItemDTO)
+                .collect(Collectors.toList());
+
+        int totalPages = (int) Math.ceil((double) total / size);
+        return PageResponse.<ReplyChatSessionListItemDTO>builder()
+                .items(items)
+                .totalPages(totalPages)
+                .total(total)
+                .currentPage(page)
+                .pageSize(size)
+                .build();
+    }
+
     @Transactional
     public GenerateChatSuggestionsResponse generateSuggestions(String userId, String sessionId, GenerateChatSuggestionsRequest request) {
         ReplyChatSession session = requireActiveSession(userId, sessionId);
@@ -116,23 +154,41 @@ public class ReplyChatSessionService extends ServiceImpl<ReplyChatSessionMapper,
             throw new RuntimeException("这段继续聊已经到达上限，可以重新开启一段新的继续聊");
         }
 
+        String chatImage = trimToNull(request.getChatImage());
         String opponentMessage = trimAndLimit(request.getOpponentMessage(), MAX_MESSAGE_LENGTH, "对方消息");
-        if (opponentMessage == null) {
-            throw new RuntimeException("对方消息不能为空");
+        if (opponentMessage == null && chatImage == null) {
+            throw new RuntimeException("对方说了什么不能为空");
         }
         String userIntent = trimAndLimit(request.getUserIntent(), MAX_INTENT_LENGTH, "真实想法");
         String requestedModel = request.getModelPreference() != null && !request.getModelPreference().isBlank()
                 ? request.getModelPreference()
                 : defaultModel(session.getModelPreference());
+        AiModel model = AiModel.fromId(requestedModel);
+        if (chatImage != null && !model.isSupportsImage()) {
+            throw new RuntimeException("上传聊天截图需要选择支持截图的模型");
+        }
         checkModelAndQuota(userId, requestedModel);
 
         int nextTurnIndex = (session.getTurnCount() == null ? 0 : session.getTurnCount()) + 1;
-        ReplyChatMessage opponent = insertMessage(sessionId, "opponent", opponentMessage, "manual", null, nextTurnIndex);
-
-        List<ReplyChatSuggestionDTO> suggestions = createSuggestionsForMessage(session, opponent, requestedModel, userIntent,
-                collectExcludedContents(sessionId, request.getExcludeSuggestionIds()));
+        List<ReplyChatSuggestionDTO> suggestions;
+        ReplyChatMessage opponent;
+        if (chatImage != null) {
+            ContinueChatGeneration generation = generateFromScreenshot(session, requestedModel, opponentMessage,
+                    chatImage, userIntent, collectExcludedContents(sessionId, request.getExcludeSuggestionIds()));
+            String summary = trimAndLimit(generation.opponentSummary(), MAX_MESSAGE_LENGTH, "对方说了什么");
+            if (summary == null) {
+                summary = opponentMessage != null ? opponentMessage : "已根据聊天截图识别对方说了什么";
+            }
+            opponent = insertMessage(sessionId, "opponent", summary, "screenshot_summary", null, nextTurnIndex);
+            suggestions = saveSuggestions(session, opponent, generation.suggestions());
+        } else {
+            opponent = insertMessage(sessionId, "opponent", opponentMessage, "manual", null, nextTurnIndex);
+            suggestions = createSuggestionsForMessage(session, opponent, requestedModel, userIntent,
+                    collectExcludedContents(sessionId, request.getExcludeSuggestionIds()));
+        }
         session.setMessageCount(defaultInt(session.getMessageCount()) + 1);
         session.setModelPreference(requestedModel);
+        refreshSessionSummary(session);
         baseMapper.updateById(session);
 
         return GenerateChatSuggestionsResponse.builder()
@@ -204,6 +260,21 @@ public class ReplyChatSessionService extends ServiceImpl<ReplyChatSessionMapper,
         return getSession(userId, sessionId);
     }
 
+    @Transactional
+    public void deleteSession(String userId, String sessionId) {
+        requireSession(userId, sessionId);
+
+        QueryWrapper<ReplyChatSuggestion> suggestionWrapper = new QueryWrapper<>();
+        suggestionWrapper.eq("session_id", sessionId);
+        suggestionMapper.delete(suggestionWrapper);
+
+        QueryWrapper<ReplyChatMessage> messageWrapper = new QueryWrapper<>();
+        messageWrapper.eq("session_id", sessionId);
+        messageMapper.delete(messageWrapper);
+
+        baseMapper.deleteById(sessionId);
+    }
+
     private List<ReplyChatSuggestionDTO> createSuggestionsForMessage(ReplyChatSession session, ReplyChatMessage opponent,
                                                                      String requestedModel, String userIntent,
                                                                      List<String> excludeContents) {
@@ -225,10 +296,15 @@ public class ReplyChatSessionService extends ServiceImpl<ReplyChatSessionMapper,
                 excludeContents
         );
 
+        return saveSuggestions(session, opponent, aiSuggestions);
+    }
+
+    private List<ReplyChatSuggestionDTO> saveSuggestions(ReplyChatSession session, ReplyChatMessage opponent,
+                                                         List<String> suggestions) {
         int batchIndex = nextBatchIndex(session.getId());
         List<ReplyChatSuggestionDTO> result = new ArrayList<>();
-        for (int i = 0; i < Math.min(aiSuggestions.size(), AiService.DEFAULT_REPLY_COUNT); i++) {
-            ReplyStyleLabelParser.ParsedSuggestion parsed = ReplyStyleLabelParser.parse(aiSuggestions.get(i));
+        for (int i = 0; i < Math.min(suggestions.size(), AiService.DEFAULT_REPLY_COUNT); i++) {
+            ReplyStyleLabelParser.ParsedSuggestion parsed = ReplyStyleLabelParser.parse(suggestions.get(i));
             ReplyChatSuggestion suggestion = ReplyChatSuggestion.builder()
                     .id(UUID.randomUUID().toString())
                     .sessionId(session.getId())
@@ -245,6 +321,27 @@ public class ReplyChatSessionService extends ServiceImpl<ReplyChatSessionMapper,
             result.add(toSuggestionDTO(suggestion));
         }
         return result;
+    }
+
+    private ContinueChatGeneration generateFromScreenshot(ReplyChatSession session, String requestedModel,
+                                                          String opponentMessage, String chatImage,
+                                                          String userIntent, List<String> excludeContents) {
+        List<ReplyChatMessage> messages = listMessages(session.getId());
+        List<String> recentMessages = messages.stream()
+                .skip(Math.max(0, messages.size() - MAX_CONTEXT_MESSAGES))
+                .map(message -> ("opponent".equals(message.getRole()) ? "对方：" : "我：") + message.getContent())
+                .collect(Collectors.toList());
+        if (AiModel.QWEN3_VL_PLUS.getId().equals(requestedModel)) {
+            return qwenVisionService.generateContinueChatWithImage(chatImage, opponentMessage, session.getRoleBackground(),
+                    session.getInitialChatContent(), session.getInitialUserIntent(), session.getSessionSummary(),
+                    recentMessages, userIntent, excludeContents);
+        }
+        if (AiModel.DOUBAO_SEED_2_PRO.getId().equals(requestedModel)) {
+            return doubaoVisionService.generateContinueChatWithImage(chatImage, opponentMessage, session.getRoleBackground(),
+                    session.getInitialChatContent(), session.getInitialUserIntent(), session.getSessionSummary(),
+                    recentMessages, userIntent, excludeContents);
+        }
+        throw new RuntimeException("当前模型暂不支持聊天截图识别");
     }
 
     private SourceContext requireSourceContext(String userId, String historyId, String suggestionId) {
@@ -277,7 +374,23 @@ public class ReplyChatSessionService extends ServiceImpl<ReplyChatSessionMapper,
         if (session == null || !userId.equals(session.getUserId())) {
             throw new RuntimeException("继续聊会话不存在");
         }
+        normalizeSessionLimit(session);
         return session;
+    }
+
+    private void normalizeSessionLimit(ReplyChatSession session) {
+        boolean changed = false;
+        if (session.getMaxTurnCount() == null || session.getMaxTurnCount() < MAX_TURN_COUNT) {
+            session.setMaxTurnCount(MAX_TURN_COUNT);
+            changed = true;
+        }
+        if (session.getWarnTurnCount() == null || session.getWarnTurnCount() < WARN_TURN_COUNT) {
+            session.setWarnTurnCount(WARN_TURN_COUNT);
+            changed = true;
+        }
+        if (changed) {
+            baseMapper.updateById(session);
+        }
     }
 
     private ReplyChatSession requireActiveSession(String userId, String sessionId) {
@@ -403,6 +516,50 @@ public class ReplyChatSessionService extends ServiceImpl<ReplyChatSessionMapper,
                 .build();
     }
 
+    private ReplyChatSessionListItemDTO toListItemDTO(ReplyChatSession session) {
+        ReplyChatMessage latest = latestMessage(session.getId());
+        return ReplyChatSessionListItemDTO.builder()
+                .id(session.getId())
+                .roleBackground(session.getRoleBackground())
+                .initialChatContent(session.getInitialChatContent())
+                .latestMessage(latest == null ? session.getInitialChatContent() : latest.getContent())
+                .turnCount(session.getTurnCount())
+                .maxTurnCount(session.getMaxTurnCount())
+                .status(session.getStatus())
+                .createTime(session.getCreateTime())
+                .updateTime(session.getUpdateTime())
+                .build();
+    }
+
+    private ReplyChatMessage latestMessage(String sessionId) {
+        QueryWrapper<ReplyChatMessage> wrapper = new QueryWrapper<>();
+        wrapper.eq("session_id", sessionId)
+                .orderByDesc("turn_index")
+                .orderByDesc("create_time")
+                .last("LIMIT 1");
+        return messageMapper.selectOne(wrapper);
+    }
+
+    private void refreshSessionSummary(ReplyChatSession session) {
+        List<ReplyChatMessage> messages = listMessages(session.getId());
+        if (messages.size() <= MAX_CONTEXT_MESSAGES) {
+            return;
+        }
+        List<ReplyChatMessage> olderMessages = messages.subList(0, messages.size() - MAX_CONTEXT_MESSAGES);
+        StringBuilder summary = new StringBuilder("前情摘要：");
+        for (ReplyChatMessage message : olderMessages) {
+            String speaker = "opponent".equals(message.getRole()) ? "对方" : "我";
+            summary.append(speaker).append("说：").append(message.getContent()).append("；");
+            if (summary.length() >= MAX_SUMMARY_LENGTH) {
+                break;
+            }
+        }
+        String nextSummary = summary.length() > MAX_SUMMARY_LENGTH
+                ? summary.substring(0, MAX_SUMMARY_LENGTH)
+                : summary.toString();
+        session.setSessionSummary(nextSummary);
+    }
+
     private String trimAndLimit(String value, int maxLength, String fieldName) {
         if (value == null || value.trim().isEmpty()) {
             return null;
@@ -412,6 +569,10 @@ public class ReplyChatSessionService extends ServiceImpl<ReplyChatSessionMapper,
             throw new RuntimeException(fieldName + "最多 " + maxLength + " 字");
         }
         return trimmed;
+    }
+
+    private String trimToNull(String value) {
+        return value == null || value.trim().isEmpty() ? null : value.trim();
     }
 
     private String defaultModel(String model) {

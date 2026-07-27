@@ -5,18 +5,22 @@ import com.highiq.dto.ApiResponse;
 import com.highiq.dto.CreateReplyChatSessionRequest;
 import com.highiq.dto.GenerateChatSuggestionsRequest;
 import com.highiq.dto.GenerateChatSuggestionsResponse;
+import com.highiq.dto.PageResponse;
 import com.highiq.dto.ReplyChatSessionDTO;
+import com.highiq.dto.ReplyChatSessionListItemDTO;
 import com.highiq.service.ReplyChatSessionService;
 import com.highiq.util.JwtUtil;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
@@ -42,6 +46,20 @@ public class ReplyChatSessionController {
             return ApiResponse.success("继续聊会话创建成功", chatSessionService.createSession(userId, request));
         } catch (Exception e) {
             log.error("Failed to create reply chat session", e);
+            return ApiResponse.error(500, e.getMessage());
+        }
+    }
+
+    @GetMapping
+    public ApiResponse<PageResponse<ReplyChatSessionListItemDTO>> listSessions(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            String userId = getUserId(authHeader);
+            return ApiResponse.success("获取成功", chatSessionService.listSessions(userId, page, size));
+        } catch (Exception e) {
+            log.error("Failed to list reply chat sessions", e);
             return ApiResponse.error(500, e.getMessage());
         }
     }
@@ -97,6 +115,20 @@ public class ReplyChatSessionController {
             return ApiResponse.success("保存成功", chatSessionService.adoptSuggestion(userId, sessionId, request));
         } catch (Exception e) {
             log.error("Failed to adopt reply chat suggestion", e);
+            return ApiResponse.error(500, e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{sessionId}")
+    public ApiResponse<Void> deleteSession(
+            @PathVariable String sessionId,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            String userId = getUserId(authHeader);
+            chatSessionService.deleteSession(userId, sessionId);
+            return ApiResponse.success("删除成功", null);
+        } catch (Exception e) {
+            log.error("Failed to delete reply chat session", e);
             return ApiResponse.error(500, e.getMessage());
         }
     }

@@ -227,6 +227,13 @@ export const replyAPI = {
 };
 
 export const replyChatAPI = {
+  listSessions: async (page: number = 1, size: number = 10) => {
+    const response = await apiClient.get('/reply/chat-sessions', {
+      params: { page, size },
+    });
+    return response.data;
+  },
+
   createSession: async (data: {
     historyId: string;
     suggestionId: string;
@@ -242,7 +249,8 @@ export const replyChatAPI = {
   },
 
   generateSuggestions: async (sessionId: string, data: {
-    opponentMessage: string;
+    opponentMessage?: string;
+    chatImage?: string | null;
     userIntent?: string;
     modelPreference?: string;
     excludeSuggestionIds?: string[];
@@ -265,6 +273,11 @@ export const replyChatAPI = {
     finalContent: string;
   }) => {
     const response = await apiClient.post(`/reply/chat-sessions/${sessionId}/adopt`, data);
+    return response.data;
+  },
+
+  deleteSession: async (sessionId: string) => {
+    const response = await apiClient.delete(`/reply/chat-sessions/${sessionId}`);
     return response.data;
   },
 };
