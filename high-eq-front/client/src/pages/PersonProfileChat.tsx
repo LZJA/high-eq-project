@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { profileAPI, replyAPI } from "@/lib/api";
+import { profileAPI, replyAPI, replyChatAPI } from "@/lib/api";
 import { AI_MODELS, PersonProfile } from "@/types";
 import { AppNav } from "@/components/AppNav";
 import { QuotaIndicator } from "@/components/QuotaIndicator";
@@ -9,17 +9,18 @@ import { useQuota } from "@/hooks/useQuota";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ArrowLeft, Copy, Heart, MessageCircle, User, Wand2, Upload, X } from "lucide-react";
+import { ArrowLeft, Copy, Heart, MessageCircle, RefreshCw, User, Wand2, Upload, X } from "lucide-react";
 import { ImagePreview } from "@/components/ImagePreview";
 import { uploadChatImageToOss } from "@/lib/oss";
 
@@ -32,15 +33,8 @@ interface ReplySuggestion {
   content: string;
   reason: string;
   tone: string;
+  styleLabel?: string;
 }
-
-const TONE_OPTIONS = [
-  { value: "温和友善", label: "温和友善" },
-  { value: "正式得体", label: "正式得体" },
-  { value: "幽默风趣", label: "幽默风趣" },
-  { value: "真诚直接", label: "真诚直接" },
-  { value: "委婉含蓄", label: "委婉含蓄" },
-];
 
 export default function PersonProfileChat({ profileId }: PersonProfileChatProps) {
   const [, setLocation] = useLocation();
@@ -49,13 +43,15 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
   const [profile, setProfile] = useState<PersonProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isCreatingChat, setIsCreatingChat] = useState(false);
   const [chatContent, setChatContent] = useState("");
   const [userIntent, setUserIntent] = useState("");
-  const [replyCount, setReplyCount] = useState(3);
-  const [tone, setTone] = useState("");
   const [modelPreference, setModelPreference] = useState("deepseek-v4-flash");
   const [suggestions, setSuggestions] = useState<ReplySuggestion[]>([]);
   const [generatedHistoryId, setGeneratedHistoryId] = useState<string | null>(null);
+  const [continueSuggestion, setContinueSuggestion] = useState<ReplySuggestion | null>(null);
+  const [sentReplyDraft, setSentReplyDraft] = useState("");
   const [isGeneratedFavorite, setIsGeneratedFavorite] = useState(false);
   const [chatImage, setChatImage] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -161,9 +157,7 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
         chatContent,
         roleBackground: buildRoleBackground(),
         userIntent,
-        replyCount,
         modelPreference,
-        tone,
         personProfileId: profileId,
         chatImage,
       });
@@ -183,6 +177,65 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
   const handleCopy = async (content: string) => {
     await navigator.clipboard.writeText(content);
     toast.success("已复制到剪贴板");
+  };
+
+  const handleRegenerate = async () => {
+    if (!generatedHistoryId) {
+      toast.error("请先生成回复");
+      return;
+    }
+    if (!isUnlimited && remainingQuota < selectedModelCost) {
+      toast.error(`当前模型需要 ${selectedModelCost} 点，今日剩余 ${remainingQuota} 点`);
+      return;
+    }
+
+    setIsRegenerating(true);
+    try {
+      const response = await replyAPI.regenerateReplies(generatedHistoryId, {
+        modelPreference,
+        excludeSuggestionIds: suggestions.map((suggestion) => suggestion.id),
+        excludeContents: suggestions.map((suggestion) => suggestion.content),
+      });
+      setSuggestions(response.data.suggestions || []);
+      refreshQuota();
+      toast.success("已换一批新的表达");
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "换一批失败，请稍后重试");
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
+
+  const handleOpenContinue = (suggestion: ReplySuggestion) => {
+    if (!generatedHistoryId) {
+      toast.error("请先生成回复");
+      return;
+    }
+    setContinueSuggestion(suggestion);
+    setSentReplyDraft(suggestion.content);
+  };
+
+  const handleCreateContinueChat = async () => {
+    if (!generatedHistoryId || !continueSuggestion) return;
+    if (!sentReplyDraft.trim()) {
+      toast.error("请输入你实际发给对方的话");
+      return;
+    }
+
+    setIsCreatingChat(true);
+    try {
+      const response = await replyChatAPI.createSession({
+        historyId: generatedHistoryId,
+        suggestionId: continueSuggestion.id,
+        sentReply: sentReplyDraft,
+      });
+      toast.success("已开启继续聊");
+      setLocation(`/reply-chat/${response.data.id}`);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "开启继续聊失败");
+    } finally {
+      setIsCreatingChat(false);
+    }
   };
 
   const handleToggleFavorite = async () => {
@@ -368,43 +421,6 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">回复数量</label>
-                  <Select
-                    value={replyCount.toString()}
-                    onValueChange={(value) => setReplyCount(parseInt(value))}
-                    disabled={isGenerating || isUploadingImage}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1 条</SelectItem>
-                      <SelectItem value="2">2 条</SelectItem>
-                      <SelectItem value="3">3 条</SelectItem>
-                      <SelectItem value="5">5 条</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">语气风格</label>
-                  <Select value={tone} onValueChange={setTone} disabled={isGenerating}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="选择语气" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TONE_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
               <div className="space-y-2">
                 <label className="text-sm font-medium">AI 模型</label>
                 <ModelSelector
@@ -450,14 +466,25 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
                 回复建议 {suggestions.length > 0 && `(${suggestions.length})`}
               </h2>
               {suggestions.length > 0 && (
-                <Button variant="outline" size="sm" onClick={handleToggleFavorite}>
-                  <Heart
-                    className={`size-4 mr-2 ${
-                      isGeneratedFavorite ? "fill-red-500 text-red-500" : ""
-                    }`}
-                  />
-                  {isGeneratedFavorite ? "已收藏" : "收藏本次记录"}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRegenerate}
+                    disabled={isGenerating || isRegenerating || isUploadingImage}
+                  >
+                    {isRegenerating ? <Spinner className="mr-2" /> : <RefreshCw className="mr-2 size-4" />}
+                    换一批
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleToggleFavorite}>
+                    <Heart
+                      className={`size-4 mr-2 ${
+                        isGeneratedFavorite ? "fill-red-500 text-red-500" : ""
+                      }`}
+                    />
+                    {isGeneratedFavorite ? "已收藏" : "收藏本次记录"}
+                  </Button>
+                </div>
               )}
             </div>
 
@@ -483,19 +510,29 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
               </Card>
             ) : (
               <div className="space-y-4">
-                {suggestions.map((suggestion, index) => (
+                {suggestions.map((suggestion) => (
                   <Card key={suggestion.id} className="shadow-sm hover:shadow-md transition-shadow">
                     <CardContent className="pt-4">
                       <div className="flex items-start justify-between gap-2 mb-2">
-                        <Badge variant="secondary">方案 {index + 1}</Badge>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => handleCopy(suggestion.content)}
-                          title="复制"
-                        >
-                          <Copy className="size-4" />
-                        </Button>
+                        <Badge variant="outline">{suggestion.styleLabel || suggestion.tone || "自然得体"}</Badge>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => handleCopy(suggestion.content)}
+                            title="复制"
+                          >
+                            <Copy className="size-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => handleOpenContinue(suggestion)}
+                            title="继续聊"
+                          >
+                            <MessageCircle className="size-4" />
+                          </Button>
+                        </div>
                       </div>
                       <p className="text-base mb-3 whitespace-pre-wrap">{suggestion.content}</p>
                       {suggestion.reason && (
@@ -503,11 +540,6 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
                           <span className="font-medium">推荐理由</span>
                           {suggestion.reason}
                         </div>
-                      )}
-                      {suggestion.tone && (
-                        <Badge variant="outline" className="mt-3">
-                          {suggestion.tone}
-                        </Badge>
                       )}
                     </CardContent>
                   </Card>
@@ -517,6 +549,37 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
           </div>
         </div>
       </div>
+      <Dialog open={!!continueSuggestion} onOpenChange={(open) => !open && setContinueSuggestion(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>开启继续聊</DialogTitle>
+            <DialogDescription>
+              先确认你实际发给对方的话。你可以按自己的习惯改一下，后续 AI 会按这句话继续理解上下文。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">我实际发出的内容</label>
+            <Textarea
+              value={sentReplyDraft}
+              onChange={(event) => setSentReplyDraft(event.target.value)}
+              rows={5}
+              maxLength={500}
+              disabled={isCreatingChat}
+              className="resize-none"
+            />
+            <p className="text-xs text-muted-foreground text-right">{sentReplyDraft.length}/500</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setContinueSuggestion(null)} disabled={isCreatingChat}>
+              取消
+            </Button>
+            <Button onClick={handleCreateContinueChat} disabled={isCreatingChat || !sentReplyDraft.trim()}>
+              {isCreatingChat && <Spinner className="mr-2" />}
+              进入继续聊
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <ImagePreview src={previewImage} open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)} />
     </div>
   );

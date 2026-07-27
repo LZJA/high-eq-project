@@ -5,18 +5,17 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * 回复建议 DTO
- */
+import java.time.LocalDateTime;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SuggestionDTO {
-
+public class ReplyChatMessageDTO {
     private String id;
+    private String role;
     private String content;
-    private String reason;
-    private String tone;
-    private String styleLabel;
+    private String source;
+    private Integer turnIndex;
+    private LocalDateTime createTime;
 }

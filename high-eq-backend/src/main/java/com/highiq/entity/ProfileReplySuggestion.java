@@ -15,6 +15,7 @@ public class ProfileReplySuggestion {
     private String id;
     private String historyId;
     private String suggestionText;
+    private String styleLabel;
     private Integer orderIndex;
     private Integer isSelected;
 }

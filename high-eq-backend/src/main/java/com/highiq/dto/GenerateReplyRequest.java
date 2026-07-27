@@ -21,9 +21,9 @@ public class GenerateReplyRequest {
 
     private String modelPreference;  // 可选，默认使用 deepseek-v4-flash
 
-    private Integer replyCount;  // 生成回复的数量，默认 3
+    private Integer replyCount;  // 兼容旧客户端；新版本固定生成 5 条
 
-    private String tone;  // 语气/风格：温和友善、正式得体、幽默风趣、真诚直接、委婉含蓄
+    private String tone;  // 兼容旧客户端；新版本由 AI 根据语境自适应风格标签
 
     private String personProfileId;  // 人物档案ID（可选）
 }

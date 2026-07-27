@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add three first-phase improvements to the core reply generator: style labels on generated suggestions, a "换一批" regeneration flow, and a persisted continue-chat page where users can track "对方说了什么 / 我实际发了什么" and generate the next reply.
+**Goal:** Add three first-phase improvements to the core reply generator: fixed 5-result style-labeled suggestions, a "换一批" regeneration flow, and a persisted continue-chat page where users can track "对方说了什么 / 我实际发了什么" and generate the next reply.
 
-**Architecture:** Keep first-round reply generation compatible with existing `GenerateReplyResponse`, but extend suggestions with `styleLabel`. Add dedicated chat-session tables and APIs for continue-chat so it can persist messages, adopted AI drafts, user edits, turn count, and summarized context. Frontend keeps the current generation page as the entry point, adds style badges and "换一批 / 继续聊", then routes continue-chat to a new chat-like page.
+**Architecture:** Keep first-round reply generation compatible with existing `GenerateReplyResponse`, but extend suggestions with `styleLabel` and make backend generation use a fixed `DEFAULT_REPLY_COUNT = 5`. Remove user-facing reply-count and tone/style selectors; AI chooses the 5 most suitable reply styles for the context and makes every returned style label distinct within the batch. Add dedicated chat-session tables and APIs for continue-chat so it can persist messages, adopted AI drafts, user edits, turn count, and summarized context.
 
 **Tech Stack:** Spring Boot 3.2, Java 17, MyBatis Plus, Flyway SQL migrations, React 19, TypeScript, Vite, Wouter, Axios, existing shadcn/Radix UI components, Docker Maven verification.
 
@@ -14,10 +14,13 @@
 
 Included:
 - Add `styleLabel` to normal generated replies, image replies, history detail DTOs, and profile-history DTOs where suggestions are shown.
+- Change first-round generation from user-selected 3/5 replies to a fixed 5 replies.
+- Remove the reply-count selector and tone/style selector from all reply-generation entry points included in this phase.
+- Make AI choose 5 context-appropriate suggestions with distinct style labels; users choose by label and content instead of preselecting tone.
 - Add a first-round "换一批" API that consumes quota and regenerates suggestions for the same original history while excluding previous suggestion text.
 - Add continue-chat session creation from a selected current suggestion only.
 - Add a new continue-chat page with persisted messages and suggestions.
-- Continue-chat supports: opponent message input, optional user real intent, AI generates 3 suggestions, user chooses a suggestion, edits actual sent text, confirms it into the chat timeline.
+- Continue-chat supports: opponent message input, optional user real intent, AI generates 5 suggestions with distinct style labels, user chooses a suggestion, edits actual sent text, confirms it into the chat timeline.
 - Add continue-chat "换一批" for the latest opponent message and same turn context.
 - Enforce continue-chat limits: max 12 turns, warn from turn 9, max 16 recent context messages, max 60 stored messages, max 500 chars per message, max 300 chars per turn intent, summary max 600 chars.
 
@@ -27,6 +30,8 @@ Excluded:
 - No continue-chat entry from History page.
 - No guest continue-chat in this phase unless explicitly requested later.
 - No multi-branch tree UI; each session is a single linear chat timeline.
+- No user-facing reply-count selection on any reply-generation entry in this phase.
+- No user-facing tone/style selection on any reply-generation entry in this phase.
 
 ## File Structure
 
@@ -38,7 +43,7 @@ Backend files to create:
 - `high-eq-backend/src/main/java/com/highiq/mapper/ReplyChatSessionMapper.java`: MyBatis Plus mapper.
 - `high-eq-backend/src/main/java/com/highiq/mapper/ReplyChatMessageMapper.java`: MyBatis Plus mapper.
 - `high-eq-backend/src/main/java/com/highiq/mapper/ReplyChatSuggestionMapper.java`: MyBatis Plus mapper.
-- `high-eq-backend/src/main/java/com/highiq/dto/RegenerateReplyRequest.java`: request body for first-round "换一批".
+- `high-eq-backend/src/main/java/com/highiq/dto/RegenerateReplyRequest.java`: request body for first-round "换一批"; excludes `replyCount` and `tone` because generation is fixed at 5 and AI selects styles.
 - `high-eq-backend/src/main/java/com/highiq/dto/CreateReplyChatSessionRequest.java`: request body for opening continue-chat from a chosen suggestion.
 - `high-eq-backend/src/main/java/com/highiq/dto/ReplyChatSessionDTO.java`: session detail response.
 - `high-eq-backend/src/main/java/com/highiq/dto/ReplyChatMessageDTO.java`: chat message DTO.
@@ -55,11 +60,13 @@ Backend files to modify:
 - `high-eq-backend/src/main/java/com/highiq/dto/SuggestionDTO.java`: add `styleLabel`.
 - `high-eq-backend/src/main/java/com/highiq/entity/ReplySuggestion.java`: add `styleLabel`.
 - `high-eq-backend/src/main/java/com/highiq/entity/ProfileReplySuggestion.java`: add `styleLabel`.
-- `high-eq-backend/src/main/java/com/highiq/service/AiService.java`: update prompt/output parsing to include style label and add regenerate/continue-chat generation methods.
+- `high-eq-backend/src/main/java/com/highiq/service/AiService.java`: update prompt/output parsing to include style label, fixed 5-result generation, distinct style labels, and regenerate/continue-chat generation methods.
 - `high-eq-backend/src/main/java/com/highiq/service/QwenVisionService.java`: include style labels in image reply format.
 - `high-eq-backend/src/main/java/com/highiq/service/DoubaoVisionService.java`: include style labels in image reply format.
-- `high-eq-backend/src/main/java/com/highiq/service/ReplyService.java`: store style labels, expose them in DTOs, add first-round regenerate method.
+- `high-eq-backend/src/main/java/com/highiq/service/ReplyService.java`: store style labels, expose them in DTOs, make logged-in and guest generation fixed at 5 replies, add first-round regenerate method.
+- `high-eq-backend/src/main/java/com/highiq/service/GuestReplyService.java`: continue delegating to `ReplyService.generateRepliesForGuest`, which now ignores `replyCount/tone` and returns 5 style-labeled suggestions.
 - `high-eq-backend/src/main/java/com/highiq/service/PersonProfileService.java`: return style label on profile suggestion DTOs.
+- `high-eq-backend/src/main/java/com/highiq/dto/GenerateReplyRequest.java`: keep `replyCount` and `tone` only as deprecated backward-compatible fields; backend ignores them for new generation.
 - `high-eq-backend/src/main/java/com/highiq/controller/ReplyController.java`: add `/reply/history/{historyId}/regenerate`.
 - `high-eq-backend/src/main/resources/db/init.sql`: mirror schema for fresh local DBs.
 
@@ -68,10 +75,12 @@ Frontend files to create:
 
 Frontend files to modify:
 - `high-eq-front/client/src/lib/api.ts`: add regenerate and chat-session API clients, plus TypeScript response shapes.
-- `high-eq-front/client/src/pages/ReplyApp.tsx`: show style labels, add "换一批", add "继续聊" entry from each current suggestion.
+- `high-eq-front/client/src/pages/ReplyApp.tsx`: remove reply-count and tone/style selectors, show 5 style-labeled suggestions, add "换一批", add "继续聊" entry from each current suggestion.
 - `high-eq-front/client/src/App.tsx`: route `/reply/chat/:sessionId` to `ReplyChatSession`.
-- `high-eq-front/client/src/pages/PersonProfileChat.tsx`: show style labels; do not add continue-chat unless the product later wants profile-specific continuation.
-- `high-eq-front/client/src/pages/History.tsx`, `Favorites.tsx`, `PersonProfileDetail.tsx`, `GuestReplyApp.tsx`: show style labels only where DTOs provide them; no continue-chat actions.
+- `high-eq-front/client/src/pages/PersonProfileChat.tsx`: remove reply-count/tone-style selectors if present, show 5 style-labeled suggestions; do not add continue-chat unless the product later wants profile-specific continuation.
+- `high-eq-front/client/src/pages/GuestReplyApp.tsx`: remove reply-count/tone-style selectors if present, stop sending `replyCount/tone`, and show 5 style-labeled suggestions.
+- `high-eq-front/client/src/pages/Home.tsx`: update marketing copy that currently advertises "5 种语气风格" so it describes "5 条智能风格方案".
+- `high-eq-front/client/src/pages/History.tsx`, `Favorites.tsx`, `PersonProfileDetail.tsx`: show style labels where DTOs provide them; no continue-chat actions.
 
 ## API Contract
 
@@ -82,9 +91,7 @@ Frontend files to modify:
 Request:
 ```json
 {
-  "replyCount": 3,
   "modelPreference": "deepseek-v4-flash",
-  "tone": "",
   "excludeSuggestionIds": ["s1", "s2", "s3"],
   "excludeContents": ["好嘞，听你的..."]
 }
@@ -98,6 +105,8 @@ Rules:
 - Must keep the original history record.
 - Must insert new `reply_suggestion` rows with next `order_index` values.
 - Must ask AI to avoid prior content and angles.
+- Must return exactly 5 suggestions unless the AI provider fails partially and existing fallback logic is triggered.
+- Must ignore user-selected `replyCount` or `tone` if older clients send them.
 
 ### Create Continue-Chat Session
 
@@ -121,7 +130,6 @@ Response:
   "roleBackground": "伴侣",
   "initialChatContent": "你今天。在公司吃完再回来吧",
   "initialUserIntent": "因为回去要打球...",
-  "tone": "自然得体",
   "modelPreference": "deepseek-v4-flash",
   "turnCount": 0,
   "maxTurnCount": 12,
@@ -150,8 +158,6 @@ Request:
 {
   "opponentMessage": "那你别打太晚，早点回来",
   "userIntent": "想让她放心，但不想显得敷衍",
-  "replyCount": 3,
-  "tone": "",
   "modelPreference": "deepseek-v4-flash",
   "excludeSuggestionIds": []
 }
@@ -170,7 +176,6 @@ Response:
       "id": "suggestion-id",
       "content": "知道啦，我不会打太晚...",
       "reason": "这条先接住对方的担心...",
-      "tone": "自然得体",
       "styleLabel": "稳重安心"
     }
   ]
@@ -185,6 +190,7 @@ Rules:
 - Must consume quota.
 - Must store the opponent message.
 - Must store generated suggestions under that opponent message.
+- Must generate exactly 5 suggestions with distinct style labels.
 - Must not add a user message until the user confirms actual sent content.
 
 ### Regenerate Continue-Chat Suggestions
@@ -238,7 +244,7 @@ CREATE TABLE reply_chat_session (
   role_background VARCHAR(500) NULL,
   initial_chat_content TEXT NULL,
   initial_user_intent TEXT NULL,
-  tone VARCHAR(50) NULL,
+  tone VARCHAR(50) NULL COMMENT 'legacy display tone; new generation no longer exposes tone selection',
   model_preference VARCHAR(50) NULL,
   session_summary TEXT NULL,
   turn_count INT NOT NULL DEFAULT 0,
@@ -272,7 +278,7 @@ CREATE TABLE reply_chat_suggestion (
   after_message_id VARCHAR(64) NOT NULL,
   content TEXT NOT NULL,
   reason TEXT NULL,
-  tone VARCHAR(50) NULL,
+  tone VARCHAR(50) NULL COMMENT 'legacy display tone; new generation no longer exposes tone selection',
   style_label VARCHAR(32) NULL,
   batch_index INT NOT NULL DEFAULT 1,
   order_index INT NOT NULL DEFAULT 1,
@@ -297,11 +303,11 @@ Extend the output format while remaining parseable:
 【推荐理由】
 用一两句话说明它哪里体贴、哪里照顾到关系和用户真实意图
 【风格标签】
-从以下标签中选择一个：温柔体贴、俏皮亲密、稳重安心、真诚直接、委婉缓和、轻松自然、主动解释、边界清楚
+根据对方角色、关系、消息语境和这条回复的沟通策略，生成一个贴切的短标签，2-6 个中文字，例如“温柔体贴”“俏皮亲密”“稳重安心”“专业周全”。不要固定套用示例标签。
 ```
 
 Parser fallback:
-- If `【风格标签】` missing, infer with a deterministic fallback method from tone/content keywords, default `自然得体`.
+- If `【风格标签】` missing, infer with a deterministic fallback method from content keywords, default `自然得体`.
 - Continue to parse old stored rows without style labels.
 
 ### Regenerate Prompt Addition
@@ -343,12 +349,13 @@ Use a separate builder:
 {userIntent or "未补充，以自然回应对方最新消息为准"}
 
 # 回复要求
-生成 {replyCount} 条候选。
+生成 5 条候选。
 1. 优先回应对方最新消息里的情绪、关心、疑问或担忧。
 2. 不要重复用户已经说过的话。
 3. 不要推翻用户已经确认发送过的内容。
 4. 如果用户补充了这次真实想法，以这次真实想法为准。
 5. 每条 20-80 字，像可以直接发出去的聊天消息。
+6. 5 条候选必须体现不同回复策略，每条使用不同的风格标签。
 
 # 输出格式
 ...
@@ -455,18 +462,46 @@ Expected: BUILD SUCCESS.
 ### Task 3: Generate and Persist Style Labels
 
 **Files:**
+- Modify: `high-eq-backend/src/main/java/com/highiq/dto/GenerateReplyRequest.java`
 - Modify: `high-eq-backend/src/main/java/com/highiq/service/AiService.java`
 - Modify: `high-eq-backend/src/main/java/com/highiq/service/QwenVisionService.java`
 - Modify: `high-eq-backend/src/main/java/com/highiq/service/DoubaoVisionService.java`
 - Modify: `high-eq-backend/src/main/java/com/highiq/service/ReplyService.java`
 - Modify: `high-eq-backend/src/main/java/com/highiq/service/PersonProfileService.java`
 
-- [ ] **Step 1: Update text prompt output format**
+- [ ] **Step 1: Update text prompt output format and fixed count**
 
-In `AiService.buildPrompt`, add `【风格标签】` after `【推荐理由】` and list the approved labels:
-`温柔体贴、俏皮亲密、稳重安心、真诚直接、委婉缓和、轻松自然、主动解释、边界清楚`.
+In `AiService.buildPrompt`, add `【风格标签】` after `【推荐理由】`, remove tone-driven wording from the user-facing generation path, force 5 suggestions, and ask AI to generate flexible labels instead of choosing from a fixed list.
 
-- [ ] **Step 2: Update image prompt output format**
+Prompt requirements:
+- Always generate 5 suggestions.
+- AI chooses the most suitable mix of styles based on context, opponent role, relationship, opponent message, and user intent.
+- The 5 suggestions must use 5 different `styleLabel` values.
+- Each `styleLabel` should be 2-6 Chinese characters, concise, user-facing, and directly describe that reply's communication strategy.
+- Example labels are only references, not a fixed enum: `温柔体贴`、`俏皮亲密`、`稳重安心`、`专业周全`、`委婉缓和`、`轻松自然`、`主动解释`、`边界清楚`.
+- Do not ask the user to preselect tone/style.
+
+- [ ] **Step 2: Deprecate ignored request fields**
+
+In `GenerateReplyRequest.java`, keep the fields for old clients but mark comments clearly:
+
+```java
+private Integer replyCount;  // deprecated: ignored, backend always generates 5 replies
+
+private String tone;  // deprecated: ignored, AI now chooses style labels by context
+```
+
+In `ReplyService.generateReplies` and `ReplyService.generateRepliesForGuest`, do not use `request.getReplyCount()` or `request.getTone()` for new generation. Use:
+
+```java
+private static final int DEFAULT_REPLY_COUNT = 5;
+```
+
+and pass `DEFAULT_REPLY_COUNT` to AI services.
+
+For storage, set legacy `tone` columns to `自然得体` or leave the existing default behavior, but do not expose tone as a user-controlled choice.
+
+- [ ] **Step 3: Update image prompt output format**
 
 Change vision output rows from:
 ```text
@@ -479,7 +514,7 @@ to:
 
 Keep parser backward-compatible for old image rows.
 
-- [ ] **Step 3: Use parser in `ReplyService.generateReplies`**
+- [ ] **Step 4: Use parser in `ReplyService.generateReplies`**
 
 Replace manual split logic with `ReplyStyleLabelParser.parse(aiSuggestion)`.
 
@@ -495,16 +530,17 @@ SuggestionDTO.builder()
     .id(suggestionId)
     .content(parsed.content())
     .reason(parsed.reason())
-    .tone(selectedTone)
     .styleLabel(parsed.styleLabel())
     .build();
 ```
 
-- [ ] **Step 4: Return style labels from history and profile history**
+Keep `SuggestionDTO.tone` only if removing it would break existing pages, but do not set or display it in newly generated primary reply cards.
+
+- [ ] **Step 5: Return style labels from history and profile history**
 
 Update `getSuggestionsForHistory` and `getSuggestionsForProfileHistory` so they use stored `styleLabel` first, parser fallback second, default `自然得体` last.
 
-- [ ] **Step 5: Verify existing generate endpoint**
+- [ ] **Step 6: Verify existing generate endpoint**
 
 Run:
 ```bash
@@ -528,9 +564,7 @@ Then call `/api/reply/generate` with a valid token and confirm each suggestion h
 
 Fields:
 ```java
-private Integer replyCount;
 private String modelPreference;
-private String tone;
 private List<String> excludeSuggestionIds;
 private List<String> excludeContents;
 ```
@@ -543,8 +577,6 @@ public List<String> generateRegeneratedReplies(
     String chatContent,
     String roleBackground,
     String userIntent,
-    Integer replyCount,
-    String tone,
     String requestedModel,
     List<String> excludeContents
 )
@@ -563,6 +595,8 @@ Behavior:
 - Call `aiService.generateRegeneratedReplies`.
 - Insert new `reply_suggestion` rows using the same history ID and continuing `order_index`.
 - Return `GenerateReplyResponse` with same history ID.
+- Always request 5 new suggestions.
+- Do not read `replyCount` or `tone` from frontend.
 
 - [ ] **Step 4: Add controller endpoint**
 
@@ -606,7 +640,7 @@ Each mapper extends `BaseMapper<Entity>`.
 DTO requirements:
 - `ReplyChatSessionDTO` includes metadata, limits, messages, latestSuggestions.
 - `ReplyChatMessageDTO` includes id, role, content, source, turnIndex, createTime.
-- `ReplyChatSuggestionDTO` includes id, content, reason, tone, styleLabel, isAdopted.
+- `ReplyChatSuggestionDTO` includes id, content, reason, styleLabel, isAdopted. Keep `tone` only if needed for backward compatibility, but do not display it in the new UI.
 
 - [ ] **Step 4: Compile**
 
@@ -656,7 +690,7 @@ Behavior:
 - If request is regenerate for latest opponent message, reuse latest opponent message and collect excluded suggestions.
 - Build prompt from fixed background, session summary, recent 16 messages, latest opponent message, user intent.
 - Consume quota.
-- Generate 3 suggestions.
+- Generate 5 suggestions.
 - Store them under `reply_chat_suggestion`.
 - Return turn response.
 
@@ -711,9 +745,7 @@ styleLabel?: string;
 
 ```ts
 regenerateReplies: async (historyId: string, data: {
-  replyCount?: number;
   modelPreference?: string;
-  tone?: string;
   excludeSuggestionIds?: string[];
   excludeContents?: string[];
 }) => {
@@ -748,7 +780,19 @@ Expected: no TypeScript errors.
 **Files:**
 - Modify: `high-eq-front/client/src/pages/ReplyApp.tsx`
 
-- [ ] **Step 1: Display style label**
+- [ ] **Step 1: Remove reply-count and tone/style controls**
+
+Remove from `ReplyApp.tsx`:
+- `TONE_OPTIONS`
+- `replyCount` state
+- `tone` state
+- reply-count `<Select>` block
+- tone/style `<Select>` block
+- `replyCount` and `tone` fields from `replyAPI.generateReplies(...)`
+
+Keep model selection unchanged.
+
+- [ ] **Step 2: Display style label**
 
 Replace or supplement `方案 {index + 1}` badge:
 ```tsx
@@ -757,21 +801,22 @@ Replace or supplement `方案 {index + 1}` badge:
 </Badge>
 ```
 
-Keep `tone` badge as a secondary badge if useful.
+Do not show the old `tone` badge in the primary generated result cards. The style label is now the user's selection cue.
 
-- [ ] **Step 2: Add "换一批" button**
+- [ ] **Step 3: Add "换一批" button**
 
 Show when `suggestions.length > 0 && currentHistoryId`.
 
 Behavior:
 - Button text: `换一批`
 - Loading text: `正在换一批...`
-- Calls `replyAPI.regenerateReplies(currentHistoryId, { replyCount, modelPreference, tone, excludeSuggestionIds, excludeContents })`
+- Calls `replyAPI.regenerateReplies(currentHistoryId, { modelPreference, excludeSuggestionIds, excludeContents })`
 - Replace visible `suggestions` with response suggestions.
 - Keep `currentHistoryId`.
+- Expect exactly 5 suggestions from the backend.
 - Toast on success/failure.
 
-- [ ] **Step 3: Add "继续聊" action per card**
+- [ ] **Step 4: Add "继续聊" action per card**
 
 Add button text `继续聊`.
 
@@ -782,9 +827,42 @@ On click:
 - Calls `replyAPI.createChatSession({ historyId: currentHistoryId, suggestionId: suggestion.id, sentReply })`
 - Navigate to `/reply/chat/${sessionId}`.
 
-- [ ] **Step 4: Type check**
+- [ ] **Step 5: Type check**
 
 Run `pnpm check`.
+
+Expected: PASS.
+
+### Task 8.5: Remove Reply Count and Tone Controls From Other Entry Points
+
+**Files:**
+- Modify: `high-eq-front/client/src/pages/PersonProfileChat.tsx`
+- Modify: `high-eq-front/client/src/pages/GuestReplyApp.tsx`
+- Modify: `high-eq-front/client/src/pages/Home.tsx`
+
+- [ ] **Step 1: Update `PersonProfileChat.tsx`**
+
+Remove user-facing reply-count and tone/style selectors if present. Calls to the backend should not send `replyCount` or `tone`. Render `styleLabel` badges on the 5 returned suggestions and do not show the old `tone` badge.
+
+- [ ] **Step 2: Update `GuestReplyApp.tsx`**
+
+Remove user-facing reply-count and tone/style selectors if present. Calls to guest generation should not send `replyCount` or `tone` after the guest backend is updated. Render `styleLabel` badges where available.
+
+- [ ] **Step 3: Update `Home.tsx` marketing copy**
+
+Replace claims such as `5种语气风格` and `五种语气，灵活切换` with copy that matches the new behavior, for example:
+
+```text
+5 条智能风格方案
+AI 根据语境自动给出不同风格的回复
+```
+
+- [ ] **Step 4: Type check**
+
+Run:
+```bash
+cd high-eq-front && pnpm check
+```
 
 Expected: PASS.
 
@@ -801,7 +879,7 @@ Add `/reply/chat/:sessionId`.
 - [ ] **Step 2: Build page skeleton**
 
 Layout:
-- Header: `续聊`, role background, tone, `turnCount / maxTurnCount`.
+- Header: `续聊`, role background, `turnCount / maxTurnCount`.
 - Timeline: opponent bubbles left, user bubbles right.
 - Bottom panel when active and no pending suggestions:
   - `对方又说了什么？` textarea, max 500.
@@ -809,7 +887,7 @@ Layout:
   - `生成回复` button.
 - Candidate panel when suggestions exist:
   - Title `下一句可以这样回`
-  - 3 suggestion cards with style label, content, reason, buttons `复制` and `用这句`
+  - 5 suggestion cards with style label, content, reason, buttons `复制` and `用这句`
   - `换一批` button.
 
 - [ ] **Step 3: Implement data load**
@@ -932,4 +1010,3 @@ Type consistency:
 - `styleLabel` is consistently camelCase in Java DTOs and TypeScript.
 - SQL columns use snake_case (`style_label`) and MyBatis Plus maps them by default.
 - Continue-chat route is consistently `/reply/chat/:sessionId` on frontend and `/reply/chat-sessions` on backend.
-

@@ -34,20 +34,12 @@ const PRESET_ROLES = [
   { value: "老师", label: "老师" },
 ];
 
-// 语气/风格选项
-const TONE_OPTIONS = [
-  { value: "温和友善", label: "温和友善", description: "充满关怀和理解" },
-  { value: "正式得体", label: "正式得体", description: "保持专业和礼貌" },
-  { value: "幽默风趣", label: "幽默风趣", description: "轻松活泼的表达" },
-  { value: "真诚直接", label: "真诚直接", description: "坦率表达想法" },
-  { value: "委婉含蓄", label: "委婉含蓄", description: "间接表达意思" },
-];
-
 interface ReplySuggestion {
   id: string;
   content: string;
   reason: string;
   tone: string;
+  styleLabel?: string;
 }
 
 export default function GuestReplyApp() {
@@ -56,7 +48,6 @@ export default function GuestReplyApp() {
   const [chatContent, setChatContent] = useState("");
   const [roleBackground, setRoleBackground] = useState("");
   const [userIntent, setUserIntent] = useState("");
-  const [tone, setTone] = useState("");
   const [suggestions, setSuggestions] = useState<ReplySuggestion[]>([]);
   const [remainingQuota, setRemainingQuota] = useState(3);
 
@@ -96,8 +87,6 @@ export default function GuestReplyApp() {
         chatContent,
         roleBackground,
         userIntent,
-        tone: tone || undefined,
-        replyCount: 3,
       });
 
       if (response.code === 200) {
@@ -225,32 +214,6 @@ export default function GuestReplyApp() {
                 />
               </div>
 
-              {/* 语气/风格选择 */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">语气/风格（可选）</label>
-                <Select
-                  value={tone}
-                  onValueChange={setTone}
-                  disabled={isGenerating}
-                >
-                  <SelectTrigger className="w-full transition-transform focus:scale-[1.02]">
-                    <SelectValue placeholder="选择回复语气" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TONE_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        <div className="flex items-center gap-2">
-                          <span>{option.label}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {option.description}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
               {/* 操作按钮 */}
               <div className="flex gap-2">
                 <Button
@@ -311,11 +274,11 @@ export default function GuestReplyApp() {
               </Card>
             ) : (
               <div className="space-y-4">
-                {suggestions.map((suggestion, index) => (
+                {suggestions.map((suggestion) => (
                   <Card key={suggestion.id} className="shadow-sm hover:shadow-md transition-shadow">
                     <CardContent className="pt-4">
                       <div className="flex items-start justify-between gap-2 mb-2">
-                        <Badge variant="secondary">方案 {index + 1}</Badge>
+                        <Badge variant="outline">{suggestion.styleLabel || suggestion.tone || "自然得体"}</Badge>
                         <Button
                           variant="ghost"
                           size="icon-sm"
@@ -333,11 +296,6 @@ export default function GuestReplyApp() {
                           <span className="font-medium">推荐理由：</span>
                           {suggestion.reason}
                         </div>
-                      )}
-                      {suggestion.tone && (
-                        <Badge variant="outline" className="mt-2">
-                          {suggestion.tone}
-                        </Badge>
                       )}
                     </CardContent>
                   </Card>

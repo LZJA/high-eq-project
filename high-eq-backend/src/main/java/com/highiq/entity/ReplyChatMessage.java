@@ -7,30 +7,24 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 
-/**
- * 回复建议实体类
- */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@TableName("reply_suggestion")
-public class ReplySuggestion {
-    
+@TableName("reply_chat_message")
+public class ReplyChatMessage {
+
     @TableId(type = IdType.ASSIGN_UUID)
     private String id;
-    
-    private String historyId;
-    
-    private String suggestionText;
 
-    private String styleLabel;
-    
-    private Integer orderIndex;
-    
-    private Integer isSelected;
-    
+    private String sessionId;
+    private String role;
+    private String content;
+    private String source;
+    private String sourceSuggestionId;
+    private Integer turnIndex;
     private LocalDateTime createTime;
 }

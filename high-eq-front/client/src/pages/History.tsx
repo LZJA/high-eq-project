@@ -50,6 +50,7 @@ interface HistoryDetail {
     content: string;
     reason: string;
     tone: string;
+    styleLabel?: string;
   }>;
   createTime: string;
   isFavorite: boolean;
@@ -357,11 +358,11 @@ export default function History() {
                       回复建议 ({selectedHistory.suggestions.length})
                     </h3>
                     <div className="space-y-3">
-                      {selectedHistory.suggestions.map((suggestion, index) => (
+                      {selectedHistory.suggestions.map((suggestion) => (
                         <Card key={suggestion.id} className="shadow-sm">
                           <CardContent className="pt-4">
                             <div className="flex items-start justify-between gap-2 mb-2">
-                              <Badge variant="secondary">方案 {index + 1}</Badge>
+                              <Badge variant="outline">{suggestion.styleLabel || suggestion.tone || "自然得体"}</Badge>
                               <Button
                                 variant="ghost"
                                 size="icon-sm"
@@ -379,11 +380,6 @@ export default function History() {
                                 <span className="font-medium">推荐理由：</span>
                                 {suggestion.reason}
                               </div>
-                            )}
-                            {suggestion.tone && (
-                              <Badge variant="outline" className="mt-2">
-                                {suggestion.tone}
-                              </Badge>
                             )}
                           </CardContent>
                         </Card>

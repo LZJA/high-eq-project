@@ -159,12 +159,19 @@ export const replyAPI = {
     chatImage?: string | null;
     roleBackground: string;
     userIntent: string;
-    replyCount?: number;
     modelPreference?: string;
-    tone?: string;
     personProfileId?: string;
   }) => {
     const response = await apiClient.post('/reply/generate', data, { timeout: 0 });
+    return response.data;
+  },
+
+  regenerateReplies: async (historyId: string, data?: {
+    modelPreference?: string;
+    excludeSuggestionIds?: string[];
+    excludeContents?: string[];
+  }) => {
+    const response = await apiClient.post(`/reply/history/${historyId}/regenerate`, data || {}, { timeout: 0 });
     return response.data;
   },
 
@@ -215,6 +222,49 @@ export const replyAPI = {
    */
   getFavoriteHistory: async () => {
     const response = await apiClient.get('/reply/history/favorite');
+    return response.data;
+  },
+};
+
+export const replyChatAPI = {
+  createSession: async (data: {
+    historyId: string;
+    suggestionId: string;
+    sentReply?: string;
+  }) => {
+    const response = await apiClient.post('/reply/chat-sessions', data);
+    return response.data;
+  },
+
+  getSession: async (sessionId: string) => {
+    const response = await apiClient.get(`/reply/chat-sessions/${sessionId}`);
+    return response.data;
+  },
+
+  generateSuggestions: async (sessionId: string, data: {
+    opponentMessage: string;
+    userIntent?: string;
+    modelPreference?: string;
+    excludeSuggestionIds?: string[];
+  }) => {
+    const response = await apiClient.post(`/reply/chat-sessions/${sessionId}/suggestions`, data, { timeout: 0 });
+    return response.data;
+  },
+
+  regenerateSuggestions: async (sessionId: string, data?: {
+    userIntent?: string;
+    modelPreference?: string;
+    excludeSuggestionIds?: string[];
+  }) => {
+    const response = await apiClient.post(`/reply/chat-sessions/${sessionId}/suggestions/regenerate`, data || {}, { timeout: 0 });
+    return response.data;
+  },
+
+  adoptSuggestion: async (sessionId: string, data: {
+    suggestionId: string;
+    finalContent: string;
+  }) => {
+    const response = await apiClient.post(`/reply/chat-sessions/${sessionId}/adopt`, data);
     return response.data;
   },
 };
@@ -408,8 +458,6 @@ export const guestApi = {
     chatContent: string;
     roleBackground?: string;
     userIntent?: string;
-    replyCount?: number;
-    tone?: string;
   }) => {
     const response = await axios.post(`${API_BASE_URL}/guest/reply/generate`, data, {
       headers: guestHeaders(),

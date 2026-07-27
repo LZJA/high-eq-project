@@ -31,6 +31,7 @@ interface FavoriteSuggestion {
   content: string;
   reason: string;
   tone: string;
+  styleLabel?: string;
 }
 
 interface FavoriteItem {
@@ -308,12 +309,12 @@ export default function Favorites() {
                         推荐回复 ({item.suggestions?.length || 0})
                       </h4>
                       <div className="grid sm:grid-cols-2 gap-3">
-                        {(item.suggestions || []).map((suggestion, index) => (
+                        {(item.suggestions || []).map((suggestion) => (
                           <Card key={suggestion.id} className="shadow-sm">
                             <CardContent className="pt-4">
                               <div className="flex items-start justify-between gap-2 mb-2">
-                                <Badge variant="secondary" className="text-xs">
-                                  方案 {index + 1}
+                                <Badge variant="outline" className="text-xs">
+                                  {suggestion.styleLabel || suggestion.tone || "自然得体"}
                                 </Badge>
                                 <Button
                                   variant="ghost"
@@ -331,11 +332,6 @@ export default function Favorites() {
                                 <div className="text-xs text-muted-foreground bg-muted/50 rounded-md p-2 mb-2">
                                   {suggestion.reason}
                                 </div>
-                              )}
-                              {suggestion.tone && (
-                                <Badge variant="outline" className="text-xs">
-                                  {suggestion.tone}
-                                </Badge>
                               )}
                             </CardContent>
                           </Card>

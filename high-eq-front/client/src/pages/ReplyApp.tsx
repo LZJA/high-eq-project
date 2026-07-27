@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { replyAPI } from "@/lib/api";
+import { replyAPI, replyChatAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -17,10 +17,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
-import { Copy, Heart, Wand2, Upload, X } from "lucide-react";
+import { Copy, Heart, MessageCircle, RefreshCw, Wand2, Upload, X } from "lucide-react";
 import { AI_MODELS } from "@/types";
 import { AppNav } from "@/components/AppNav";
 import { QuotaIndicator } from "@/components/QuotaIndicator";
@@ -28,6 +36,7 @@ import { ModelSelector } from "@/components/ModelSelector";
 import { useQuota } from "@/hooks/useQuota";
 import { ImagePreview } from "@/components/ImagePreview";
 import { uploadChatImageToOss } from "@/lib/oss";
+import { useLocation } from "wouter";
 
 // 预设角色
 const PRESET_ROLES = [
@@ -41,35 +50,30 @@ const PRESET_ROLES = [
   { value: "老师", label: "老师" },
 ];
 
-// 语气/风格选项
-const TONE_OPTIONS = [
-  { value: "温和友善", label: "温和友善", description: "充满关怀和理解" },
-  { value: "正式得体", label: "正式得体", description: "保持专业和礼貌" },
-  { value: "幽默风趣", label: "幽默风趣", description: "轻松活泼的表达" },
-  { value: "真诚直接", label: "真诚直接", description: "坦率表达想法" },
-  { value: "委婉含蓄", label: "委婉含蓄", description: "间接表达意思" },
-];
-
 interface ReplySuggestion {
   id: string;
   content: string;
   reason: string;
   tone: string;
+  styleLabel?: string;
 }
 
 export default function ReplyApp() {
   const { user } = useAuth();
+  const [, navigate] = useLocation();
   const { remainingQuota: hookRemainingQuota, isUnlimited, tier, refresh: refreshQuota } = useQuota();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isCreatingChat, setIsCreatingChat] = useState(false);
   const [chatContent, setChatContent] = useState("");
   const [chatImage, setChatImage] = useState<string | null>(null);
   const [roleBackground, setRoleBackground] = useState("");
   const [userIntent, setUserIntent] = useState("");
-  const [replyCount, setReplyCount] = useState(3);
   const [modelPreference, setModelPreference] = useState("deepseek-v4-flash");
-  const [tone, setTone] = useState("");
   const [suggestions, setSuggestions] = useState<ReplySuggestion[]>([]);
   const [currentHistoryId, setCurrentHistoryId] = useState<string | null>(null);
+  const [continueSuggestion, setContinueSuggestion] = useState<ReplySuggestion | null>(null);
+  const [sentReplyDraft, setSentReplyDraft] = useState("");
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [remainingQuota, setRemainingQuota] = useState(hookRemainingQuota);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -158,9 +162,7 @@ export default function ReplyApp() {
         chatImage,
         roleBackground,
         userIntent,
-        replyCount,
         modelPreference,
-        tone,
       });
 
       setSuggestions(response.data.suggestions || []);
@@ -178,6 +180,66 @@ export default function ReplyApp() {
   const handleCopy = (content: string) => {
     navigator.clipboard.writeText(content);
     toast.success("已复制到剪贴板");
+  };
+
+  const handleRegenerate = async () => {
+    if (!currentHistoryId) {
+      toast.error("请先生成回复");
+      return;
+    }
+    if (!isUnlimited && remainingQuota < selectedModelCost) {
+      toast.error(`当前模型需要 ${selectedModelCost} 点，今日剩余 ${remainingQuota} 点`);
+      return;
+    }
+
+    setIsRegenerating(true);
+    try {
+      const response = await replyAPI.regenerateReplies(currentHistoryId, {
+        modelPreference,
+        excludeSuggestionIds: suggestions.map((suggestion) => suggestion.id),
+        excludeContents: suggestions.map((suggestion) => suggestion.content),
+      });
+      setSuggestions(response.data.suggestions || []);
+      setRemainingQuota(prev => Math.max(0, prev - selectedModelCost));
+      toast.success("已换一批新的表达");
+      setTimeout(() => refreshQuota(), 300);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "换一批失败，请稍后重试");
+    } finally {
+      setIsRegenerating(false);
+    }
+  };
+
+  const handleOpenContinue = (suggestion: ReplySuggestion) => {
+    if (!currentHistoryId) {
+      toast.error("请先生成回复");
+      return;
+    }
+    setContinueSuggestion(suggestion);
+    setSentReplyDraft(suggestion.content);
+  };
+
+  const handleCreateContinueChat = async () => {
+    if (!currentHistoryId || !continueSuggestion) return;
+    if (!sentReplyDraft.trim()) {
+      toast.error("请输入你实际发给对方的话");
+      return;
+    }
+
+    setIsCreatingChat(true);
+    try {
+      const response = await replyChatAPI.createSession({
+        historyId: currentHistoryId,
+        suggestionId: continueSuggestion.id,
+        sentReply: sentReplyDraft,
+      });
+      toast.success("已开启继续聊");
+      navigate(`/reply-chat/${response.data.id}`);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "开启继续聊失败");
+    } finally {
+      setIsCreatingChat(false);
+    }
   };
 
   const handleToggleFavorite = async (suggestionId: string) => {
@@ -335,53 +397,6 @@ export default function ReplyApp() {
                 />
               </div>
 
-              {/* 高级选项 */}
-              <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">回复数量</label>
-                  <Select
-                    value={replyCount.toString()}
-                    onValueChange={(v) => setReplyCount(parseInt(v))}
-                    disabled={isGenerating || isUploadingImage}
-                  >
-                    <SelectTrigger className="w-full transition-transform focus:scale-[1.02]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1 条</SelectItem>
-                      <SelectItem value="2">2 条</SelectItem>
-                      <SelectItem value="3">3 条</SelectItem>
-                      <SelectItem value="5">5 条</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">语气/风格（可选）</label>
-                  <Select
-                    value={tone}
-                    onValueChange={setTone}
-                    disabled={isGenerating || isUploadingImage}
-                  >
-                    <SelectTrigger className="w-full transition-transform focus:scale-[1.02]">
-                      <SelectValue placeholder="选择回复语气" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TONE_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          <div className="flex items-center gap-2">
-                            <span>{option.label}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {option.description}
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
               <div className="space-y-2">
                 <label className="text-sm font-medium">AI 模型</label>
                 <ModelSelector
@@ -434,6 +449,17 @@ export default function ReplyApp() {
                   回复建议 {suggestions.length > 0 && `(${suggestions.length})`}
                 </h2>
                 <div className="flex items-center gap-3">
+                  {suggestions.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRegenerate}
+                      disabled={isGenerating || isRegenerating || isUploadingImage}
+                    >
+                      {isRegenerating ? <Spinner className="mr-2" /> : <RefreshCw className="mr-2 size-4" />}
+                      换一批
+                    </Button>
+                  )}
                   <div className="hidden sm:block">
                     <QuotaIndicator overrideRemainingQuota={remainingQuota} />
                   </div>
@@ -464,11 +490,11 @@ export default function ReplyApp() {
               </Card>
             ) : (
               <div className="space-y-4">
-                {suggestions.map((suggestion, index) => (
+                {suggestions.map((suggestion) => (
                   <Card key={suggestion.id} className="shadow-sm hover:shadow-md transition-shadow">
                     <CardContent className="pt-4">
                       <div className="flex items-start justify-between gap-2 mb-2">
-                        <Badge variant="secondary">方案 {index + 1}</Badge>
+                        <Badge variant="outline">{suggestion.styleLabel || suggestion.tone || "自然得体"}</Badge>
                         <div className="flex gap-1">
                           <Button
                             variant="ghost"
@@ -477,6 +503,14 @@ export default function ReplyApp() {
                             title="复制"
                           >
                             <Copy className="size-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => handleOpenContinue(suggestion)}
+                            title="继续聊"
+                          >
+                            <MessageCircle className="size-4" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -503,11 +537,6 @@ export default function ReplyApp() {
                           {suggestion.reason}
                         </div>
                       )}
-                      {suggestion.tone && (
-                        <Badge variant="outline" className="mt-2">
-                          {suggestion.tone}
-                        </Badge>
-                      )}
                     </CardContent>
                   </Card>
                 ))}
@@ -516,6 +545,37 @@ export default function ReplyApp() {
           </div>
         </div>
       </div>
+      <Dialog open={!!continueSuggestion} onOpenChange={(open) => !open && setContinueSuggestion(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>开启继续聊</DialogTitle>
+            <DialogDescription>
+              先确认你实际发给对方的话。你可以按自己的习惯改一下，后续 AI 会按这句话继续理解上下文。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">我实际发出的内容</label>
+            <Textarea
+              value={sentReplyDraft}
+              onChange={(event) => setSentReplyDraft(event.target.value)}
+              rows={5}
+              maxLength={500}
+              disabled={isCreatingChat}
+              className="resize-none"
+            />
+            <p className="text-xs text-muted-foreground text-right">{sentReplyDraft.length}/500</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setContinueSuggestion(null)} disabled={isCreatingChat}>
+              取消
+            </Button>
+            <Button onClick={handleCreateContinueChat} disabled={isCreatingChat || !sentReplyDraft.trim()}>
+              {isCreatingChat && <Spinner className="mr-2" />}
+              进入继续聊
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <ImagePreview src={previewImage} open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)} />
     </div>
   );

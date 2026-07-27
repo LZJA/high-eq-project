@@ -5,6 +5,7 @@ import com.highiq.dto.GenerateReplyRequest;
 import com.highiq.dto.GenerateReplyResponse;
 import com.highiq.dto.HistoryDTO;
 import com.highiq.dto.PageResponse;
+import com.highiq.dto.RegenerateReplyRequest;
 import com.highiq.service.ReplyService;
 import com.highiq.util.JwtUtil;
 import jakarta.validation.Valid;
@@ -121,6 +122,26 @@ public class ReplyController {
             return ApiResponse.success("获取成功", suggestions);
         } catch (Exception e) {
             log.error("Failed to get suggestions", e);
+            return ApiResponse.error(500, e.getMessage());
+        }
+    }
+
+    /**
+     * 换一批回复建议
+     */
+    @PostMapping("/history/{historyId}/regenerate")
+    public ApiResponse<GenerateReplyResponse> regenerateReplies(
+            @PathVariable String historyId,
+            @RequestBody(required = false) RegenerateReplyRequest request,
+            @RequestHeader("Authorization") String authHeader) {
+        try {
+            String token = authHeader.replace("Bearer ", "");
+            String userId = jwtUtil.getUserIdFromToken(token);
+
+            GenerateReplyResponse response = replyService.regenerateReplies(userId, historyId, request);
+            return ApiResponse.success("换一批成功", response);
+        } catch (Exception e) {
+            log.error("Failed to regenerate replies", e);
             return ApiResponse.error(500, e.getMessage());
         }
     }

@@ -307,28 +307,19 @@ public class PersonProfileService extends ServiceImpl<PersonProfileMapper, Perso
         wrapper.eq("history_id", historyId)
                 .orderByAsc("order_index");
 
-        String displayTone = tone != null && !tone.isEmpty() ? tone : "自然得体";
-
         return profileReplySuggestionMapper.selectList(wrapper).stream()
                 .map(suggestion -> {
-                    String storedText = suggestion.getSuggestionText();
-                    String content;
-                    String reason;
-
-                    if (storedText != null && storedText.contains("|||REASON|||")) {
-                        String[] parts = storedText.split("\\|\\|\\|REASON\\|\\|\\|", 2);
-                        content = parts[0];
-                        reason = parts.length > 1 ? parts[1] : "基于人物档案生成的推荐回复";
-                    } else {
-                        content = storedText;
-                        reason = "使用" + displayTone + "语气生成的推荐回复";
-                    }
+                    ReplyStyleLabelParser.ParsedSuggestion parsed = ReplyStyleLabelParser.parse(suggestion.getSuggestionText());
+                    String styleLabel = suggestion.getStyleLabel() != null && !suggestion.getStyleLabel().isBlank()
+                            ? suggestion.getStyleLabel()
+                            : parsed.styleLabel();
 
                     return SuggestionDTO.builder()
                             .id(suggestion.getId())
-                            .content(content)
-                            .reason(reason)
-                            .tone(displayTone)
+                            .content(parsed.content())
+                            .reason(parsed.reason())
+                            .tone(ReplyStyleLabelParser.DEFAULT_STYLE_LABEL)
+                            .styleLabel(styleLabel)
                             .build();
                 })
                 .collect(Collectors.toList());

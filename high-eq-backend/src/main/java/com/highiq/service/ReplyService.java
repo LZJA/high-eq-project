@@ -6,6 +6,7 @@ import com.highiq.dto.GenerateReplyRequest;
 import com.highiq.dto.GenerateReplyResponse;
 import com.highiq.dto.HistoryDTO;
 import com.highiq.dto.PageResponse;
+import com.highiq.dto.RegenerateReplyRequest;
 import com.highiq.dto.SuggestionDTO;
 import com.highiq.entity.History;
 import com.highiq.entity.ProfileChatHistory;
@@ -83,7 +84,7 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                 throw new RuntimeException("今日点数不足，请切换低消耗模型或升级会员");
             }
 
-            // 调用 AI 服务生成回复
+            // 调用 AI 服务生成回复。新版本固定生成 5 条，由 AI 自适应风格标签。
             List<String> aiSuggestions;
             if (AiModel.QWEN3_VL_PLUS.getId().equals(requestedModel)) {
                 aiSuggestions = qwenVisionService.generateRepliesWithImage(
@@ -91,8 +92,8 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                         request.getChatContent(),
                         request.getRoleBackground(),
                         request.getUserIntent(),
-                        request.getReplyCount(),
-                        request.getTone()
+                        AiService.DEFAULT_REPLY_COUNT,
+                        null
                 );
             } else if (AiModel.DOUBAO_SEED_2_PRO.getId().equals(requestedModel)) {
                 aiSuggestions = doubaoVisionService.generateRepliesWithImage(
@@ -100,23 +101,23 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                         request.getChatContent(),
                         request.getRoleBackground(),
                         request.getUserIntent(),
-                        request.getReplyCount(),
-                        request.getTone()
+                        AiService.DEFAULT_REPLY_COUNT,
+                        null
                 );
             } else {
                 aiSuggestions = aiService.generateReplies(
                         request.getChatContent(),
                         request.getRoleBackground(),
                         request.getUserIntent(),
-                        request.getReplyCount(),
-                        request.getTone(),
+                        AiService.DEFAULT_REPLY_COUNT,
+                        null,
                         requestedModel
                 );
             }
 
             // 保存到数据库
             String historyId = UUID.randomUUID().toString();
-            String selectedTone = request.getTone() != null && !request.getTone().isEmpty() ? request.getTone() : "自然得体";
+            String selectedTone = ReplyStyleLabelParser.DEFAULT_STYLE_LABEL;
             String modelUsed = request.getModelPreference() != null ? request.getModelPreference() : AiModel.DEFAULT_MODEL;
 
             // 判断是否为人物档案聊天
@@ -157,19 +158,18 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
             List<SuggestionDTO> suggestionDTOs = new ArrayList<>();
 
             // 保存回复建议到对应的表
-            for (int i = 0; i < aiSuggestions.size(); i++) {
+            for (int i = 0; i < Math.min(aiSuggestions.size(), AiService.DEFAULT_REPLY_COUNT); i++) {
                 String suggestionId = UUID.randomUUID().toString();
                 String aiSuggestion = aiSuggestions.get(i);
 
-                String[] parts = aiSuggestion.split("\\|\\|\\|REASON\\|\\|\\|", 2);
-                String content = parts[0];
-                String reason = parts.length > 1 ? parts[1] : "这是一条高情商回复，能得体地表达意图";
+                ReplyStyleLabelParser.ParsedSuggestion parsed = ReplyStyleLabelParser.parse(aiSuggestion);
 
                 if (request.getPersonProfileId() != null && !request.getPersonProfileId().isEmpty()) {
                     ProfileReplySuggestion suggestion = ProfileReplySuggestion.builder()
                             .id(suggestionId)
                             .historyId(historyId)
                             .suggestionText(aiSuggestion)
+                            .styleLabel(parsed.styleLabel())
                             .orderIndex(i + 1)
                             .isSelected(0)
                             .build();
@@ -179,6 +179,7 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                             .id(suggestionId)
                             .historyId(historyId)
                             .suggestionText(aiSuggestion)
+                            .styleLabel(parsed.styleLabel())
                             .orderIndex(i + 1)
                             .isSelected(0)
                             .build();
@@ -187,9 +188,10 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
 
                 SuggestionDTO dto = SuggestionDTO.builder()
                         .id(suggestionId)
-                        .content(content)
-                        .reason(reason)
+                        .content(parsed.content())
+                        .reason(parsed.reason())
                         .tone(selectedTone)
+                        .styleLabel(parsed.styleLabel())
                         .build();
                 suggestionDTOs.add(dto);
             }
@@ -339,15 +341,105 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
         List<ReplySuggestion> suggestions = replySuggestionMapper.selectList(queryWrapper);
 
         return suggestions.stream()
-                .map(rs -> {
-                    String storedText = rs.getSuggestionText();
-                    // 如果包含新格式分隔符，只返回内容部分
-                    if (storedText.contains("|||REASON|||")) {
-                        return storedText.split("\\|\\|\\|REASON\\|\\|\\|", 2)[0];
-                    }
-                    return storedText;
-                })
+                .map(rs -> ReplyStyleLabelParser.parse(rs.getSuggestionText()).content())
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 换一批回复建议，保留同一条历史记录并追加新的 5 条候选。
+     */
+    @Transactional
+    public GenerateReplyResponse regenerateReplies(String userId, String historyId, RegenerateReplyRequest request) {
+        long startTime = System.currentTimeMillis();
+
+        History history = baseMapper.selectById(historyId);
+        ProfileChatHistory profileHistory = null;
+        if (history == null || !history.getUserId().equals(userId) || (history.getStatus() != null && history.getStatus() == 0)) {
+            profileHistory = profileChatHistoryMapper.selectById(historyId);
+        }
+        boolean isProfileHistory = profileHistory != null
+                && profileHistory.getUserId().equals(userId)
+                && (profileHistory.getStatus() == null || profileHistory.getStatus() == 1);
+        if ((history == null || !history.getUserId().equals(userId) || (history.getStatus() != null && history.getStatus() == 0))
+                && !isProfileHistory) {
+            throw new RuntimeException("历史记录不存在");
+        }
+
+        String requestedModel = request != null && request.getModelPreference() != null
+                ? request.getModelPreference()
+                : (isProfileHistory && profileHistory.getModelUsed() != null
+                    ? profileHistory.getModelUsed()
+                    : (history != null && history.getModelUsed() != null ? history.getModelUsed() : AiModel.DEFAULT_MODEL));
+        if (!quotaService.isModelAvailable(userId, requestedModel)) {
+            throw new RuntimeException("当前订阅级别不支持使用 " + requestedModel + " 模型，请升级到 PRO 版本");
+        }
+        if (!quotaService.checkAndConsumeQuota(userId, requestedModel)) {
+            throw new RuntimeException("今日点数不足，请切换低消耗模型或升级会员");
+        }
+
+        List<String> excludeContents = new ArrayList<>();
+        if (request != null && request.getExcludeContents() != null) {
+            excludeContents.addAll(request.getExcludeContents());
+        }
+
+        int nextOrderIndex;
+        if (isProfileHistory) {
+            QueryWrapper<ProfileReplySuggestion> existingWrapper = new QueryWrapper<>();
+            existingWrapper.eq("history_id", historyId).orderByAsc("order_index");
+            List<ProfileReplySuggestion> existingSuggestions = profileReplySuggestionMapper.selectList(existingWrapper);
+            for (ProfileReplySuggestion suggestion : existingSuggestions) {
+                if (request == null
+                        || request.getExcludeSuggestionIds() == null
+                        || request.getExcludeSuggestionIds().isEmpty()
+                        || request.getExcludeSuggestionIds().contains(suggestion.getId())) {
+                    excludeContents.add(ReplyStyleLabelParser.parse(suggestion.getSuggestionText()).content());
+                }
+            }
+            nextOrderIndex = existingSuggestions.stream()
+                    .map(ProfileReplySuggestion::getOrderIndex)
+                    .filter(index -> index != null)
+                    .max(Integer::compareTo)
+                    .orElse(0) + 1;
+        } else {
+            QueryWrapper<ReplySuggestion> existingWrapper = new QueryWrapper<>();
+            existingWrapper.eq("history_id", historyId).orderByAsc("order_index");
+            List<ReplySuggestion> existingSuggestions = replySuggestionMapper.selectList(existingWrapper);
+            for (ReplySuggestion suggestion : existingSuggestions) {
+                if (request == null
+                        || request.getExcludeSuggestionIds() == null
+                        || request.getExcludeSuggestionIds().isEmpty()
+                        || request.getExcludeSuggestionIds().contains(suggestion.getId())) {
+                    excludeContents.add(ReplyStyleLabelParser.parse(suggestion.getSuggestionText()).content());
+                }
+            }
+            nextOrderIndex = existingSuggestions.stream()
+                    .map(ReplySuggestion::getOrderIndex)
+                    .filter(index -> index != null)
+                    .max(Integer::compareTo)
+                    .orElse(0) + 1;
+        }
+
+        List<String> aiSuggestions = aiService.generateRegeneratedReplies(
+                isProfileHistory ? profileHistory.getChatContent() : history.getChatContent(),
+                isProfileHistory ? profileHistory.getRoleBackground() : history.getRoleBackground(),
+                isProfileHistory ? profileHistory.getUserIntent() : history.getUserIntent(),
+                requestedModel,
+                excludeContents
+        );
+
+        List<SuggestionDTO> suggestionDTOs = isProfileHistory
+                ? saveProfileReplySuggestions(historyId, aiSuggestions, nextOrderIndex)
+                : saveReplySuggestions(historyId, aiSuggestions, nextOrderIndex);
+
+        long generatedTime = System.currentTimeMillis() - startTime;
+        log.info("Regenerated {} replies for history {} in {} ms", suggestionDTOs.size(), historyId, generatedTime);
+
+        return GenerateReplyResponse.builder()
+                .historyId(historyId)
+                .suggestions(suggestionDTOs)
+                .modelUsed(requestedModel)
+                .generatedTime(generatedTime)
+                .build();
     }
     
     /**
@@ -389,32 +481,8 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
 
         List<ReplySuggestion> replySuggestions = replySuggestionMapper.selectList(queryWrapper);
 
-        String displayTone = tone != null && !tone.isEmpty() ? tone : "自然得体";
-
         return replySuggestions.stream()
-                .map(rs -> {
-                    String storedText = rs.getSuggestionText();
-
-                    // 尝试解析新格式：内容|||REASON|||理由
-                    String content;
-                    String reason;
-                    if (storedText.contains("|||REASON|||")) {
-                        String[] parts = storedText.split("\\|\\|\\|REASON\\|\\|\\|", 2);
-                        content = parts[0];
-                        reason = parts.length > 1 ? parts[1] : "这是一条高情商回复，能得体地表达意图";
-                    } else {
-                        // 旧格式，直接使用存储的文本作为内容
-                        content = storedText;
-                        reason = "使用" + displayTone + "语气生成的高情商回复";
-                    }
-
-                    return SuggestionDTO.builder()
-                            .id(rs.getId())
-                            .content(content)
-                            .reason(reason)
-                            .tone(displayTone)
-                            .build();
-                })
+                .map(this::toSuggestionDTO)
                 .collect(Collectors.toList());
     }
 
@@ -429,23 +497,21 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                     request.getChatContent(),
                     request.getRoleBackground(),
                     request.getUserIntent(),
-                    request.getReplyCount(),
-                    request.getTone()
+                    AiService.DEFAULT_REPLY_COUNT,
+                    null
             );
 
-            String selectedTone = request.getTone() != null && !request.getTone().isEmpty() ? request.getTone() : "自然得体";
             List<SuggestionDTO> suggestionDTOs = new ArrayList<>();
 
-            for (String aiSuggestion : aiSuggestions) {
-                String[] parts = aiSuggestion.split("\\|\\|\\|REASON\\|\\|\\|", 2);
-                String content = parts[0];
-                String reason = parts.length > 1 ? parts[1] : "这是一条高情商回复，能得体地表达意图";
+            for (String aiSuggestion : aiSuggestions.stream().limit(AiService.DEFAULT_REPLY_COUNT).toList()) {
+                ReplyStyleLabelParser.ParsedSuggestion parsed = ReplyStyleLabelParser.parse(aiSuggestion);
 
                 SuggestionDTO dto = SuggestionDTO.builder()
                         .id(UUID.randomUUID().toString())
-                        .content(content)
-                        .reason(reason)
-                        .tone(selectedTone)
+                        .content(parsed.content())
+                        .reason(parsed.reason())
+                        .tone(ReplyStyleLabelParser.DEFAULT_STYLE_LABEL)
+                        .styleLabel(parsed.styleLabel())
                         .build();
                 suggestionDTOs.add(dto);
             }
@@ -461,5 +527,69 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
             log.error("Failed to generate replies for guest", e);
             throw new RuntimeException("生成回复失败: " + e.getMessage());
         }
+    }
+
+    private List<SuggestionDTO> saveReplySuggestions(String historyId, List<String> aiSuggestions, int startOrderIndex) {
+        List<SuggestionDTO> suggestionDTOs = new ArrayList<>();
+        for (int i = 0; i < Math.min(aiSuggestions.size(), AiService.DEFAULT_REPLY_COUNT); i++) {
+            String suggestionId = UUID.randomUUID().toString();
+            String aiSuggestion = aiSuggestions.get(i);
+            ReplyStyleLabelParser.ParsedSuggestion parsed = ReplyStyleLabelParser.parse(aiSuggestion);
+
+            ReplySuggestion suggestion = ReplySuggestion.builder()
+                    .id(suggestionId)
+                    .historyId(historyId)
+                    .suggestionText(aiSuggestion)
+                    .styleLabel(parsed.styleLabel())
+                    .orderIndex(startOrderIndex + i)
+                    .isSelected(0)
+                    .build();
+            replySuggestionMapper.insert(suggestion);
+
+            suggestionDTOs.add(toSuggestionDTO(suggestion));
+        }
+        return suggestionDTOs;
+    }
+
+    private List<SuggestionDTO> saveProfileReplySuggestions(String historyId, List<String> aiSuggestions, int startOrderIndex) {
+        List<SuggestionDTO> suggestionDTOs = new ArrayList<>();
+        for (int i = 0; i < Math.min(aiSuggestions.size(), AiService.DEFAULT_REPLY_COUNT); i++) {
+            String suggestionId = UUID.randomUUID().toString();
+            String aiSuggestion = aiSuggestions.get(i);
+            ReplyStyleLabelParser.ParsedSuggestion parsed = ReplyStyleLabelParser.parse(aiSuggestion);
+
+            ProfileReplySuggestion suggestion = ProfileReplySuggestion.builder()
+                    .id(suggestionId)
+                    .historyId(historyId)
+                    .suggestionText(aiSuggestion)
+                    .styleLabel(parsed.styleLabel())
+                    .orderIndex(startOrderIndex + i)
+                    .isSelected(0)
+                    .build();
+            profileReplySuggestionMapper.insert(suggestion);
+
+            suggestionDTOs.add(SuggestionDTO.builder()
+                    .id(suggestion.getId())
+                    .content(parsed.content())
+                    .reason(parsed.reason())
+                    .tone(ReplyStyleLabelParser.DEFAULT_STYLE_LABEL)
+                    .styleLabel(parsed.styleLabel())
+                    .build());
+        }
+        return suggestionDTOs;
+    }
+
+    private SuggestionDTO toSuggestionDTO(ReplySuggestion suggestion) {
+        ReplyStyleLabelParser.ParsedSuggestion parsed = ReplyStyleLabelParser.parse(suggestion.getSuggestionText());
+        String styleLabel = suggestion.getStyleLabel() != null && !suggestion.getStyleLabel().isBlank()
+                ? suggestion.getStyleLabel()
+                : parsed.styleLabel();
+        return SuggestionDTO.builder()
+                .id(suggestion.getId())
+                .content(parsed.content())
+                .reason(parsed.reason())
+                .tone(ReplyStyleLabelParser.DEFAULT_STYLE_LABEL)
+                .styleLabel(styleLabel)
+                .build();
     }
 }

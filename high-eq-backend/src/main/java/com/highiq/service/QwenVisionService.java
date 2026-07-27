@@ -53,12 +53,9 @@ public class QwenVisionService {
         prompt.append("对方角色：").append(roleBackground).append("\n");
         prompt.append("我的意图：").append(userIntent).append("\n");
 
-        if (tone != null && !tone.isEmpty()) {
-            prompt.append("期望语气：").append(tone).append("\n");
-        }
-
         prompt.append("\n请生成").append(replyCount).append("条回复，每条回复严格按照以下格式输出（不要有其他内容）：\n");
-        prompt.append("回复内容|||REASON|||推荐理由\n\n");
+        prompt.append("回复内容|||REASON|||推荐理由|||STYLE|||风格标签\n\n");
+        prompt.append("风格标签要根据对方角色、关系、消息语境和回复策略灵活生成，2-6个中文字；").append(replyCount).append("条回复的风格标签不能重复。\n");
         prompt.append("每条回复单独一行，不要添加序号或其他标记。");
 
         return prompt.toString();
@@ -129,7 +126,7 @@ public class QwenVisionService {
 
         if (replies.isEmpty()) {
             log.warn("No valid replies parsed from Qwen response");
-            return List.of("抱歉，生成回复失败，请重试|||REASON|||响应解析失败");
+            return List.of("抱歉，生成回复失败，请重试|||REASON|||响应解析失败|||STYLE|||自然得体");
         }
 
         return replies;

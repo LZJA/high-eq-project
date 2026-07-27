@@ -34,12 +34,12 @@ const ROLE_OPTIONS = [
   { value: "伴侣", emoji: "💕", color: "from-red-500 to-red-600" },
 ];
 
-const TONE_OPTIONS = [
-  { value: "温和友善", emoji: "🌸", desc: "充满关怀和理解" },
-  { value: "正式得体", emoji: "🎯", desc: "保持专业和礼貌" },
-  { value: "幽默风趣", emoji: "😄", desc: "轻松活泼的表达" },
-  { value: "真诚直接", emoji: "💬", desc: "坦率表达想法" },
-  { value: "委婉含蓄", emoji: "🌙", desc: "间接表达意思" },
+const STYLE_FEATURES = [
+  { value: "贴合关系", emoji: "🌸", desc: "根据对方身份调整分寸" },
+  { value: "照顾情绪", emoji: "🤍", desc: "先接住对方的感受" },
+  { value: "表达意图", emoji: "💬", desc: "把真实想法说得自然" },
+  { value: "策略分明", emoji: "🎯", desc: "每条候选都有不同角度" },
+  { value: "方便选择", emoji: "✨", desc: "用短标签快速判断风格" },
 ];
 
 export default function Home() {
@@ -58,7 +58,7 @@ export default function Home() {
     name: "高情商回复生成助手",
     alternateName: "HighEQ",
     url: "https://www.higheq.top/",
-    description: "AI 智能生成高情商聊天回复，支持聊天截图识别、角色背景适配和多种语气风格，帮你在职场、恋爱、朋友和家庭沟通中说出得体的话。",
+    description: "AI 智能生成高情商聊天回复，支持聊天截图识别、角色背景适配和智能风格标签，帮你在职场、恋爱、朋友和家庭沟通中说出得体的话。",
     applicationCategory: "UtilitiesApplication",
     operatingSystem: "Web",
     offers: {
@@ -231,7 +231,7 @@ export default function Home() {
               </div>
               <div className="flex items-center gap-2 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300 hover:scale-110 cursor-pointer">
                 <Sparkles className="w-5 h-5" />
-                <span>5种语气风格</span>
+                <span>5条智能候选</span>
               </div>
               <div className="flex items-center gap-2 hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-300 hover:scale-110 cursor-pointer">
                 <BookmarkCheck className="w-5 h-5" />
@@ -427,20 +427,20 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 语气风格展示 */}
+      {/* 智能风格展示 */}
       <section className="py-20 bg-white dark:bg-gray-950">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                五种语气，灵活切换
+                五条候选，各有侧重
               </span>
             </h2>
-            <p className="text-gray-600 dark:text-gray-400">根据场景需要，选择最适合的沟通风格</p>
+            <p className="text-gray-600 dark:text-gray-400">AI 根据关系、语境和真实意图生成不同风格标签，帮你更快选到合适表达</p>
           </div>
 
           <div className="grid md:grid-cols-5 gap-4 max-w-5xl mx-auto">
-            {TONE_OPTIONS.map((tone) => (
+            {STYLE_FEATURES.map((tone) => (
               <Card
                 key={tone.value}
                 className="p-6 text-center hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:scale-105 cursor-pointer group"
