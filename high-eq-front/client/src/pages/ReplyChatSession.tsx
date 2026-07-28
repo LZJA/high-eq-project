@@ -100,8 +100,10 @@ export default function ReplyChatSession({ sessionId }: ReplyChatSessionProps) {
     navigate("/app");
   };
 
-  const loadSession = async () => {
-    setIsLoading(true);
+  const loadSession = async (showPageLoading = true) => {
+    if (showPageLoading) {
+      setIsLoading(true);
+    }
     try {
       const response = await replyChatAPI.getSession(sessionId);
       setSession(response.data);
@@ -112,7 +114,9 @@ export default function ReplyChatSession({ sessionId }: ReplyChatSessionProps) {
       toast.error(error.response?.data?.message || "继续聊会话不存在");
       navigate("/app");
     } finally {
-      setIsLoading(false);
+      if (showPageLoading) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -188,7 +192,7 @@ export default function ReplyChatSession({ sessionId }: ReplyChatSessionProps) {
       setUserIntent("");
       refreshQuota();
       toast.success("已生成这一轮回复");
-      await loadSession();
+      await loadSession(false);
     } catch (error: any) {
       toast.error(error.response?.data?.message || "生成失败，请稍后重试");
     } finally {
