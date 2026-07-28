@@ -12,6 +12,10 @@ const sitemap = fs.readFileSync(
   path.join(projectRoot, "client/public/sitemap.xml"),
   "utf8"
 );
+const prerenderScript = fs.readFileSync(
+  path.join(projectRoot, "scripts/prerender-home.mjs"),
+  "utf8"
+);
 const nginxConfig = fs.readFileSync(
   path.join(repoRoot, "deployment/nginx-front.conf"),
   "utf8"
@@ -20,9 +24,20 @@ const nginxConfig = fs.readFileSync(
 test("sitemap contains only canonical public pages", () => {
   assert.match(sitemap, /<loc>https:\/\/www\.higheq\.top\/<\/loc>/);
   assert.match(sitemap, /<loc>https:\/\/www\.higheq\.top\/talktype<\/loc>/);
+  assert.match(sitemap, /<loc>https:\/\/www\.higheq\.top\/high-eq-reply<\/loc>/);
   assert.doesNotMatch(sitemap, /<loc>https:\/\/www\.higheq\.top\/app<\/loc>/);
   assert.doesNotMatch(sitemap, /<loc>https:\/\/www\.higheq\.top\/eq-score<\/loc>/);
   assert.doesNotMatch(sitemap, /<loc>https:\/\/www\.higheq\.top\/eq-emergency<\/loc>/);
+});
+
+test("high-eq-reply is a prerendered public SEO route", () => {
+  assert.match(prerenderScript, /"\/high-eq-reply"/);
+  assert.match(prerenderScript, /high-eq-reply\.html/);
+  assert.match(prerenderScript, /https:\/\/www\.higheq\.top\/high-eq-reply/);
+  assert.match(prerenderScript, /高情商回复生成器/);
+  assert.match(prerenderScript, /风格标签/);
+  assert.match(prerenderScript, /继续聊/);
+  assert.match(prerenderScript, /长上下文/);
 });
 
 test("nginx redirects apex domain to canonical www host", () => {

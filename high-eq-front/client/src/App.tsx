@@ -9,6 +9,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { QuotaProvider } from "./contexts/QuotaContext";
 import { HelmetProvider } from "react-helmet-async";
 import Home from "./pages/Home";
+import HighEqReply from "./pages/HighEqReply";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ReplyApp from "./pages/ReplyApp";
@@ -56,6 +57,7 @@ function Router() {
       <ScrollToTop />
       <Switch>
         <Route path={"/"} component={Home} />
+        <Route path={"/high-eq-reply"} component={HighEqReply} />
         <Route path={"/talktype/result/:shareId"}>
           {({ shareId }: { shareId: string }) => <TalkTypeSharedResult shareId={shareId} />}
         </Route>

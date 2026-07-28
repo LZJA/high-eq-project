@@ -154,6 +154,13 @@ export default function Home() {
           <div className="flex items-center gap-2">
             <Button
               asChild
+              variant="ghost"
+              className="hidden text-gray-600 hover:text-blue-700 sm:inline-flex dark:text-gray-300 dark:hover:text-blue-300"
+            >
+              <a href="/high-eq-reply">高情商回复生成器</a>
+            </Button>
+            <Button
+              asChild
               variant="outline"
               className="hidden border-purple-200 bg-white/70 text-purple-700 hover:bg-purple-50 sm:inline-flex dark:border-purple-800 dark:bg-gray-900/70 dark:text-purple-300 dark:hover:bg-purple-900/20"
             >
@@ -215,12 +222,12 @@ export default function Home() {
                 免费试用
               </Button>
               <Button
+                asChild
                 size="lg"
                 variant="ghost"
                 className="text-gray-600 dark:text-gray-300 text-lg px-8 py-6 hover:bg-white/70 dark:hover:bg-gray-900/40 transition-all duration-300 hover:scale-105"
-                onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })}
               >
-                查看演示
+                <a href="/high-eq-reply">查看生成器介绍</a>
               </Button>
             </div>
 

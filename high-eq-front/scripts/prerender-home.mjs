@@ -102,11 +102,85 @@ const pageSeo = {
       },
     ],
   },
+  "/high-eq-reply": {
+    title: "高情商回复生成器 - 多风格标签和继续聊长上下文",
+    description:
+      "HighEQ 高情商回复生成器根据聊天内容生成多条带风格标签的 AI 回复，帮你快速判断不同表达差异，并通过继续聊保留长上下文聊天内容。",
+    keywords:
+      "高情商回复生成器,高情商回复,AI聊天回复,风格标签,继续聊,长上下文聊天,AI回复生成器,职场回复,恋爱聊天回复",
+    canonicalUrl: "https://www.higheq.top/high-eq-reply",
+    twitterCard: "summary",
+    structuredData: [
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        name: "高情商回复生成器",
+        alternateName: "HighEQ",
+        url: "https://www.higheq.top/high-eq-reply",
+        description:
+          "HighEQ 高情商回复生成器可以根据聊天内容、关系和表达目的生成多条带风格标签的 AI 回复，并通过继续聊保留长上下文聊天内容。",
+        applicationCategory: "UtilitiesApplication",
+        operatingSystem: "Web",
+        offers: {
+          "@type": "Offer",
+          price: "0",
+          priceCurrency: "CNY",
+        },
+      },
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: [
+          {
+            "@type": "Question",
+            name: "高情商回复生成器适合什么场景？",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "适合不知道怎么回、担心说重了、想拒绝又怕伤关系、想安慰但怕显得敷衍等聊天场景。HighEQ 会根据关系、上下文和你的真实想法生成多条候选回复。",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "生成的回复会不会很像模板？",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "HighEQ 默认给出多条不同表达角度的回复，并用风格标签标注差异。标签会根据具体聊天关系和语境变化生成，帮助你更快选出最贴近当下的一条。",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "继续聊和普通回复生成有什么区别？",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "普通生成更适合快速回一句。继续聊会保留前面的聊天内容、你采纳过的回复和对方后续回应，形成长上下文记录，适合一段对话持续推进。",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "可以上传聊天截图吗？",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "可以。HighEQ 支持聊天截图识别，也支持直接粘贴文字。截图适合长对话和复杂上下文，文字适合快速生成一句回复。",
+            },
+          },
+          {
+            "@type": "Question",
+            name: "为什么不是只给一个标准答案？",
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: "聊天没有唯一正确答案。不同关系、不同语气和不同目的会对应不同表达方式，所以 HighEQ 更适合提供几条可选回复，让你选最像自己的那条。",
+            },
+          },
+        ],
+      },
+    ],
+  },
 };
 
 const prerenderRoutes = [
   { path: "/", output: "index.html", waitForText: "HighEQ" },
   { path: "/talktype", output: "talktype.html", waitForText: "TalkType 沟通人格测试" },
+  { path: "/high-eq-reply", output: "high-eq-reply.html", waitForText: "高情商回复生成器" },
 ];
 
 const contentTypes = new Map([
