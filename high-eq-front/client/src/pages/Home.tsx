@@ -13,7 +13,9 @@ import {
   ChevronRight,
   Image,
   UserCircle,
-  BookmarkCheck
+  BookmarkCheck,
+  MessageCircle,
+  Tags,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
@@ -25,21 +27,39 @@ import { PaymentDialog } from "@/components/PaymentDialog";
 import { getRecoverablePaymentTier } from "@/components/paymentDialogState";
 import { useAuth } from "@/contexts/AuthContext";
 
-const ROLE_OPTIONS = [
-  { value: "同事", emoji: "💼", color: "from-blue-500 to-blue-600" },
-  { value: "朋友", emoji: "👥", color: "from-green-500 to-green-600" },
-  { value: "家人", emoji: "👨‍👩‍👧", color: "from-pink-500 to-pink-600" },
-  { value: "领导", emoji: "👔", color: "from-purple-500 to-purple-600" },
-  { value: "客户", emoji: "🤝", color: "from-orange-500 to-orange-600" },
-  { value: "伴侣", emoji: "💕", color: "from-red-500 to-red-600" },
+const STYLE_FEATURES = [
+  { value: "柔软安抚", emoji: "🤍", desc: "先接住情绪，再给回应" },
+  { value: "轻松转场", emoji: "🌿", desc: "缓和氛围，不让聊天变僵" },
+  { value: "边界清晰", emoji: "🧭", desc: "温和表达立场，不委屈" },
+  { value: "认真负责", emoji: "🎯", desc: "适合解释、承诺和推进" },
+  { value: "俏皮亲近", emoji: "✨", desc: "让关系感更自然地冒出来" },
 ];
 
-const STYLE_FEATURES = [
-  { value: "贴合关系", emoji: "🌸", desc: "根据对方身份调整分寸" },
-  { value: "照顾情绪", emoji: "🤍", desc: "先接住对方的感受" },
-  { value: "表达意图", emoji: "💬", desc: "把真实想法说得自然" },
-  { value: "策略分明", emoji: "🎯", desc: "每条候选都有不同角度" },
-  { value: "方便选择", emoji: "✨", desc: "用短标签快速判断风格" },
+const FEATURE_CARDS = [
+  {
+    title: "5 条智能候选",
+    desc: "默认一次生成 5 条回复，不再让你先选语气。AI 会根据关系和语境自动拆出不同表达角度。",
+    icon: Sparkles,
+    color: "from-blue-500 to-purple-600",
+  },
+  {
+    title: "风格标签",
+    desc: "每条回复都有灵活标签，比如温柔安抚、轻松转场、边界清晰，扫一眼就知道哪条适合发。",
+    icon: Tags,
+    color: "from-purple-500 to-pink-600",
+  },
+  {
+    title: "继续聊",
+    desc: "采用回复后进入会话，记录对方说了什么、你实际发了什么，后面遇到难回的地方可以接着生成。",
+    icon: MessageCircle,
+    color: "from-emerald-500 to-teal-600",
+  },
+  {
+    title: "人物档案",
+    desc: "为常联系的人保存关系、性格和相处方式，AI 会按你们真实的关系分寸生成更贴近的回复。",
+    icon: UserCircle,
+    color: "from-orange-500 to-rose-600",
+  },
 ];
 
 export default function Home() {
@@ -58,7 +78,7 @@ export default function Home() {
     name: "高情商回复生成助手",
     alternateName: "HighEQ",
     url: "https://www.higheq.top/",
-    description: "AI 智能生成高情商聊天回复，支持聊天截图识别、角色背景适配和智能风格标签，帮你在职场、恋爱、朋友和家庭沟通中说出得体的话。",
+    description: "HighEQ 是 AI 高情商回复生成助手，支持聊天截图识别、5 条智能候选、动态风格标签、人物档案和继续聊上下文记录，帮你把一段聊天自然接下去。",
     applicationCategory: "UtilitiesApplication",
     operatingSystem: "Web",
     offers: {
@@ -85,27 +105,35 @@ export default function Home() {
   const demoScenarios = [
     {
       role: "同事",
-      input: "老板说今天要加班...",
-      intent: "想委婉拒绝",
-      output: "收到，不过我今天已经有些个人安排了，能否看看其他同事的时间？或者我明天优先处理这个任务？😊"
+      input: "这个方案今天能不能先给我？",
+      intent: "想说明时间不够，但不想显得推脱",
+      output: "我可以先把核心框架给你，细节我怕今天赶出来不够稳。要不我今晚先发一版可讨论的，明早再补完整？",
+      label: "负责推进",
     },
     {
       role: "朋友",
-      input: "说好周末一起吃饭却放鸽子",
-      intent: "表达不满但不想伤感情",
-      output: "哈哈，我可是饿着肚子等了一整天呢😂 不过没事，我知道你肯定是有急事。这周末再约？这次我请你，不许再跑啦～"
+      input: "最近有点烦，不太想说话。",
+      intent: "想关心，但不想追问太多",
+      output: "那你先缓缓，我不追问。你想安静我就在旁边，想吐槽的时候我也在。",
+      label: "安静陪伴",
     },
     {
       role: "伴侣",
-      input: "问我觉得他/她最近胖了",
-      intent: "安抚对方的焦虑",
-      output: "傻瓜，说什么呢😊 我喜欢的是你这个人，不管怎样你在我心里都是最可爱的。而且我们还可以一起运动呀，正好我想有人陪呢～"
+      input: "你今天在公司吃完再回来吧。",
+      intent: "她想让我早点吃饭，回家好运动",
+      output: "好呀，那我在公司先吃点，回去就能陪你运动。你这是把我的晚饭和健康都安排明白了😂",
+      label: "甜甜接住",
     },
   ];
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950">
-      <SEO structuredData={homeStructuredData} />
+      <SEO
+        title="HighEQ 高情商回复生成助手 - 5条候选、截图识别和继续聊"
+        description="HighEQ 根据聊天内容、关系和真实想法生成 5 条高情商回复，支持动态风格标签、人物档案、聊天截图识别和继续聊上下文记录。"
+        keywords="HighEQ,高情商回复,AI回复生成,聊天截图识别,继续聊,风格标签,人物档案,恋爱聊天回复,职场沟通"
+        structuredData={homeStructuredData}
+      />
       <ContactSidebar />
       {paymentTier && <PaymentDialog tier={paymentTier} open={true} onOpenChange={(open) => !open && setPaymentTier(null)} />}
       {/* Navigation */}
@@ -158,20 +186,22 @@ export default function Home() {
             <div className="inline-flex items-center gap-2 mb-8 px-4 py-2 bg-white/80 dark:bg-gray-800/80 rounded-full shadow-lg border border-blue-200/50 dark:border-blue-700/50 backdrop-blur-sm hover:scale-105 transition-transform duration-300">
               <Sparkles className="w-4 h-4 text-blue-500" />
               <span className="text-sm font-medium bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                AI 驱动的高情商沟通助手
+                AI 高情商回复 · 支持继续聊
               </span>
             </div>
 
             {/* 主标题 */}
             <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
               <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                沟通是一种艺术
+                不知道怎么回？
+                <br />
+                让 HighEQ 接住这段聊天
               </span>
             </h1>
 
             <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-8 leading-relaxed max-w-2xl mx-auto">
-              面对棘手的聊天场景，<span className="font-semibold text-blue-600">HighEQ</span> 帮你生成
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent font-semibold"> 既得体又高情商</span> 的完美回复
+              粘贴对方说的话，或上传聊天截图。<span className="font-semibold text-blue-600">HighEQ</span> 会结合关系、语境和你的真实想法，生成
+              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent font-semibold"> 5 条不同风格的回复</span>，还能继续聊下去。
             </p>
 
             {/* CTA 按钮 */}
@@ -196,7 +226,7 @@ export default function Home() {
 
             {/* 免费试用说明 */}
             <p className="mt-6 text-sm text-gray-500 dark:text-gray-400">
-              🎉 无需注册，每日 3 点免费体验
+              🎉 无需注册，每日 3 点免费体验 · 登录后可保存继续聊记录
             </p>
 
             <a
@@ -221,9 +251,13 @@ export default function Home() {
                 <Image className="w-5 h-5" />
                 <span>截图识别</span>
               </div>
+              <div className="flex items-center gap-2 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all duration-300 hover:scale-110 cursor-pointer">
+                <MessageCircle className="w-5 h-5" />
+                <span>继续聊</span>
+              </div>
               <div className="flex items-center gap-2 hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-300 hover:scale-110 cursor-pointer">
-                <UserCircle className="w-5 h-5" />
-                <span>人物档案</span>
+                <Tags className="w-5 h-5" />
+                <span>风格标签</span>
               </div>
               <div className="flex items-center gap-2 hover:text-pink-600 dark:hover:text-pink-400 transition-all duration-300 hover:scale-110 cursor-pointer">
                 <Users className="w-5 h-5" />
@@ -235,7 +269,7 @@ export default function Home() {
               </div>
               <div className="flex items-center gap-2 hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-300 hover:scale-110 cursor-pointer">
                 <BookmarkCheck className="w-5 h-5" />
-                <span>收藏历史</span>
+                <span>会话记录</span>
               </div>
             </div>
           </div>
@@ -304,7 +338,7 @@ export default function Home() {
                 看看它是如何工作的
               </span>
             </h2>
-            <p className="text-gray-600 dark:text-gray-400">三步搞定高情商回复</p>
+            <p className="text-gray-600 dark:text-gray-400">从一句难回的话，变成 5 个可选择的表达方向</p>
           </div>
 
           {/* 演示卡片 */}
@@ -375,15 +409,27 @@ export default function Home() {
                     <div className="text-sm text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-2">
                       <span>HighEQ 回复建议</span>
                       <span className="px-2 py-0.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs rounded-full">
-                        推荐
+                        5 条候选
                       </span>
                     </div>
-                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 rounded-2xl rounded-tl-none px-4 py-3 border-2 border-purple-200 dark:border-purple-800 shadow-lg">
-                      <p className="text-gray-800 dark:text-gray-200">{demoScenarios[activeDemo].output}</p>
+                    <div className="space-y-3">
+                      <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 rounded-2xl rounded-tl-none px-4 py-3 border-2 border-purple-200 dark:border-purple-800 shadow-lg">
+                        <div className="mb-2 inline-flex rounded-full bg-white px-2 py-0.5 text-xs font-medium text-purple-700 shadow-sm dark:bg-gray-900 dark:text-purple-300">
+                          {demoScenarios[activeDemo].label}
+                        </div>
+                        <p className="text-gray-800 dark:text-gray-200">{demoScenarios[activeDemo].output}</p>
+                      </div>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {["温柔一点", "轻松一点", "边界清晰", "更会撒娇"].map((label) => (
+                          <div key={label} className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-600 shadow-sm dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400">
+                            {label}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                     <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
                       <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                      <span>这条回复既表达了你的立场，又照顾了对方的感受</span>
+                      <span>选中后可保存实际发送内容，后面继续按上下文生成</span>
                     </div>
                   </div>
                 </div>
@@ -393,36 +439,57 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 角色背景展示 */}
+      {/* 继续聊展示 */}
       <section className="py-20 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                灵活适配各种关系场景
+                不止生成一句，还能陪你继续聊
               </span>
             </h2>
-            <p className="text-gray-600 dark:text-gray-400">无论面对谁，都能找到最合适的表达方式</p>
+            <p className="text-gray-600 dark:text-gray-400">采用某条回复后，HighEQ 会记录这段会话的上下文，下次遇到难回的地方可以接着生成</p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 max-w-4xl mx-auto">
-            {ROLE_OPTIONS.map((role) => (
-              <Card
-                key={role.value}
-                className="p-4 text-center hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:scale-105 cursor-pointer border-2 hover:border-purple-300 dark:hover:border-purple-700 group"
-              >
-                <div className={`text-4xl mb-2 transform group-hover:scale-110 transition-transform`}>
-                  {role.emoji}
+          <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+            <Card className="overflow-hidden border-2 border-blue-100 bg-white p-5 shadow-xl shadow-blue-100/60 dark:border-blue-900/40 dark:bg-gray-950 dark:shadow-none">
+              <div className="relative mb-4">
+                <h3 className="pr-28 text-xl font-bold text-gray-900 dark:text-gray-100">一段对话，一直跟得上</h3>
+                <p className="mt-1 text-sm text-gray-500 md:whitespace-nowrap dark:text-gray-400">对方说了什么、你实际发了什么，都会成为下一轮建议的背景。</p>
+                <span className="absolute right-0 top-0 whitespace-nowrap rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">第 3/100 轮</span>
+              </div>
+              <div className="space-y-3 rounded-2xl bg-slate-50 p-4 dark:bg-gray-900">
+                <div className="max-w-[72%] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm dark:border-gray-800 dark:bg-gray-950">
+                  <p className="mb-1 text-xs text-gray-500">对方</p>
+                  <p>那明晚下班后一起去吃火锅？</p>
                 </div>
-                <div className={`text-sm font-semibold bg-gradient-to-r ${role.color} bg-clip-text text-transparent`}>
-                  {role.value}
+                <div className="ml-auto max-w-[78%] rounded-2xl bg-blue-600 px-4 py-3 text-sm text-white shadow-sm">
+                  <p className="mb-1 text-xs text-blue-100">我</p>
+                  <p>好呀，我正好想见你。明晚我提前把时间留出来。</p>
                 </div>
-              </Card>
-            ))}
-          </div>
+                <div className="max-w-[78%] rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm dark:border-gray-800 dark:bg-gray-950">
+                  <p className="mb-1 text-xs text-gray-500">对方</p>
+                  <p>今晚可能去不了了，我临时被留下开会。</p>
+                </div>
+                <div className="ml-auto max-w-[78%] rounded-2xl bg-blue-600 px-4 py-3 text-sm text-white shadow-sm">
+                  <p className="mb-1 text-xs text-blue-100">AI 建议</p>
+                  <p>没关系，工作先忙完。你别因为答应过我就有压力，火锅可以改天，但我期待见你这件事没变。</p>
+                </div>
+              </div>
+            </Card>
 
-          <div className="text-center mt-8">
-            <p className="text-gray-500 dark:text-gray-400">支持自定义更多角色...</p>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+              {[
+                ["按你实际发出的内容记", "AI 不只记“推荐答案”，也记你最终改成什么样。你越按自己的话保存，后面越像你本人在说。"],
+                ["长上下文更懂当前场景", "它会参考前面的关系背景、情绪变化和聊天进展，再推荐更贴近当下语境的回复，不会像每次都从零开始。"],
+                ["重要关系可以接着聊", "暧昧推进、伴侣安抚、客户跟进这类长线聊天，下次打开记录就能从上一段状态继续。"],
+              ].map(([title, desc]) => (
+                <Card key={title} className="border-2 border-gray-100 p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-blue-200 hover:shadow-lg dark:border-gray-800 dark:hover:border-blue-900">
+                  <h3 className="font-bold text-gray-900 dark:text-gray-100">{title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-400">{desc}</p>
+                </Card>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -451,7 +518,7 @@ export default function Home() {
                 <div className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
                   {tone.value}
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
+                <div className="whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
                   {tone.desc}
                 </div>
               </Card>
@@ -472,52 +539,20 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-            <Card className="p-6 text-center hover:shadow-xl transition-all border-2 hover:border-blue-300 dark:hover:border-blue-700">
-              <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                <Brain className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="font-bold text-lg mb-2">TalkType 测试</h3>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">
-                24 道场景题测出沟通人格和 SWBC 四维画像
-              </p>
-              <Button
-                variant="link"
-                className="mt-3 h-auto p-0 text-blue-600 dark:text-blue-400"
-                onClick={() => navigate("/talktype")}
-              >
-                免费测试 <ArrowRight className="w-3 h-3" />
-              </Button>
-            </Card>
-
-            <Card className="p-6 text-center hover:shadow-xl transition-all border-2 hover:border-blue-300 dark:hover:border-blue-700">
-              <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                <Image className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="font-bold text-lg mb-2">截图识别</h3>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">
-                上传聊天截图，AI 自动识别提取对话内容
-              </p>
-            </Card>
-
-            <Card className="p-6 text-center hover:shadow-xl transition-all border-2 hover:border-purple-300 dark:hover:border-purple-700">
-              <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
-                <UserCircle className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="font-bold text-lg mb-2">人物档案</h3>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">
-                创建常联系人档案，AI 生成更贴合对方性格的回复
-              </p>
-            </Card>
-
-            <Card className="p-6 text-center hover:shadow-xl transition-all border-2 hover:border-pink-300 dark:hover:border-pink-700">
-              <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center shadow-lg shadow-pink-500/30">
-                <BookmarkCheck className="w-6 h-6 text-white" />
-              </div>
-              <h3 className="font-bold text-lg mb-2">收藏历史</h3>
-              <p className="text-gray-600 dark:text-gray-400 text-sm">
-                收藏精彩回复，建立你的个人沟通智慧库
-              </p>
-            </Card>
+            {FEATURE_CARDS.map((feature) => {
+              const Icon = feature.icon;
+              return (
+                <Card key={feature.title} className="p-6 text-center hover:shadow-xl transition-all border-2 hover:border-blue-300 dark:hover:border-blue-700">
+                  <div className={`w-12 h-12 mx-auto mb-4 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center shadow-lg shadow-blue-500/20`}>
+                    <Icon className="w-6 h-6 text-white" />
+                  </div>
+                  <h3 className="font-bold text-lg mb-2">{feature.title}</h3>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm leading-6">
+                    {feature.desc}
+                  </p>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </section>

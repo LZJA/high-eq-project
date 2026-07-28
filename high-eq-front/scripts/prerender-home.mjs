@@ -9,104 +9,99 @@ const projectRoot = path.resolve(__dirname, "..");
 const distDir = path.join(projectRoot, "dist");
 const indexPath = path.join(distDir, "index.html");
 const seoBlockPattern = /    <!-- SEO:PAGE_START -->[\s\S]*?    <!-- SEO:PAGE_END -->/;
+const blockedHosts = new Set([
+  "hm.baidu.com",
+  "fonts.googleapis.com",
+  "fonts.gstatic.com",
+]);
 
-const pageSeoBlocks = {
-  "/": `    <!-- SEO:PAGE_START -->
-    <title>高情商回复生成助手 - AI智能聊天助手</title>
-    <meta name="description" content="AI 智能生成高情商聊天回复,帮你在各种社交场景下说出得体的话。" />
-    <meta name="keywords" content="higheq,HighEQ,高情商回复,AI聊天助手,智能回复生成,社交聊天,情商助手,聊天技巧" />
-    <meta name="robots" content="index,follow" />
-    <link rel="canonical" href="https://www.higheq.top/" />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://www.higheq.top/" />
-    <meta property="og:title" content="高情商回复生成助手 - AI智能聊天助手" />
-    <meta property="og:description" content="AI 智能生成高情商聊天回复，支持聊天截图识别、角色背景适配和多种语气风格，帮你在职场、恋爱、朋友和家庭沟通中说出得体的话。" />
-    <meta property="og:site_name" content="HighEQ" />
-    <script type="application/ld+json">
+const pageSeo = {
+  "/": {
+    title: "HighEQ 高情商回复生成助手 - 5条候选、截图识别和继续聊",
+    description:
+      "HighEQ 根据聊天内容、关系和真实想法生成 5 条高情商回复，支持动态风格标签、人物档案、聊天截图识别和继续聊上下文记录。",
+    keywords:
+      "HighEQ,高情商回复,AI回复生成,AI聊天助手,智能回复生成,社交聊天,情商助手,聊天技巧,聊天截图识别,继续聊,风格标签,人物档案,恋爱聊天回复,职场沟通",
+    canonicalUrl: "https://www.higheq.top/",
+    structuredData: [
       {
         "@context": "https://schema.org",
         "@type": "WebApplication",
-        "name": "高情商回复生成助手",
-        "alternateName": "HighEQ",
-        "url": "https://www.higheq.top/",
-        "description": "AI 智能生成高情商聊天回复，支持聊天截图识别、角色背景适配和多种语气风格，帮你在职场、恋爱、朋友和家庭沟通中说出得体的话。",
-        "applicationCategory": "UtilitiesApplication",
-        "operatingSystem": "Web",
-        "offers": {
+        name: "高情商回复生成助手",
+        alternateName: "HighEQ",
+        url: "https://www.higheq.top/",
+        description:
+          "HighEQ 是 AI 高情商回复生成助手，支持聊天截图识别、5 条智能候选、动态风格标签、人物档案和继续聊上下文记录，帮你把一段聊天自然接下去。",
+        applicationCategory: "UtilitiesApplication",
+        operatingSystem: "Web",
+        offers: {
           "@type": "Offer",
-          "price": "0",
-          "priceCurrency": "CNY"
-        }
-      }
-    </script>
-    <!-- SEO:PAGE_END -->`,
-  "/talktype": `    <!-- SEO:PAGE_START -->
-    <title>TalkType 情商测试 - 免费测你的高情商沟通人格</title>
-    <meta name="description" content="完成 24 道真实沟通场景题，测出你的 TalkType 沟通人格、SWBC 四维代码、表达优势和沟通盲区。" />
-    <meta name="keywords" content="TalkType,沟通人格测试,情商测试,EQ测试,高情商测试,MBTI式人格测试,高情商回复" />
-    <meta name="robots" content="index,follow" />
-    <link rel="canonical" href="https://www.higheq.top/talktype" />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://www.higheq.top/talktype" />
-    <meta property="og:title" content="TalkType 情商测试 - 免费测你的高情商沟通人格" />
-    <meta property="og:description" content="完成 24 道真实沟通场景题，测出你的 TalkType 沟通人格、SWBC 四维代码、表达优势和沟通盲区。" />
-    <meta property="og:site_name" content="HighEQ" />
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="TalkType 情商测试 - 免费测你的高情商沟通人格" />
-    <meta name="twitter:description" content="完成 24 道真实沟通场景题，测出你的 TalkType 沟通人格、SWBC 四维代码、表达优势和沟通盲区。" />
-    <script type="application/ld+json">
+          price: "0",
+          priceCurrency: "CNY",
+        },
+      },
+    ],
+  },
+  "/talktype": {
+    title: "TalkType 情商测试 - 免费测你的高情商沟通人格",
+    description:
+      "完成 24 道真实沟通场景题，测出你的 TalkType 沟通人格、SWBC 四维代码、表达优势和沟通盲区。",
+    keywords:
+      "TalkType,沟通人格测试,情商测试,EQ测试,高情商测试,MBTI式人格测试,高情商回复",
+    canonicalUrl: "https://www.higheq.top/talktype",
+    twitterCard: "summary",
+    structuredData: [
       {
         "@context": "https://schema.org",
         "@type": "Quiz",
-        "name": "TalkType 沟通人格测试",
-        "description": "完成 24 道真实沟通场景题，测出你的 TalkType 沟通人格、SWBC 四维代码、表达优势和沟通盲区。",
-        "url": "https://www.higheq.top/talktype",
-        "inLanguage": "zh-CN",
-        "educationalUse": "Self assessment",
-        "assesses": ["沟通人格", "情绪洞察", "表达温度", "边界稳定", "局势掌控"]
-      }
-    </script>
-    <script type="application/ld+json">
+        name: "TalkType 沟通人格测试",
+        description:
+          "完成 24 道真实沟通场景题，测出你的 TalkType 沟通人格、SWBC 四维代码、表达优势和沟通盲区。",
+        url: "https://www.higheq.top/talktype",
+        inLanguage: "zh-CN",
+        educationalUse: "Self assessment",
+        assesses: ["沟通人格", "情绪洞察", "表达温度", "边界稳定", "局势掌控"],
+      },
       {
         "@context": "https://schema.org",
         "@type": "FAQPage",
-        "mainEntity": [
+        mainEntity: [
           {
             "@type": "Question",
-            "name": "TalkType 是情商测试吗？",
-            "acceptedAnswer": {
+            name: "TalkType 是情商测试吗？",
+            acceptedAnswer: {
               "@type": "Answer",
-              "text": "TalkType 更像一个高情商沟通人格测试，会用真实聊天场景观察你的表达倾向。它适合自我了解和沟通训练，不等同于心理诊断或正式测评。"
-            }
+              text: "TalkType 更像一个高情商沟通人格测试，会用真实聊天场景观察你的表达倾向。它适合自我了解和沟通训练，不等同于心理诊断或正式测评。",
+            },
           },
           {
             "@type": "Question",
-            "name": "测试会保存我的聊天隐私吗？",
-            "acceptedAnswer": {
+            name: "测试会保存我的聊天隐私吗？",
+            acceptedAnswer: {
               "@type": "Answer",
-              "text": "TalkType 使用的是预设沟通场景题，不需要上传真实聊天记录。结果只用于展示你的沟通人格、四维分数和表达建议。"
-            }
+              text: "TalkType 使用的是预设沟通场景题，不需要上传真实聊天记录。结果只用于展示你的沟通人格、四维分数和表达建议。",
+            },
           },
           {
             "@type": "Question",
-            "name": "结果是怎么算出来的？",
-            "acceptedAnswer": {
+            name: "结果是怎么算出来的？",
+            acceptedAnswer: {
               "@type": "Answer",
-              "text": "每个选项会影响 S 情绪洞察、W 表达温度、B 边界稳定、C 局势掌控四个维度，再匹配最接近的 TalkType 人格中心点。"
-            }
+              text: "每个选项会影响 S 情绪洞察、W 表达温度、B 边界稳定、C 局势掌控四个维度，再匹配最接近的 TalkType 人格中心点。",
+            },
           },
           {
             "@type": "Question",
-            "name": "为什么不是直接给一个 EQ 分数？",
-            "acceptedAnswer": {
+            name: "为什么不是直接给一个 EQ 分数？",
+            acceptedAnswer: {
               "@type": "Answer",
-              "text": "单一分数很难解释你到底哪里强、哪里容易踩坑。TalkType 更关注你的沟通风格，所以会给人格类型和四维画像。"
-            }
-          }
-        ]
-      }
-    </script>
-    <!-- SEO:PAGE_END -->`,
+              text: "单一分数很难解释你到底哪里强、哪里容易踩坑。TalkType 更关注你的沟通风格，所以会给人格类型和四维画像。",
+            },
+          },
+        ],
+      },
+    ],
+  },
 };
 
 const prerenderRoutes = [
@@ -128,6 +123,72 @@ const contentTypes = new Map([
   [".txt", "text/plain; charset=utf-8"],
   [".xml", "application/xml; charset=utf-8"],
 ]);
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function indentBlock(value, spaces = 6) {
+  const padding = " ".repeat(spaces);
+  return value
+    .split("\n")
+    .map((line) => `${padding}${line}`)
+    .join("\n");
+}
+
+function renderMetaTag(attributes) {
+  const renderedAttributes = Object.entries(attributes)
+    .map(([key, value]) => `${key}="${escapeHtml(value)}"`)
+    .join(" ");
+  return `    <meta ${renderedAttributes} />`;
+}
+
+function renderSeoBlock(seo) {
+  const tags = [
+    "    <!-- SEO:PAGE_START -->",
+    `    <title>${escapeHtml(seo.title)}</title>`,
+    renderMetaTag({ name: "description", content: seo.description }),
+    renderMetaTag({ name: "keywords", content: seo.keywords }),
+    renderMetaTag({ name: "robots", content: "index,follow" }),
+    `    <link rel="canonical" href="${escapeHtml(seo.canonicalUrl)}" />`,
+    renderMetaTag({ property: "og:type", content: "website" }),
+    renderMetaTag({ property: "og:url", content: seo.canonicalUrl }),
+    renderMetaTag({ property: "og:title", content: seo.title }),
+    renderMetaTag({ property: "og:description", content: seo.description }),
+    renderMetaTag({ property: "og:site_name", content: "HighEQ" }),
+  ];
+
+  if (seo.twitterCard) {
+    tags.push(
+      renderMetaTag({ name: "twitter:card", content: seo.twitterCard }),
+      renderMetaTag({ name: "twitter:title", content: seo.title }),
+      renderMetaTag({ name: "twitter:description", content: seo.description })
+    );
+  }
+
+  for (const item of seo.structuredData || []) {
+    tags.push(
+      "    <script type=\"application/ld+json\">",
+      indentBlock(JSON.stringify(item, null, 2)),
+      "    </script>"
+    );
+  }
+
+  tags.push("    <!-- SEO:PAGE_END -->");
+  return tags.join("\n");
+}
+
+function validatePrerenderConfig() {
+  for (const route of prerenderRoutes) {
+    if (!pageSeo[route.path]) {
+      throw new Error(`Missing SEO config for prerender route: ${route.path}`);
+    }
+  }
+}
 
 async function resolveBrowserPath() {
   const candidates = [
@@ -165,8 +226,13 @@ async function createStaticServer() {
     try {
       const requestUrl = new URL(req.url || "/", "http://127.0.0.1");
       const rawPath = decodeURIComponent(requestUrl.pathname);
-      const safePath = path.normalize(rawPath).replace(/^(\.\.[/\\])+/, "");
-      let filePath = path.join(distDir, safePath);
+      const normalizedPath = path.normalize(rawPath).replace(/^[/\\]+/, "");
+      let filePath = path.resolve(distDir, normalizedPath);
+      if (!filePath.startsWith(distDir + path.sep) && filePath !== distDir) {
+        res.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
+        res.end("Forbidden");
+        return;
+      }
 
       const stat = await fs.stat(filePath).catch(() => null);
       if (!stat || stat.isDirectory()) {
@@ -192,7 +258,23 @@ async function createStaticServer() {
   };
 }
 
+async function closeStaticServer(server) {
+  if (!server.listening) {
+    return;
+  }
+  await new Promise((resolve, reject) => {
+    server.close((error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+      resolve();
+    });
+  });
+}
+
 async function main() {
+  validatePrerenderConfig();
   const browserPath = await resolveBrowserPath();
   const { server, origin } = await createStaticServer();
   let browser;
@@ -209,17 +291,16 @@ async function main() {
 
     page.on("console", (message) => {
       if (message.type() === "error") {
+        if (message.text().includes("Failed to load resource: net::ERR_FAILED")) {
+          return;
+        }
         console.warn(`[prerender console] ${message.text()}`);
       }
     });
 
     await page.route("**/*", async (route) => {
-      const url = route.request().url();
-      if (
-        url.includes("hm.baidu.com") ||
-        url.includes("fonts.googleapis.com") ||
-        url.includes("fonts.gstatic.com")
-      ) {
+      const hostname = new URL(route.request().url()).hostname;
+      if (blockedHosts.has(hostname)) {
         await route.abort();
         return;
       }
@@ -252,7 +333,7 @@ async function main() {
       }
 
       const prerenderedHtml = indexHtml
-        .replace(seoBlockPattern, pageSeoBlocks[route.path])
+        .replace(seoBlockPattern, renderSeoBlock(pageSeo[route.path]))
         .replace('<div id="root"></div>', `<div id="root">${rootHtml}</div>`);
 
       const outputPath = path.join(distDir, route.output);
@@ -263,7 +344,7 @@ async function main() {
     if (browser) {
       await browser.close();
     }
-    server.close();
+    await closeStaticServer(server);
   }
 }
 
