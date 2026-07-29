@@ -511,26 +511,27 @@ export default function PersonProfileChat({ profileId }: PersonProfileChatProps)
             ) : (
               <div className="space-y-4">
                 {suggestions.map((suggestion) => (
-                  <Card key={suggestion.id} className="shadow-sm hover:shadow-md transition-shadow">
-                    <CardContent className="pt-4">
-                      <div className="flex items-start justify-between gap-2 mb-2">
+                  <Card key={suggestion.id} className="py-0 shadow-sm hover:shadow-md transition-shadow">
+                    <CardContent className="p-4 sm:px-6">
+                      <div className="mb-2 flex items-start justify-between gap-2">
                         <Badge variant="outline">{suggestion.styleLabel || suggestion.tone || "自然得体"}</Badge>
-                        <div className="flex gap-1">
+                        <div className="ml-auto flex shrink-0 items-center gap-2">
                           <Button
-                            variant="ghost"
-                            size="icon-sm"
+                            variant="outline"
+                            size="sm"
                             onClick={() => handleCopy(suggestion.content)}
                             title="复制"
                           >
-                            <Copy className="size-4" />
+                            <Copy className="mr-1.5 size-4" />
+                            复制
                           </Button>
                           <Button
-                            variant="ghost"
-                            size="icon-sm"
+                            size="sm"
                             onClick={() => handleOpenContinue(suggestion)}
                             title="继续聊"
                           >
-                            <MessageCircle className="size-4" />
+                            <MessageCircle className="mr-1.5 size-4" />
+                            继续聊
                           </Button>
                         </div>
                       </div>

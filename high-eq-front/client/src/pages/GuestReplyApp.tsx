@@ -17,10 +17,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
-import { Copy, Wand2, LogIn } from "lucide-react";
+import { Copy, LogIn, MessageCircle, Wand2 } from "lucide-react";
+import { createGuestChatSession } from "@/lib/guestReplyChat";
 
 // 预设角色
 const PRESET_ROLES = [
@@ -50,6 +59,8 @@ export default function GuestReplyApp() {
   const [userIntent, setUserIntent] = useState("");
   const [suggestions, setSuggestions] = useState<ReplySuggestion[]>([]);
   const [remainingQuota, setRemainingQuota] = useState(3);
+  const [continueSuggestion, setContinueSuggestion] = useState<ReplySuggestion | null>(null);
+  const [sentReplyDraft, setSentReplyDraft] = useState("");
 
   useEffect(() => {
     loadQuota();
@@ -115,6 +126,29 @@ export default function GuestReplyApp() {
   const handleCopy = (content: string) => {
     navigator.clipboard.writeText(content);
     toast.success("已复制到剪贴板");
+  };
+
+  const handleOpenContinue = (suggestion: ReplySuggestion) => {
+    setContinueSuggestion(suggestion);
+    setSentReplyDraft(suggestion.content);
+  };
+
+  const handleCreateContinueChat = () => {
+    if (!continueSuggestion) return;
+    if (!sentReplyDraft.trim()) {
+      toast.error("请输入你实际发给对方的话");
+      return;
+    }
+
+    const session = createGuestChatSession({
+      initialOpponentMessage: chatContent,
+      roleBackground,
+      initialUserIntent: userIntent,
+      selectedReply: continueSuggestion.content,
+      sentReply: sentReplyDraft,
+    });
+    toast.success("已开启临时继续聊");
+    navigate(`/guest-reply-chat/${session.id}`);
   };
 
   const handleReset = () => {
@@ -275,18 +309,29 @@ export default function GuestReplyApp() {
             ) : (
               <div className="space-y-4">
                 {suggestions.map((suggestion) => (
-                  <Card key={suggestion.id} className="shadow-sm hover:shadow-md transition-shadow">
-                    <CardContent className="pt-4">
-                      <div className="flex items-start justify-between gap-2 mb-2">
+                  <Card key={suggestion.id} className="py-0 shadow-sm hover:shadow-md transition-shadow">
+                    <CardContent className="p-4 sm:px-6">
+                      <div className="mb-2 flex items-start justify-between gap-2">
                         <Badge variant="outline">{suggestion.styleLabel || suggestion.tone || "自然得体"}</Badge>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => handleCopy(suggestion.content)}
-                          title="复制"
-                        >
-                          <Copy className="size-4" />
-                        </Button>
+                        <div className="ml-auto flex shrink-0 items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCopy(suggestion.content)}
+                            title="复制"
+                          >
+                            <Copy className="mr-1.5 size-4" />
+                            复制
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleOpenContinue(suggestion)}
+                            title="继续聊"
+                          >
+                            <MessageCircle className="mr-1.5 size-4" />
+                            继续聊
+                          </Button>
+                        </div>
                       </div>
                       <p className="text-base mb-3 whitespace-pre-wrap">
                         {suggestion.content}
@@ -328,6 +373,35 @@ export default function GuestReplyApp() {
           </Card>
         </div>
       </div>
+      <Dialog open={!!continueSuggestion} onOpenChange={(open) => !open && setContinueSuggestion(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>开启临时继续聊</DialogTitle>
+            <DialogDescription>
+              先确认你实际发给对方的话。游客继续聊只保存在当前浏览器会话里，登录后可以长期保存记录。
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">我实际发出的内容</label>
+            <Textarea
+              value={sentReplyDraft}
+              onChange={(event) => setSentReplyDraft(event.target.value)}
+              rows={5}
+              maxLength={500}
+              className="resize-none"
+            />
+            <p className="text-right text-xs text-muted-foreground">{sentReplyDraft.length}/500</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setContinueSuggestion(null)}>
+              取消
+            </Button>
+            <Button onClick={handleCreateContinueChat} disabled={!sentReplyDraft.trim()}>
+              进入继续聊
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

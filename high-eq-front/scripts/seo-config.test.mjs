@@ -51,7 +51,7 @@ test("nginx redirects apex domain to canonical www host", () => {
 test("app-only routes are marked noindex", () => {
   assert.match(
     nginxConfig,
-    /location\s+~\s+\^\(\/app|\/login|\/register|\/history|\/favorites|\/profiles|\/admin\)/
+    /location\s+~\s+\^\(\/app|\/guest-reply-chat|\/login|\/register|\/history|\/favorites|\/profiles|\/admin\)/
   );
   assert.match(
     nginxConfig,
