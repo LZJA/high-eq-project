@@ -34,6 +34,35 @@ interface StatisticsData {
   updateTime: string;
 }
 
+const formatUserIdentifier = (item: StatisticsData) => {
+  if (item.username) {
+    return item.username;
+  }
+
+  const clientIp = item.clientIp || "";
+  let displayIp = clientIp;
+
+  if (item.userType === "GUEST") {
+    const guestIdSeparatorIndex = clientIp.lastIndexOf(":");
+    const guestIdPart = guestIdSeparatorIndex > -1 ? clientIp.slice(guestIdSeparatorIndex + 1) : "";
+    const hasGuestIdSuffix =
+      guestIdPart === "anonymous" ||
+      guestIdPart.includes("-") ||
+      guestIdPart.includes("_") ||
+      /^[a-zA-Z0-9]{16,}$/.test(guestIdPart);
+
+    if (guestIdSeparatorIndex > -1 && hasGuestIdSuffix) {
+      displayIp = clientIp.slice(0, guestIdSeparatorIndex);
+    }
+  }
+
+  if (displayIp === "0:0:0:0:0:0:0:1" || displayIp === "127.0.0.1") {
+    return "localhost";
+  }
+
+  return displayIp;
+};
+
 export default function AdminStatistics() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
@@ -185,7 +214,7 @@ export default function AdminStatistics() {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-sm text-gray-900">
-                        {item.username || (item.clientIp === '0:0:0:0:0:0:0:1' ? 'localhost' : item.clientIp)}
+                        {formatUserIdentifier(item)}
                         {item.userType === "REGISTERED" && item.subscriptionTier && (
                           <span className={`ml-2 px-2 py-0.5 rounded text-xs ${
                             item.subscriptionTier.toUpperCase() === "PRO" ? "bg-purple-100 text-purple-700" :
