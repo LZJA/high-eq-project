@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS `user` (
 
 CREATE TABLE IF NOT EXISTS `guest_statistics` (
     `id` VARCHAR(36) PRIMARY KEY,
-    `client_ip` VARCHAR(50) NOT NULL,
+    `client_ip` VARCHAR(128) NOT NULL,
     `reply_count` INT NOT NULL DEFAULT 0,
     `upgrade_click_count` INT NOT NULL DEFAULT 0,
     `lite_upgrade_click_count` INT NOT NULL DEFAULT 0,

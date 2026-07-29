@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS guest_statistics (
     id VARCHAR(36) PRIMARY KEY,
-    client_ip VARCHAR(50) NOT NULL COMMENT 'Client IP',
+    client_ip VARCHAR(128) NOT NULL COMMENT 'Client IP or guest client key',
     reply_count INT DEFAULT 0 COMMENT 'Generated reply count',
     upgrade_click_count INT DEFAULT 0 COMMENT 'Upgrade click count',
     lite_upgrade_click_count INT DEFAULT 0 COMMENT 'Lite upgrade click count',
