@@ -172,7 +172,7 @@ export default function GuestReplyChatSession({ sessionId }: GuestReplyChatSessi
           <CardContent className="space-y-4 p-5 text-center">
             <h1 className="text-lg font-semibold">这段临时继续聊已失效</h1>
             <p className="text-sm leading-6 text-muted-foreground">
-              游客继续聊只保存在当前浏览器会话里。登录后可以长期保存继续聊记录，之后还能从历史里接着聊。
+              游客继续聊只保存在当前浏览器会话里，关闭页面后可能无法找回。登录后可以使用正式继续聊和更多可用点数。
             </p>
             <div className="flex justify-center gap-2">
               <Button variant="outline" onClick={() => navigate("/app")}>
@@ -180,7 +180,7 @@ export default function GuestReplyChatSession({ sessionId }: GuestReplyChatSessi
               </Button>
               <Button onClick={() => navigate("/login")}>
                 <LogIn className="mr-2 size-4" />
-                登录保存
+                登录使用
               </Button>
             </div>
           </CardContent>
@@ -202,7 +202,7 @@ export default function GuestReplyChatSession({ sessionId }: GuestReplyChatSessi
           <div className="flex items-center gap-2">
             <span className="hidden text-xs text-muted-foreground sm:inline">游客临时体验</span>
             <Button variant="outline" size="sm" onClick={() => navigate("/login")}>
-              登录保存记录
+              登录使用正式功能
             </Button>
           </div>
         </div>
@@ -223,7 +223,7 @@ export default function GuestReplyChatSession({ sessionId }: GuestReplyChatSessi
         </div>
 
         <div className="mb-2 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs leading-5 text-blue-700">
-          游客继续聊不会进入历史记录，关闭页面后可能无法找回。登录后可以保存这段会话，并获得更多可用点数。
+          游客继续聊不会进入历史记录，关闭页面后可能无法找回。登录后可以使用正式继续聊，并获得更多可用点数。
         </div>
 
         <div className="grid gap-2.5 lg:grid-cols-[1fr_360px] lg:gap-3">

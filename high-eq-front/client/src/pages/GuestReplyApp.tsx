@@ -378,7 +378,7 @@ export default function GuestReplyApp() {
           <DialogHeader>
             <DialogTitle>开启临时继续聊</DialogTitle>
             <DialogDescription>
-              先确认你实际发给对方的话。游客继续聊只保存在当前浏览器会话里，登录后可以长期保存记录。
+              先确认你实际发给对方的话。游客继续聊只保存在当前浏览器会话里，关闭页面后可能无法找回。
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
