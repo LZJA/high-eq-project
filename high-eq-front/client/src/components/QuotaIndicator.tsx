@@ -4,7 +4,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Zap, Crown } from 'lucide-react';
 import { analytics } from '@/lib/analytics';
-import { toast } from 'sonner';
+import { PaymentDialog } from '@/components/PaymentDialog';
+import { useAuth } from '@/contexts/AuthContext';
+import { useLocation } from 'wouter';
+import { useState } from 'react';
+
+type UpgradeTier = 'lite' | 'pro';
 
 /**
  * 配额指示器组件
@@ -17,15 +22,22 @@ export function QuotaIndicator({
   showSubscriptionRemaining?: boolean;
 } = {}) {
   const { quota, isLoading, tier, remainingQuota: hookRemainingQuota, isUnlimited } = useQuota();
+  const { isAuthenticated } = useAuth();
+  const [, navigate] = useLocation();
+  const [paymentTier, setPaymentTier] = useState<UpgradeTier | null>(null);
   const remainingQuota = overrideRemainingQuota ?? hookRemainingQuota;
   const subscriptionRemainingText = showSubscriptionRemaining
     ? formatSubscriptionRemaining(quota?.subscriptionRemainingSeconds)
     : null;
 
   const handleUpgradeClick = async () => {
-    const targetTier = tier === 'free' ? 'lite' : 'pro';
+    const targetTier: UpgradeTier = tier === 'free' ? 'lite' : 'pro';
     await analytics.trackUpgradeClick(targetTier);
-    toast.info('支付功能开发中，敬请期待');
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    setPaymentTier(targetTier);
   };
 
   if (isLoading) {
@@ -66,26 +78,35 @@ export function QuotaIndicator({
   const isExhausted = remainingQuota <= 0;
 
   return (
-    <div className="flex items-center gap-3 flex-wrap">
-      <div className="flex items-center gap-2">
-        <Zap className={`size-4 ${isExhausted ? 'text-destructive' : isLow ? 'text-amber-500' : 'text-muted-foreground'}`} />
-        <span className={`text-sm ${isExhausted ? 'text-destructive font-medium' : ''}`}>
-          今日剩余: <strong>{remainingQuota}</strong>/{quota.dailyQuota} 点
-        </span>
+    <>
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Zap className={`size-4 ${isExhausted ? 'text-destructive' : isLow ? 'text-amber-500' : 'text-muted-foreground'}`} />
+          <span className={`text-sm ${isExhausted ? 'text-destructive font-medium' : ''}`}>
+            今日剩余: <strong>{remainingQuota}</strong>/{quota.dailyQuota} 点
+          </span>
+        </div>
+        <Progress
+          value={percentage}
+          className={`w-20 h-2 ${isExhausted ? '[&>div]:bg-destructive' : isLow ? '[&>div]:bg-amber-500' : ''}`}
+        />
+        {isLow && (
+          <Button size="sm" variant="outline" className="text-amber-600 border-amber-600 hover:bg-amber-50" onClick={handleUpgradeClick}>
+            升级 {tier === 'free' ? 'Lite' : 'PRO'}
+          </Button>
+        )}
+        {subscriptionRemainingText && (
+          <span className="text-xs text-muted-foreground">到期剩余: {subscriptionRemainingText}</span>
+        )}
       </div>
-      <Progress
-        value={percentage}
-        className={`w-20 h-2 ${isExhausted ? '[&>div]:bg-destructive' : isLow ? '[&>div]:bg-amber-500' : ''}`}
-      />
-      {isLow && (
-        <Button size="sm" variant="outline" className="text-amber-600 border-amber-600 hover:bg-amber-50" onClick={handleUpgradeClick}>
-          升级 {tier === 'free' ? 'Lite' : 'PRO'}
-        </Button>
+      {paymentTier && (
+        <PaymentDialog
+          tier={paymentTier}
+          open={true}
+          onOpenChange={(open) => !open && setPaymentTier(null)}
+        />
       )}
-      {subscriptionRemainingText && (
-        <span className="text-xs text-muted-foreground">到期剩余: {subscriptionRemainingText}</span>
-      )}
-    </div>
+    </>
   );
 }
 
