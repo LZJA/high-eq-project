@@ -435,7 +435,7 @@ export const profileAPI = {
 /**
  * 游客 API（无需认证）
  */
-const getGuestId = () => {
+export const getGuestId = () => {
   if (typeof window === "undefined") {
     return "server";
   }
@@ -451,7 +451,7 @@ const getGuestId = () => {
   return newId;
 };
 
-const guestHeaders = () => ({
+export const guestHeaders = () => ({
   "X-Guest-Id": getGuestId(),
 });
 

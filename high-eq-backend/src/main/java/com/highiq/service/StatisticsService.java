@@ -81,19 +81,19 @@ public class StatisticsService {
     }
 
     @Transactional
-    public void recordGuestUpgradeClick(String clientIp, String targetTier) {
+    public void recordGuestUpgradeClick(String clientKey, String targetTier) {
         String normalizedTier = normalizeTier(targetTier);
-        if (guestMapper.incrementUpgradeClickCount(clientIp, normalizedTier) > 0) {
+        if (guestMapper.incrementUpgradeClickCount(clientKey, normalizedTier) > 0) {
             return;
         }
         int liteCount = "lite".equals(normalizedTier) ? 1 : 0;
         int proCount = "pro".equals(normalizedTier) ? 1 : 0;
-        if (!insertGuestStatistics(clientIp, 0, 1, liteCount, proCount)) {
-            guestMapper.incrementUpgradeClickCount(clientIp, normalizedTier);
+        if (!insertGuestStatistics(clientKey, 0, 1, liteCount, proCount)) {
+            guestMapper.incrementUpgradeClickCount(clientKey, normalizedTier);
         }
     }
 
-    public UpgradeClickStatsDTO getUpgradeClickStats(String userId, String clientIp) {
+    public UpgradeClickStatsDTO getUpgradeClickStats(String userId, String clientKey) {
         if (userId != null && !userId.isBlank()) {
             QueryWrapper<UserStatistics> wrapper = new QueryWrapper<>();
             wrapper.eq("user_id", userId);
@@ -108,7 +108,7 @@ public class StatisticsService {
         }
 
         QueryWrapper<GuestStatistics> wrapper = new QueryWrapper<>();
-        wrapper.eq("client_ip", clientIp);
+        wrapper.eq("client_ip", clientKey);
         GuestStatistics stats = guestMapper.selectOne(wrapper);
         return toUpgradeClickStats(stats == null ? 0 : stats.getUpgradeClickCount(),
                 stats == null ? 0 : stats.getLiteUpgradeClickCount(),

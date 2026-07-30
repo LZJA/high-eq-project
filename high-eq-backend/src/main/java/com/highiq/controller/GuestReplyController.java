@@ -4,6 +4,7 @@ import com.highiq.dto.ApiResponse;
 import com.highiq.dto.GenerateReplyRequest;
 import com.highiq.dto.GenerateReplyResponse;
 import com.highiq.service.GuestReplyService;
+import com.highiq.util.GuestClientKeyUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +27,7 @@ public class GuestReplyController {
             @Valid @RequestBody GenerateReplyRequest request,
             HttpServletRequest httpRequest) {
         try {
-            String clientKey = getClientKey(httpRequest);
+            String clientKey = GuestClientKeyUtil.getClientKey(httpRequest);
             GenerateReplyResponse response = guestReplyService.generateReplies(clientKey, request);
             return ApiResponse.success("回复生成成功", response);
         } catch (IllegalStateException e) {
@@ -40,7 +41,7 @@ public class GuestReplyController {
     @GetMapping("/quota")
     public ApiResponse<Integer> getRemainingQuota(HttpServletRequest httpRequest) {
         try {
-            String clientKey = getClientKey(httpRequest);
+            String clientKey = GuestClientKeyUtil.getClientKey(httpRequest);
             int remaining = guestReplyService.getRemainingQuota(clientKey);
             return ApiResponse.success("获取成功", remaining);
         } catch (Exception e) {
@@ -49,30 +50,4 @@ public class GuestReplyController {
         }
     }
 
-    private String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("X-Real-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
-        }
-        ip = ip != null ? ip.split(",")[0].trim() : "unknown";
-        if ("0:0:0:0:0:0:0:1".equals(ip)) {
-            ip = "127.0.0.1";
-        }
-        return ip;
-    }
-
-    private String getClientKey(HttpServletRequest request) {
-        String guestId = request.getHeader("X-Guest-Id");
-        if (guestId == null || guestId.isBlank()) {
-            guestId = "anonymous";
-        }
-        guestId = guestId.replaceAll("[^a-zA-Z0-9_-]", "");
-        if (guestId.length() > 64) {
-            guestId = guestId.substring(0, 64);
-        }
-        return getClientIp(request) + ":" + guestId;
-    }
 }

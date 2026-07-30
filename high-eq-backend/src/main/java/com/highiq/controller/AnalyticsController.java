@@ -4,6 +4,7 @@ import com.highiq.dto.ApiResponse;
 import com.highiq.dto.UpgradeClickDTO;
 import com.highiq.dto.UpgradeClickStatsDTO;
 import com.highiq.service.StatisticsService;
+import com.highiq.util.GuestClientKeyUtil;
 import com.highiq.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +32,7 @@ public class AnalyticsController {
                 String userId = jwtUtil.getUserIdFromToken(token);
                 statisticsService.recordUpgradeClick(userId, dto.getTargetTier());
             } else {
-                statisticsService.recordGuestUpgradeClick(getClientIp(request), dto.getTargetTier());
+                statisticsService.recordGuestUpgradeClick(GuestClientKeyUtil.getClientKey(request), dto.getTargetTier());
             }
             return ApiResponse.success("记录成功", null);
         } catch (Exception e) {
@@ -51,22 +52,11 @@ public class AnalyticsController {
                 String token = authHeader.replace("Bearer ", "");
                 userId = jwtUtil.getUserIdFromToken(token);
             }
-            UpgradeClickStatsDTO stats = statisticsService.getUpgradeClickStats(userId, getClientIp(request));
+            UpgradeClickStatsDTO stats = statisticsService.getUpgradeClickStats(userId, GuestClientKeyUtil.getClientKey(request));
             return ApiResponse.success("获取成功", stats);
         } catch (Exception e) {
             log.warn("Failed to get upgrade clicks", e);
             return ApiResponse.error(500, "获取失败");
         }
-    }
-
-    private String getClientIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader("X-Real-IP");
-        }
-        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getRemoteAddr();
-        }
-        return ip != null ? ip.split(",")[0].trim() : "unknown";
     }
 }
