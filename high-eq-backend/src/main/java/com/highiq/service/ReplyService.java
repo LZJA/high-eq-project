@@ -279,6 +279,10 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
         if (history == null || !history.getUserId().equals(userId)) {
             throw new RuntimeException("历史记录不存在");
         }
+
+        QueryWrapper<ReplySuggestion> suggestionWrapper = new QueryWrapper<>();
+        suggestionWrapper.eq("history_id", historyId);
+        replySuggestionMapper.delete(suggestionWrapper);
         
         // 软删除
         history.setStatus(0);

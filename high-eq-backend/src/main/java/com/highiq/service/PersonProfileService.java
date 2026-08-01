@@ -158,6 +158,7 @@ public class PersonProfileService extends ServiceImpl<PersonProfileMapper, Perso
         historyWrapper.eq("person_profile_id", profileId);
         List<ProfileChatHistory> histories = profileChatHistoryMapper.selectList(historyWrapper);
         for (ProfileChatHistory history : histories) {
+            deleteProfileHistorySuggestions(history.getId());
             history.setStatus(0);
             profileChatHistoryMapper.updateById(history);
         }
@@ -225,6 +226,7 @@ public class PersonProfileService extends ServiceImpl<PersonProfileMapper, Perso
         requireProfile(profileId, userId);
 
         ProfileChatHistory history = requireProfileHistory(profileId, historyId, userId);
+        deleteProfileHistorySuggestions(historyId);
         history.setStatus(0);
         profileChatHistoryMapper.updateById(history);
     }
@@ -323,5 +325,11 @@ public class PersonProfileService extends ServiceImpl<PersonProfileMapper, Perso
                             .build();
                 })
                 .collect(Collectors.toList());
+    }
+
+    private void deleteProfileHistorySuggestions(String historyId) {
+        QueryWrapper<ProfileReplySuggestion> wrapper = new QueryWrapper<>();
+        wrapper.eq("history_id", historyId);
+        profileReplySuggestionMapper.delete(wrapper);
     }
 }
