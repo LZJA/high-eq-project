@@ -499,19 +499,19 @@ export default function Home() {
           </div>
 
           <div className="grid md:grid-cols-5 gap-4 max-w-5xl mx-auto">
-            {STYLE_FEATURES.map((tone) => (
+            {STYLE_FEATURES.map((feature) => (
               <Card
-                key={tone.value}
+                key={feature.value}
                 className="p-6 text-center hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:scale-105 cursor-pointer group"
               >
                 <div className="text-3xl mb-3 transform group-hover:scale-110 transition-transform">
-                  {tone.emoji}
+                  {feature.emoji}
                 </div>
                 <div className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
-                  {tone.value}
+                  {feature.value}
                 </div>
                 <div className="whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
-                  {tone.desc}
+                  {feature.desc}
                 </div>
               </Card>
             ))}

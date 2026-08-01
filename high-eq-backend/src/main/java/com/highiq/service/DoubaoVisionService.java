@@ -30,9 +30,9 @@ public class DoubaoVisionService {
     }
 
     public List<String> generateRepliesWithImage(String chatImage, String chatContent, String roleBackground,
-                                                  String userIntent, Integer replyCount, String tone) {
+                                                  String userIntent, Integer replyCount) {
         try {
-            String prompt = buildPrompt(chatContent, roleBackground, userIntent, replyCount, tone);
+            String prompt = buildPrompt(chatContent, roleBackground, userIntent, replyCount);
             Map<String, Object> response = callDoubaoVisionApi(prompt, chatImage);
             return parseResponse(response);
         } catch (Exception e) {
@@ -57,7 +57,7 @@ public class DoubaoVisionService {
         }
     }
 
-    private String buildPrompt(String chatContent, String roleBackground, String userIntent, Integer replyCount, String tone) {
+    private String buildPrompt(String chatContent, String roleBackground, String userIntent, Integer replyCount) {
         StringBuilder prompt = new StringBuilder();
         prompt.append("你是一个高情商沟通助手。请根据以下信息生成").append(replyCount).append("条得体的回复建议。\n\n");
         prompt.append("回复要像可以直接发出去的微信/私聊消息，保留生活感和人情味，避免官方、客服式或说教式表达。\n\n");

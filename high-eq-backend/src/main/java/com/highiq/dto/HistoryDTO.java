@@ -31,8 +31,6 @@ public class HistoryDTO {
 
     private String modelUsed;
 
-    private String tone;  // 语气/风格
-
     private String chatImage;  // 聊天截图
 
     private Boolean isFavorite;

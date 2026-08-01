@@ -26,7 +26,6 @@ public class ReplyChatSession {
     private String roleBackground;
     private String initialChatContent;
     private String initialUserIntent;
-    private String tone;
     private String modelPreference;
     private String sessionSummary;
     private Integer turnCount;

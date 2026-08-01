@@ -30,7 +30,6 @@ interface FavoriteSuggestion {
   id: string;
   content: string;
   reason: string;
-  tone: string;
   styleLabel?: string;
 }
 
@@ -314,7 +313,7 @@ export default function Favorites() {
                             <CardContent className="pt-4">
                               <div className="flex items-start justify-between gap-2 mb-2">
                                 <Badge variant="outline" className="text-xs">
-                                  {suggestion.styleLabel || suggestion.tone || "自然得体"}
+                                  {suggestion.styleLabel || "自然得体"}
                                 </Badge>
                                 <Button
                                   variant="ghost"

@@ -311,7 +311,7 @@ export default function GuestReplyChatSession({ sessionId }: GuestReplyChatSessi
                 {suggestions.map((suggestion) => (
                   <Card key={suggestion.id} className="py-0 shadow-sm">
                     <CardContent className="space-y-2.5 p-3">
-                      <Badge variant="outline">{suggestion.styleLabel || suggestion.tone || "自然得体"}</Badge>
+                      <Badge variant="outline">{suggestion.styleLabel || "自然得体"}</Badge>
                       <p className="whitespace-pre-wrap text-sm leading-6">{suggestion.content}</p>
                       {suggestion.reason && (
                         <p className="rounded-md bg-muted/60 p-2 text-xs leading-5 text-muted-foreground">

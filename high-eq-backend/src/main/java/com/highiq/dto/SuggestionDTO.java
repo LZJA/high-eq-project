@@ -17,6 +17,5 @@ public class SuggestionDTO {
     private String id;
     private String content;
     private String reason;
-    private String tone;
     private String styleLabel;
 }

@@ -54,7 +54,6 @@ interface ReplySuggestion {
   id: string;
   content: string;
   reason: string;
-  tone: string;
   styleLabel?: string;
 }
 
@@ -494,7 +493,7 @@ export default function ReplyApp() {
                   <Card key={suggestion.id} className="py-0 shadow-sm hover:shadow-md transition-shadow">
                     <CardContent className="p-4 sm:px-6">
                       <div className="mb-2 flex items-start justify-between gap-2">
-                        <Badge variant="outline">{suggestion.styleLabel || suggestion.tone || "自然得体"}</Badge>
+                        <Badge variant="outline">{suggestion.styleLabel || "自然得体"}</Badge>
                       </div>
                       <p className="text-base mb-3 whitespace-pre-wrap">
                         {suggestion.content}

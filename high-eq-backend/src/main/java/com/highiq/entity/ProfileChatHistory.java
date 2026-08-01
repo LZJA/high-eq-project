@@ -21,7 +21,6 @@ public class ProfileChatHistory {
     private String roleBackground;
     private String userIntent;
     private String modelUsed;
-    private String tone;
     private String chatImage;
     private Integer status;
     private Integer isFavorite;

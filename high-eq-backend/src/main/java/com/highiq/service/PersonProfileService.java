@@ -285,7 +285,7 @@ public class PersonProfileService extends ServiceImpl<PersonProfileMapper, Perso
 
     private HistoryDTO convertProfileHistoryToDTO(ProfileChatHistory history, boolean includeSuggestions) {
         List<SuggestionDTO> suggestions = includeSuggestions
-                ? getSuggestionsForProfileHistory(history.getId(), history.getTone())
+                ? getSuggestionsForProfileHistory(history.getId())
                 : null;
 
         return HistoryDTO.builder()
@@ -296,7 +296,6 @@ public class PersonProfileService extends ServiceImpl<PersonProfileMapper, Perso
                 .roleBackground(history.getRoleBackground())
                 .userIntent(history.getUserIntent())
                 .modelUsed(history.getModelUsed())
-                .tone(history.getTone())
                 .chatImage(history.getChatImage())
                 .isFavorite(history.getIsFavorite() != null && history.getIsFavorite() == 1)
                 .createTime(history.getCreateTime() != null ? history.getCreateTime().format(HISTORY_TIME_FORMATTER) : null)
@@ -304,7 +303,7 @@ public class PersonProfileService extends ServiceImpl<PersonProfileMapper, Perso
                 .build();
     }
 
-    private List<SuggestionDTO> getSuggestionsForProfileHistory(String historyId, String tone) {
+    private List<SuggestionDTO> getSuggestionsForProfileHistory(String historyId) {
         QueryWrapper<ProfileReplySuggestion> wrapper = new QueryWrapper<>();
         wrapper.eq("history_id", historyId)
                 .orderByAsc("order_index");
@@ -320,7 +319,6 @@ public class PersonProfileService extends ServiceImpl<PersonProfileMapper, Perso
                             .id(suggestion.getId())
                             .content(parsed.content())
                             .reason(parsed.reason())
-                            .tone(ReplyStyleLabelParser.DEFAULT_STYLE_LABEL)
                             .styleLabel(styleLabel)
                             .build();
                 })

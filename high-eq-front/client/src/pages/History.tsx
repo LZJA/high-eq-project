@@ -49,7 +49,6 @@ interface HistoryDetail {
     id: string;
     content: string;
     reason: string;
-    tone: string;
     styleLabel?: string;
   }>;
   createTime: string;
@@ -362,7 +361,7 @@ export default function History() {
                         <Card key={suggestion.id} className="shadow-sm">
                           <CardContent className="pt-4">
                             <div className="flex items-start justify-between gap-2 mb-2">
-                              <Badge variant="outline">{suggestion.styleLabel || suggestion.tone || "自然得体"}</Badge>
+                              <Badge variant="outline">{suggestion.styleLabel || "自然得体"}</Badge>
                               <Button
                                 variant="ghost"
                                 size="icon-sm"

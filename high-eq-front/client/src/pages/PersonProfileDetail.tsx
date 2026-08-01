@@ -38,7 +38,6 @@ interface HistorySuggestion {
   id: string;
   content: string;
   reason: string;
-  tone: string;
   styleLabel?: string;
 }
 
@@ -432,7 +431,7 @@ export default function PersonProfileDetail({ profileId }: PersonProfileDetailPr
                 {selectedHistory.suggestions?.map((suggestion) => (
                   <Card key={suggestion.id}>
                     <CardContent className="pt-4 space-y-2">
-                      <Badge variant="outline">{suggestion.styleLabel || suggestion.tone || "自然得体"}</Badge>
+                      <Badge variant="outline">{suggestion.styleLabel || "自然得体"}</Badge>
                       <p className="text-sm whitespace-pre-wrap">{suggestion.content}</p>
                       {suggestion.reason && (
                         <div className="text-sm text-muted-foreground bg-muted/50 rounded-md p-2">

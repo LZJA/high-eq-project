@@ -92,8 +92,7 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                         request.getChatContent(),
                         request.getRoleBackground(),
                         request.getUserIntent(),
-                        AiService.DEFAULT_REPLY_COUNT,
-                        null
+                        AiService.DEFAULT_REPLY_COUNT
                 );
             } else if (AiModel.DOUBAO_SEED_2_PRO.getId().equals(requestedModel)) {
                 aiSuggestions = doubaoVisionService.generateRepliesWithImage(
@@ -101,8 +100,7 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                         request.getChatContent(),
                         request.getRoleBackground(),
                         request.getUserIntent(),
-                        AiService.DEFAULT_REPLY_COUNT,
-                        null
+                        AiService.DEFAULT_REPLY_COUNT
                 );
             } else {
                 aiSuggestions = aiService.generateReplies(
@@ -110,14 +108,12 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                         request.getRoleBackground(),
                         request.getUserIntent(),
                         AiService.DEFAULT_REPLY_COUNT,
-                        null,
                         requestedModel
                 );
             }
 
             // 保存到数据库
             String historyId = UUID.randomUUID().toString();
-            String selectedTone = ReplyStyleLabelParser.DEFAULT_STYLE_LABEL;
             String modelUsed = request.getModelPreference() != null ? request.getModelPreference() : AiModel.DEFAULT_MODEL;
 
             // 判断是否为人物档案聊天
@@ -131,7 +127,6 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                         .roleBackground(request.getRoleBackground())
                         .userIntent(request.getUserIntent())
                         .modelUsed(modelUsed)
-                        .tone(selectedTone)
                         .chatImage(request.getChatImage())
                         .status(1)
                         .isFavorite(0)
@@ -146,7 +141,6 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                         .roleBackground(request.getRoleBackground())
                         .userIntent(request.getUserIntent())
                         .modelUsed(modelUsed)
-                        .tone(selectedTone)
                         .chatImage(request.getChatImage())
                         .status(1)
                         .isFavorite(0)
@@ -190,7 +184,6 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                         .id(suggestionId)
                         .content(parsed.content())
                         .reason(parsed.reason())
-                        .tone(selectedTone)
                         .styleLabel(parsed.styleLabel())
                         .build();
                 suggestionDTOs.add(dto);
@@ -456,7 +449,7 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
 
         List<SuggestionDTO> suggestions = null;
         if (includeSuggestions) {
-            suggestions = getSuggestionsForHistory(history.getId(), history.getTone());
+            suggestions = getSuggestionsForHistory(history.getId());
         }
 
         return HistoryDTO.builder()
@@ -467,7 +460,6 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                 .roleBackground(history.getRoleBackground())
                 .userIntent(history.getUserIntent())
                 .modelUsed(history.getModelUsed())
-                .tone(history.getTone())
                 .chatImage(history.getChatImage())
                 .isFavorite(history.getIsFavorite() != null && history.getIsFavorite() == 1)
                 .createTime(history.getCreateTime() != null ? history.getCreateTime().format(formatter) : null)
@@ -478,7 +470,7 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
     /**
      * 获取历史记录的建议列表
      */
-    private List<SuggestionDTO> getSuggestionsForHistory(String historyId, String tone) {
+    private List<SuggestionDTO> getSuggestionsForHistory(String historyId) {
         QueryWrapper<ReplySuggestion> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("history_id", historyId)
                 .orderByAsc("order_index");
@@ -501,8 +493,7 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                     request.getChatContent(),
                     request.getRoleBackground(),
                     request.getUserIntent(),
-                    AiService.DEFAULT_REPLY_COUNT,
-                    null
+                    AiService.DEFAULT_REPLY_COUNT
             );
 
             List<SuggestionDTO> suggestionDTOs = new ArrayList<>();
@@ -514,7 +505,6 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                         .id(UUID.randomUUID().toString())
                         .content(parsed.content())
                         .reason(parsed.reason())
-                        .tone(ReplyStyleLabelParser.DEFAULT_STYLE_LABEL)
                         .styleLabel(parsed.styleLabel())
                         .build();
                 suggestionDTOs.add(dto);
@@ -576,7 +566,6 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                     .id(suggestion.getId())
                     .content(parsed.content())
                     .reason(parsed.reason())
-                    .tone(ReplyStyleLabelParser.DEFAULT_STYLE_LABEL)
                     .styleLabel(parsed.styleLabel())
                     .build());
         }
@@ -592,7 +581,6 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
                 .id(suggestion.getId())
                 .content(parsed.content())
                 .reason(parsed.reason())
-                .tone(ReplyStyleLabelParser.DEFAULT_STYLE_LABEL)
                 .styleLabel(styleLabel)
                 .build();
     }

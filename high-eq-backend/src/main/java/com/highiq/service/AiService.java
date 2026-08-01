@@ -51,11 +51,10 @@ public class AiService {
      * @param roleBackground 角色背景
      * @param userIntent 用户真实意图
      * @param replyCount 生成回复的数量
-     * @param tone 语气/风格（可选）
      * @return 回复建议列表
      */
-    public List<String> generateReplies(String chatContent, String roleBackground, String userIntent, Integer replyCount, String tone) {
-        return generateReplies(chatContent, roleBackground, userIntent, replyCount, tone, model);
+    public List<String> generateReplies(String chatContent, String roleBackground, String userIntent, Integer replyCount) {
+        return generateReplies(chatContent, roleBackground, userIntent, replyCount, model);
     }
 
     public String generateText(String prompt, String requestedModel) {
@@ -72,7 +71,7 @@ public class AiService {
         }
     }
 
-    public List<String> generateReplies(String chatContent, String roleBackground, String userIntent, Integer replyCount, String tone, String requestedModel) {
+    public List<String> generateReplies(String chatContent, String roleBackground, String userIntent, Integer replyCount, String requestedModel) {
         try {
             int fixedReplyCount = DEFAULT_REPLY_COUNT;
 

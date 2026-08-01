@@ -24,7 +24,6 @@ public class ReplyChatSuggestion {
     private String afterMessageId;
     private String content;
     private String reason;
-    private String tone;
     private String styleLabel;
     private Integer batchIndex;
     private Integer orderIndex;

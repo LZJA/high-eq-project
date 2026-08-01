@@ -23,7 +23,5 @@ public class GenerateReplyRequest {
 
     private Integer replyCount;  // 兼容旧客户端；新版本固定生成 5 条
 
-    private String tone;  // 兼容旧客户端；新版本由 AI 根据语境自适应风格标签
-
     private String personProfileId;  // 人物档案ID（可选）
 }

@@ -12,7 +12,6 @@ export interface GuestChatSuggestion {
   id: string;
   content: string;
   reason?: string;
-  tone?: string;
   styleLabel?: string;
 }
 
