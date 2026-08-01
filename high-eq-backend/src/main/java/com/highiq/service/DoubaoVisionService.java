@@ -18,7 +18,7 @@ public class DoubaoVisionService {
     @Value("${ai.doubao.api-url:https://ark.cn-beijing.volces.com/api/v3}")
     private String apiUrl;
 
-    @Value("${ai.doubao.model:doubao-seed-2.0-pro}")
+    @Value("${ai.doubao.model:doubao-seed-2-0-pro-260215}")
     private String model;
 
     private final WebClient webClient;
@@ -102,37 +102,41 @@ public class DoubaoVisionService {
     }
 
     private Map<String, Object> callDoubaoVisionApi(String prompt, String imageBase64) {
-        List<Map<String, Object>> input = new ArrayList<>();
-        Map<String, Object> userInput = new HashMap<>();
-        userInput.put("role", "user");
+        List<Map<String, Object>> messages = new ArrayList<>();
+        Map<String, Object> userMessage = new HashMap<>();
+        userMessage.put("role", "user");
 
         List<Object> content = new ArrayList<>();
 
         if (imageBase64 != null && !imageBase64.isEmpty()) {
             Map<String, Object> imageContent = new HashMap<>();
-            imageContent.put("type", "input_image");
-            imageContent.put("image_url", imageBase64);
+            imageContent.put("type", "image_url");
+            Map<String, String> imageUrl = new HashMap<>();
+            imageUrl.put("url", imageBase64);
+            imageContent.put("image_url", imageUrl);
             content.add(imageContent);
         }
 
         Map<String, Object> textContent = new HashMap<>();
-        textContent.put("type", "input_text");
+        textContent.put("type", "text");
         textContent.put("text", prompt);
         content.add(textContent);
 
-        userInput.put("content", content);
-        input.add(userInput);
+        userMessage.put("content", content);
+        messages.add(userMessage);
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", model);
-        requestBody.put("input", input);
+        requestBody.put("messages", messages);
+        requestBody.put("temperature", 0.7);
+        requestBody.put("max_tokens", 2000);
 
-        log.info("Calling Doubao API: {}", apiUrl + "/responses");
+        log.info("Calling Doubao API: {}", apiUrl + "/chat/completions");
         log.debug("Request body: {}", requestBody);
 
         try {
             Map<String, Object> response = webClient.post()
-                    .uri(apiUrl + "/responses")
+                    .uri(apiUrl + "/chat/completions")
                     .header("Authorization", "Bearer " + apiKey)
                     .header("Content-Type", "application/json")
                     .bodyValue(requestBody)
@@ -153,23 +157,15 @@ public class DoubaoVisionService {
         List<String> replies = new ArrayList<>();
 
         try {
-            List<Map<String, Object>> output = (List<Map<String, Object>>) response.get("output");
-            if (output != null && output.size() > 1) {
-                Map<String, Object> message = output.get(1);
-                if ("message".equals(message.get("type"))) {
-                    List<Map<String, Object>> content = (List<Map<String, Object>>) message.get("content");
-                    if (content != null && !content.isEmpty()) {
-                        String text = (String) content.get(0).get("text");
+            String text = extractMessageContent(response);
+            if (text != null) {
+                log.info("Parsing Doubao response content: {}", text);
 
-                        log.info("Parsing Doubao response content: {}", text);
-
-                        String[] lines = text.split("\n");
-                        for (String line : lines) {
-                            line = line.trim();
-                            if (!line.isEmpty() && line.contains("|||REASON|||")) {
-                                replies.add(line);
-                            }
-                        }
+                String[] lines = text.split("\n");
+                for (String line : lines) {
+                    line = line.trim();
+                    if (!line.isEmpty() && line.contains("|||REASON|||")) {
+                        replies.add(line);
                     }
                 }
             }
@@ -191,22 +187,15 @@ public class DoubaoVisionService {
         List<String> replies = new ArrayList<>();
 
         try {
-            List<Map<String, Object>> output = (List<Map<String, Object>>) response.get("output");
-            if (output != null && output.size() > 1) {
-                Map<String, Object> message = output.get(1);
-                if ("message".equals(message.get("type"))) {
-                    List<Map<String, Object>> content = (List<Map<String, Object>>) message.get("content");
-                    if (content != null && !content.isEmpty()) {
-                        String text = (String) content.get(0).get("text");
-                        String[] lines = text.split("\n");
-                        for (String line : lines) {
-                            line = line.trim();
-                            if (line.startsWith("OPPONENT_SUMMARY|||")) {
-                                opponentSummary = line.substring("OPPONENT_SUMMARY|||".length()).trim();
-                            } else if (!line.isEmpty() && line.contains("|||REASON|||")) {
-                                replies.add(line);
-                            }
-                        }
+            String text = extractMessageContent(response);
+            if (text != null) {
+                String[] lines = text.split("\n");
+                for (String line : lines) {
+                    line = line.trim();
+                    if (line.startsWith("OPPONENT_SUMMARY|||")) {
+                        opponentSummary = line.substring("OPPONENT_SUMMARY|||".length()).trim();
+                    } else if (!line.isEmpty() && line.contains("|||REASON|||")) {
+                        replies.add(line);
                     }
                 }
             }
@@ -221,6 +210,20 @@ public class DoubaoVisionService {
             replies = List.of("我看到了，我先顺着你的意思认真回一下，别让话赶话把事情说僵。|||REASON|||先稳住对话氛围|||STYLE|||稳住情绪");
         }
         return new ContinueChatGeneration(opponentSummary, replies);
+    }
+
+    @SuppressWarnings("unchecked")
+    private String extractMessageContent(Map<String, Object> response) {
+        List<Map<String, Object>> choices = (List<Map<String, Object>>) response.get("choices");
+        if (choices == null || choices.isEmpty()) {
+            return null;
+        }
+        Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+        if (message == null) {
+            return null;
+        }
+        Object content = message.get("content");
+        return content instanceof String text ? text : null;
     }
 
     private String formatExcludedContents(List<String> excludeContents) {

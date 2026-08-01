@@ -124,7 +124,7 @@ ai:
   doubao:
     api-key: ${DOUBAO_API_KEY:}
     api-url: https://ark.cn-beijing.volces.com/api/v3
-    model: doubao-seed-2.0-pro
+    model: ${DOUBAO_MODEL:doubao-seed-2-0-pro-260215}
 
 aliyun:
   oss:
