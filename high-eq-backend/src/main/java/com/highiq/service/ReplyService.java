@@ -276,10 +276,8 @@ public class ReplyService extends ServiceImpl<HistoryMapper, History> {
         QueryWrapper<ReplySuggestion> suggestionWrapper = new QueryWrapper<>();
         suggestionWrapper.eq("history_id", historyId);
         replySuggestionMapper.delete(suggestionWrapper);
-        
-        // 软删除
-        history.setStatus(0);
-        baseMapper.updateById(history);
+
+        baseMapper.deleteById(historyId);
         
         log.info("History deleted: {}", historyId);
     }

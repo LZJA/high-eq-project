@@ -227,8 +227,7 @@ public class PersonProfileService extends ServiceImpl<PersonProfileMapper, Perso
 
         ProfileChatHistory history = requireProfileHistory(profileId, historyId, userId);
         deleteProfileHistorySuggestions(historyId);
-        history.setStatus(0);
-        profileChatHistoryMapper.updateById(history);
+        profileChatHistoryMapper.deleteById(historyId);
     }
 
     public List<HistoryDTO> getFavoriteProfileHistory(String userId) {

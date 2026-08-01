@@ -16,6 +16,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -41,7 +42,7 @@ class PersonProfileServiceDeleteHistoryTest {
     }
 
     @Test
-    void deleteProfileHistoryAlsoDeletesStoredReplySuggestions() {
+    void deleteProfileHistoryPhysicallyDeletesHistoryAndStoredReplySuggestions() {
         PersonProfile profile = PersonProfile.builder()
                 .id("profile-1")
                 .userId("user-1")
@@ -61,7 +62,7 @@ class PersonProfileServiceDeleteHistoryTest {
         ArgumentCaptor<QueryWrapper<ProfileReplySuggestion>> captor = ArgumentCaptor.forClass(QueryWrapper.class);
         verify(suggestionMapper).delete(captor.capture());
         assertThat(captor.getValue().getSqlSegment()).contains("history_id");
-        assertThat(history.getStatus()).isZero();
-        verify(historyMapper).updateById(history);
+        verify(historyMapper).deleteById("history-1");
+        verify(historyMapper, never()).updateById(history);
     }
 }
