@@ -15,10 +15,10 @@ class ToneRemovalMigrationTest {
             assertThat(input).isNotNull();
             String sql = new String(input.readAllBytes(), StandardCharsets.UTF_8);
 
-            assertThat(sql).contains("ALTER TABLE `history` DROP COLUMN IF EXISTS `tone`");
-            assertThat(sql).contains("ALTER TABLE `profile_chat_history` DROP COLUMN IF EXISTS `tone`");
-            assertThat(sql).contains("ALTER TABLE `reply_chat_session` DROP COLUMN IF EXISTS `tone`");
-            assertThat(sql).contains("ALTER TABLE `reply_chat_suggestion` DROP COLUMN IF EXISTS `tone`");
+            assertThat(sql).contains("ALTER TABLE `history` DROP COLUMN `tone`");
+            assertThat(sql).contains("ALTER TABLE `profile_chat_history` DROP COLUMN `tone`");
+            assertThat(sql).contains("ALTER TABLE `reply_chat_session` DROP COLUMN `tone`");
+            assertThat(sql).contains("ALTER TABLE `reply_chat_suggestion` DROP COLUMN `tone`");
         }
     }
 }
